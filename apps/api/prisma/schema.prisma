@@ -1,0 +1,233 @@
+// SiteKit 核心資料模型（依 docs/全新網站規劃.md 第 03 節）
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  user
+  admin
+  superadmin
+}
+
+enum UserStatus {
+  active
+  suspended
+  deleted
+}
+
+enum ProductType {
+  physical
+  course
+  credit_pack
+}
+
+enum OrderStatus {
+  pending
+  paid
+  failed
+  refunded
+  canceled
+}
+
+enum JobStatus {
+  queued
+  running
+  succeeded
+  failed
+  canceled
+}
+
+enum ContentStatus {
+  draft
+  published
+  archived
+}
+
+model User {
+  id              String        @id @default(cuid())
+  email           String        @unique
+  displayName     String?
+  role            Role          @default(user)
+  status          UserStatus    @default(active)
+  membershipTier  String?
+  allowedFeatures String[]      @default([])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  identities      Identity[]
+  orders          Order[]
+  entitlements    Entitlement[]
+  ledger          CreditLedger[]
+  jobs            AiJob[]
+
+  @@map("users")
+}
+
+model Identity {
+  id          String @id @default(cuid())
+  userId      String
+  provider    String
+  providerUid String
+  user        User   @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerUid])
+  @@map("identities")
+}
+
+model Product {
+  id           String        @id @default(cuid())
+  type         ProductType
+  sku          String        @unique
+  name         String
+  price        Int
+  isActive     Boolean       @default(true)
+  course       Course?
+  items        OrderItem[]
+  entitlements Entitlement[]
+  createdAt    DateTime      @default(now())
+
+  @@map("products")
+}
+
+model Course {
+  id          String    @id @default(cuid())
+  productId   String    @unique
+  slug        String    @unique
+  isPublished Boolean   @default(false)
+  product     Product   @relation(fields: [productId], references: [id])
+  chapters    Chapter[]
+
+  @@map("courses")
+}
+
+model Chapter {
+  id              String  @id @default(cuid())
+  courseId        String
+  order           Int
+  title           String
+  videoProviderId String?
+  course          Course  @relation(fields: [courseId], references: [id])
+
+  @@map("chapters")
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  userId          String
+  status          OrderStatus @default(pending)
+  amount          Int
+  providerTradeNo String?
+  user            User        @relation(fields: [userId], references: [id])
+  items           OrderItem[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  qty       Int     @default(1)
+  unitPrice Int
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model Entitlement {
+  id        String    @id @default(cuid())
+  userId    String
+  productId String
+  grantedAt DateTime  @default(now())
+  expiresAt DateTime?
+  user      User      @relation(fields: [userId], references: [id])
+  product   Product   @relation(fields: [productId], references: [id])
+
+  @@unique([userId, productId])
+  @@map("entitlements")
+}
+
+model CreditLedger {
+  id           String   @id @default(cuid())
+  userId       String
+  type         String
+  amount       Int
+  balanceAfter Int
+  jobId        String?
+  reason       String?
+  createdBy    String?
+  user         User     @relation(fields: [userId], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@map("credit_ledger")
+}
+
+model AiJob {
+  id        String    @id @default(cuid())
+  userId    String
+  kind      String
+  status    JobStatus @default(queued)
+  provider  String?
+  costTwd   Decimal?  @db.Decimal(10, 4)
+  resultUrl String?
+  user      User      @relation(fields: [userId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("ai_jobs")
+}
+
+model Content {
+  id           String        @id @default(cuid())
+  source       String
+  externalId   String
+  type         String
+  title        String
+  slug         String        @unique
+  body         String?
+  canonicalUrl String?
+  originalUrl  String?
+  status       ContentStatus @default(draft)
+  publishedAt  DateTime?
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([source, externalId])
+  @@map("contents")
+}
+
+model Redirect {
+  id       String @id @default(cuid())
+  fromPath String @unique
+  toPath   String
+  code     Int    @default(301)
+
+  @@map("redirects")
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  isSecret  Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actor     String
+  action    String
+  params    Json?
+  ok        Boolean
+  error     String?
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}

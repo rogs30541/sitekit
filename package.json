@@ -1,0 +1,19 @@
+{
+  "name": "sitekit",
+  "private": true,
+  "version": "0.1.0",
+  "description": "SiteKit 通用架站套件：電商開店／線上課程／品牌網站共用骨架，後台具 MCP 與 AI API 雙路徑",
+  "workspaces": ["packages/*", "apps/*", "mcp"],
+  "scripts": {
+    "dev:web": "npm run dev -w @sitekit/web",
+    "dev:api": "npm run dev -w @sitekit/api",
+    "build": "npm run build -w @sitekit/shared && npm run build -w @sitekit/api && npm run build -w @sitekit/web",
+    "build:shared": "npm run build -w @sitekit/shared",
+    "build:api": "npm run build -w @sitekit/api",
+    "build:web": "npm run build -w @sitekit/web",
+    "db:generate": "npm run db:generate -w @sitekit/api",
+    "db:migrate": "npm run db:migrate -w @sitekit/api",
+    "mcp": "node mcp/server.mjs"
+  },
+  "engines": { "node": ">=20" }
+}
