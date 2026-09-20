@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-/** 301 導向表：從 api 讀 redirects，記憶體快取 5 分鐘。搬運舊站時保住 SEO 權重。 */
+/** 301 導向表：從 api 讀 redirects，記憶體快取 60 秒（匯入後最多 1 分鐘生效）。搬運舊站時保住 SEO 權重。 */
 const API = process.env.API_INTERNAL_URL ?? 'http://localhost:4000';
-const TTL = 5 * 60_000;
+const TTL = 60_000;
 let cache: { at: number; map: Map<string, { to: string; code: number }> } | null = null;
 
 async function redirects() {
