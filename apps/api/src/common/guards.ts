@@ -1,13 +1,15 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import type { Request } from 'express';
 import { ADMIN_ROLES } from '@sitekit/shared';
 import { env } from '../config/env';
-import { SESSION_COOKIE, decodeSession, type SessionPayload } from './session';
+import { SESSION_COOKIE, SessionService, type ResolvedSession } from '../modules/auth/session.service';
 
 type CookieRequest = Request & { cookies?: Record<string, string> };
-export interface AuthedRequest extends Request { session?: SessionPayload }
+export interface AuthedRequest extends Request {
+  session?: ResolvedSession;
+}
 
-/** MCP path: Bearer OPS_TOKEN only, cookies ignored. Unset OPS_TOKEN = whole path closed. */
+/** MCP 路徑：只認 Bearer OPS_TOKEN，不看 cookie。OPS_TOKEN 未設定＝整條路徑關閉。 */
 @Injectable()
 export class OperatorTokenGuard implements CanActivate {
   canActivate(ctx: ExecutionContext): boolean {
@@ -20,16 +22,28 @@ export class OperatorTokenGuard implements CanActivate {
   }
 }
 
-/** AI API path: httpOnly cookie session only, admin role required, Bearer tokens rejected. */
+/** 任何已登入使用者（DB session）。 */
 @Injectable()
-export class AdminSessionGuard implements CanActivate {
-  canActivate(ctx: ExecutionContext): boolean {
+export class UserSessionGuard implements CanActivate {
+  constructor(protected readonly sessions: SessionService) {}
+
+  async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const req = ctx.switchToHttp().getRequest<AuthedRequest & CookieRequest>();
-    if (req.headers.authorization) throw new ForbiddenException('this path accepts admin session only, not tokens');
-    const session = decodeSession(req.cookies?.[SESSION_COOKIE]);
-    if (!session) throw new UnauthorizedException('admin login required');
-    if (!ADMIN_ROLES.includes(session.role)) throw new ForbiddenException('admin role required');
+    const session = await this.sessions.resolve(req.cookies?.[SESSION_COOKIE]);
+    if (!session) throw new UnauthorizedException('login required');
     req.session = session;
+    return true;
+  }
+}
+
+/** AI API 路徑與後台：只認 httpOnly cookie session、角色須為管理員，拒絕 Bearer token。 */
+@Injectable()
+export class AdminSessionGuard extends UserSessionGuard {
+  override async canActivate(ctx: ExecutionContext): Promise<boolean> {
+    const req = ctx.switchToHttp().getRequest<AuthedRequest>();
+    if (req.headers.authorization) throw new ForbiddenException('this path accepts admin session only, not tokens');
+    await super.canActivate(ctx);
+    if (!ADMIN_ROLES.includes(req.session!.user.role)) throw new ForbiddenException('admin role required');
     return true;
   }
 }

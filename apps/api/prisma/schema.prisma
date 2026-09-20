@@ -1,6 +1,7 @@
 // SiteKit 核心資料模型（依 docs/全新網站規劃.md 第 03 節）
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -49,22 +50,37 @@ enum ContentStatus {
 }
 
 model User {
-  id              String        @id @default(cuid())
-  email           String        @unique
+  id              String         @id @default(cuid())
+  email           String         @unique
+  passwordHash    String?
   displayName     String?
-  role            Role          @default(user)
-  status          UserStatus    @default(active)
+  role            Role           @default(user)
+  status          UserStatus     @default(active)
   membershipTier  String?
-  allowedFeatures String[]      @default([])
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  allowedFeatures String[]       @default([])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
   identities      Identity[]
+  sessions        Session[]
   orders          Order[]
   entitlements    Entitlement[]
   ledger          CreditLedger[]
   jobs            AiJob[]
 
   @@map("users")
+}
+
+/// 伺服器端 session：cookie 只存 id，權限以 DB 為準，登出即失效
+model Session {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+  userAgent String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
 }
 
 model Identity {
@@ -184,29 +200,38 @@ model AiJob {
   @@map("ai_jobs")
 }
 
+/// 正規化內容模型（canonical content）：外站搬運與自建內容共用
 model Content {
   id           String        @id @default(cuid())
   source       String
   externalId   String
-  type         String
+  type         String        @default("post")
   title        String
   slug         String        @unique
   body         String?
+  excerpt      String?
+  coverUrl     String?
+  author       String?
+  tags         String[]      @default([])
   canonicalUrl String?
   originalUrl  String?
   status       ContentStatus @default(draft)
   publishedAt  DateTime?
+  raw          Json?
+  createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
   @@unique([source, externalId])
+  @@index([status, publishedAt])
   @@map("contents")
 }
 
 model Redirect {
-  id       String @id @default(cuid())
-  fromPath String @unique
+  id       String  @id @default(cuid())
+  fromPath String  @unique
   toPath   String
-  code     Int    @default(301)
+  code     Int     @default(301)
+  source   String?
 
   @@map("redirects")
 }
@@ -227,7 +252,9 @@ model AuditLog {
   params    Json?
   ok        Boolean
   error     String?
+  result    Json?
   createdAt DateTime @default(now())
 
+  @@index([createdAt])
   @@map("audit_logs")
 }

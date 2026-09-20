@@ -13,9 +13,9 @@ export class AdminAiController {
     return this.ops.listActions();
   }
 
-  /** 後台 AI 助手代為觸發既有維運動作。正式版先呼叫模型規劃 action+params，再落到同一個 run()。 */
+  /** 後台 AI 助手代為觸發既有維運動作。之後在此之前先呼叫模型規劃 action+params，再落到同一個 run()。 */
   @Post('act')
   act(@Body() body: { action: string; params?: Record<string, unknown> }, @Req() req: AuthedRequest) {
-    return this.ops.run(body.action, body.params, 'admin-ai:' + req.session?.userId);
+    return this.ops.run(body.action, body.params, 'admin-ai:' + req.session!.user.id);
   }
 }

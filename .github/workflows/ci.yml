@@ -1,0 +1,23 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build -w @sitekit/shared
+      - run: npm run db:validate -w @sitekit/api
+      - run: npm run db:generate -w @sitekit/api
+      - run: npm run build -w @sitekit/api
+      - run: npm run build -w @sitekit/web
+      - run: node --check mcp/server.mjs

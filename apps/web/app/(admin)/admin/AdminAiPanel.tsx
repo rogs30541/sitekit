@@ -1,51 +1,63 @@
 'use client';
 
 import { useState } from 'react';
-import { OPS_ACTION_KEYS } from '@sitekit/shared';
+import { useRouter } from 'next/navigation';
+import { OPS_ACTIONS, OPS_ACTION_KEYS } from '@sitekit/shared';
 
-/** AI API 路徑示範：後台 UI 以 cookie session 呼叫 /api/admin/ai/act（骨架版直接送 action，正式版先經模型規劃）。 */
+const PRESETS: Record<string, string> = {
+  deploy: '{ "target": "all" }',
+  update_settings: '{ "settings": { "brand.name": "SiteKit" } }',
+  import_content: '{ "source": "csv", "dryRun": true, "csv": "external_id,title,slug,body,published_at,original_url\\n1,示範文章,demo,<p>內文</p>,2026-09-01,https://old.example.com/2026/09/demo" }',
+  audit: '{ "limit": 20 }',
+};
+
+/** AI API 路徑：後台 UI 以 cookie session 呼叫 /api/admin/ai/act。之後在此接模型把自然語言規劃成 action+params。 */
 export function AdminAiPanel() {
+  const router = useRouter();
   const [action, setAction] = useState<string>('status');
+  const [params, setParams] = useState<string>('{}');
   const [out, setOut] = useState<string>('');
   const [busy, setBusy] = useState(false);
 
-  async function devLogin() {
-    const r = await fetch('/api/auth/dev-login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
-    setOut(JSON.stringify(await r.json(), null, 2));
+  function pick(a: string) {
+    setAction(a);
+    setParams(PRESETS[a] ?? '{}');
   }
 
   async function act() {
     setBusy(true);
     try {
-      const r = await fetch('/api/admin/ai/act', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ action, params: action === 'deploy' ? { target: 'all' } : {} }),
-      });
+      const body = { action, params: JSON.parse(params || '{}') };
+      const r = await fetch('/api/admin/ai/act', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
       setOut(JSON.stringify(await r.json(), null, 2));
+      router.refresh();
+    } catch (e) {
+      setOut(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
   }
 
+  const desc = OPS_ACTIONS[action as keyof typeof OPS_ACTIONS]?.desc ?? '';
   return (
-    <div className="mt-6 rounded-lg border p-4" style={{ borderColor: 'var(--line)' }}>
-      <p className="text-sm font-semibold">AI API 路徑示範（只接受後台 session）</p>
+    <div className="mt-4 rounded-lg border p-4" style={{ borderColor: 'var(--line)' }}>
+      <p className="text-sm font-semibold">AI API 路徑（只接受後台 session）</p>
       <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-        <button onClick={devLogin} className="rounded border px-3 py-1" style={{ borderColor: 'var(--line)' }}>
-          開發用登入
-        </button>
-        <select value={action} onChange={(e) => setAction(e.target.value)} className="rounded border px-2 py-1" style={{ borderColor: 'var(--line)' }}>
+        <select value={action} onChange={(e) => pick(e.target.value)} className="rounded border px-2 py-1" style={{ borderColor: 'var(--line)' }}>
           {OPS_ACTION_KEYS.map((k) => (
             <option key={k} value={k}>
               {k}
             </option>
           ))}
         </select>
+        <span className="text-xs" style={{ color: 'var(--muted)' }}>
+          {desc}
+        </span>
         <button onClick={act} disabled={busy} className="rounded bg-black px-3 py-1 text-white disabled:opacity-50">
           {busy ? '執行中…' : '執行'}
         </button>
       </div>
+      <textarea value={params} onChange={(e) => setParams(e.target.value)} rows={3} className="mt-2 w-full rounded border p-2 font-mono text-xs" style={{ borderColor: 'var(--line)' }} />
       <pre className="mt-3 max-h-64 overflow-auto rounded bg-neutral-100 p-3 text-xs">{out || '尚未執行'}</pre>
     </div>
   );
