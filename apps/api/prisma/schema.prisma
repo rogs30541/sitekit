@@ -94,17 +94,21 @@ model Identity {
   @@map("identities")
 }
 
+/// 商品與課程共用 SKU 模型；type=course 時對應一筆 Course
 model Product {
   id           String        @id @default(cuid())
   type         ProductType
   sku          String        @unique
   name         String
+  description  String?
+  coverUrl     String?
   price        Int
   isActive     Boolean       @default(true)
   course       Course?
   items        OrderItem[]
   entitlements Entitlement[]
   createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
   @@map("products")
 }
@@ -113,6 +117,7 @@ model Course {
   id          String    @id @default(cuid())
   productId   String    @unique
   slug        String    @unique
+  summary     String?
   isPublished Boolean   @default(false)
   product     Product   @relation(fields: [productId], references: [id])
   chapters    Chapter[]
@@ -126,22 +131,40 @@ model Chapter {
   order           Int
   title           String
   videoProviderId String?
-  course          Course  @relation(fields: [courseId], references: [id])
+  durationSec     Int?
+  isPreview       Boolean @default(false)
+  course          Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
+  @@unique([courseId, order])
   @@map("chapters")
 }
 
+/// 訂單狀態機：pending → paid | failed | canceled；paid → refunded。授權只在 markPaid 寫入。
 model Order {
-  id              String      @id @default(cuid())
+  id              String         @id @default(cuid())
+  merchantOrderNo String         @unique
   userId          String
-  status          OrderStatus @default(pending)
+  status          OrderStatus    @default(pending)
   amount          Int
+  provider        String?
   providerTradeNo String?
-  user            User        @relation(fields: [userId], references: [id])
+  paymentType     String?
+  paidAt          DateTime?
+  virtualAccount  String?
+  expireAt        DateTime?
+  refundStatus    String?
+  refundReason    String?
+  refundedAt      DateTime?
+  note            String?
+  user            User           @relation(fields: [userId], references: [id])
   items           OrderItem[]
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  events          PaymentEvent[]
+  invoices        Invoice[]
+  entitlements    Entitlement[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
+  @@index([userId, createdAt])
   @@map("orders")
 }
 
@@ -149,22 +172,57 @@ model OrderItem {
   id        String  @id @default(cuid())
   orderId   String
   productId String
+  name      String
   qty       Int     @default(1)
   unitPrice Int
-  order     Order   @relation(fields: [orderId], references: [id])
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product @relation(fields: [productId], references: [id])
 
   @@map("order_items")
 }
 
+/// 金流回呼原始紀錄：驗章通過才寫；同 tradeNo+type 冪等
+model PaymentEvent {
+  id        String   @id @default(cuid())
+  orderId   String
+  provider  String
+  type      String
+  tradeNo   String?
+  payload   Json
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@map("payment_events")
+}
+
+model Invoice {
+  id        String   @id @default(cuid())
+  orderId   String
+  provider  String
+  number    String?
+  status    String
+  amount    Int
+  payload   Json?
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@map("invoices")
+}
+
+/// 課程／商品授權：唯一可寫入者是後端（金流回呼、免費訂單、管理員手動）
 model Entitlement {
   id        String    @id @default(cuid())
   userId    String
   productId String
+  orderId   String?
+  source    String    @default("purchase")
   grantedAt DateTime  @default(now())
   expiresAt DateTime?
   user      User      @relation(fields: [userId], references: [id])
   product   Product   @relation(fields: [productId], references: [id])
+  order     Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
   @@unique([userId, productId])
   @@map("entitlements")

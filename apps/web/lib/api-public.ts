@@ -32,3 +32,49 @@ export interface PostList {
   page: number;
   limit: number;
 }
+
+export interface CourseSummary {
+  id: string;
+  slug: string;
+  summary: string | null;
+  product: { id: string; name: string; description: string | null; coverUrl: string | null; price: number };
+  _count: { chapters: number };
+}
+export interface Chapter {
+  id: string;
+  order: number;
+  title: string;
+  durationSec: number | null;
+  isPreview: boolean;
+}
+export interface CourseDetail {
+  id: string;
+  slug: string;
+  summary: string | null;
+  product: { id: string; name: string; description: string | null; coverUrl: string | null; price: number; isActive: boolean };
+  chapters: Chapter[];
+  entitled?: boolean;
+}
+export interface OrderItem {
+  id: string;
+  name: string;
+  qty: number;
+  unitPrice: number;
+}
+export interface Order {
+  id: string;
+  merchantOrderNo: string;
+  status: 'pending' | 'paid' | 'failed' | 'refunded' | 'canceled';
+  amount: number;
+  provider: string | null;
+  paymentType: string | null;
+  paidAt: string | null;
+  virtualAccount: string | null;
+  expireAt: string | null;
+  refundStatus: string | null;
+  createdAt: string;
+  items: OrderItem[];
+  user?: { email: string; displayName: string | null };
+}
+
+export const twd = (n: number) => `NT$ ${n.toLocaleString('zh-TW')}`;

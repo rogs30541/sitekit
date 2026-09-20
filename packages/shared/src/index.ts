@@ -13,6 +13,30 @@ export const ADMIN_ROLES: readonly Role[] = ['admin', 'superadmin'];
 export const FEATURES = ['shop', 'courses', 'studio', 'credits', 'storage', 'byok'] as const;
 export type Feature = (typeof FEATURES)[number];
 
+/** 金流供應商：none＝未設定、mock＝本機假閘道（非 production）、newebpay＝藍新 MPG */
+export const PAYMENT_PROVIDERS = ['none', 'mock', 'newebpay'] as const;
+export type PaymentProvider = (typeof PAYMENT_PROVIDERS)[number];
+
+export const ORDER_STATUSES = ['pending', 'paid', 'failed', 'refunded', 'canceled'] as const;
+export type OrderStatus = (typeof ORDER_STATUSES)[number];
+
+/** 設定鍵名（settings 表；env 備援鍵見 api SettingsService） */
+export const SETTING_KEYS = {
+  siteUrl: 'site.url',
+  paymentProvider: 'payment.provider',
+  newebpayMerchantId: 'newebpay.merchantId',
+  newebpayHashKey: 'newebpay.hashKey',
+  newebpayHashIv: 'newebpay.hashIv',
+  newebpayGatewayUrl: 'newebpay.gatewayUrl',
+  ezpayEnabled: 'ezpay.enabled',
+  ezpayMerchantId: 'ezpay.merchantId',
+  ezpayHashKey: 'ezpay.hashKey',
+  ezpayHashIv: 'ezpay.hashIv',
+  ezpayApiUrl: 'ezpay.apiUrl',
+  bunnyLibraryId: 'bunny.libraryId',
+  bunnySigningKey: 'bunny.signingKey',
+} as const;
+
 /**
  * 後台維運動作清單 —— MCP 路徑與 AI API 路徑共用的唯一真相源。
  * 新增維運功能：先在此登記，再於 OpsService 實作。
@@ -22,7 +46,7 @@ export const OPS_ACTIONS = {
   deploy: { desc: '觸發部署（指定 web / api / all）', mutating: true },
   migrate: { desc: '執行資料庫遷移（prisma migrate deploy）', mutating: true },
   get_settings: { desc: '讀取系統設定（不含機密明文）', mutating: false },
-  update_settings: { desc: '更新系統設定（品牌、金流、通知等鍵值）', mutating: true },
+  update_settings: { desc: '更新系統設定（品牌、金流、發票、影片等鍵值）', mutating: true },
   import_content: { desc: '外站內容匯入（WordPress / CSV，冪等 upsert）', mutating: true },
   audit: { desc: '讀取稽核日誌', mutating: false },
 } as const;

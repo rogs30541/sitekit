@@ -4,8 +4,9 @@ import { OPS_ACTIONS, OPS_ACTION_KEYS, type OpsAction, type OpsResult } from '@s
 import { env } from '../../config/env';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MigrationService } from '../migration/migration.service';
+import { SettingsService } from '../settings/settings.service';
 
-const SECRET_KEY = /secret|key|token|password|hash_iv/i;
+const SECRET_KEY = /secret|key|token|password|hashiv|hash_iv|signing/i;
 
 /**
  * 後台維運執行層：MCP 路徑與 AI API 路徑共用的唯一入口。
@@ -16,6 +17,7 @@ export class OpsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly migration: MigrationService,
+    private readonly settings: SettingsService,
   ) {}
 
   listActions() {
@@ -39,7 +41,12 @@ export class OpsService {
   }
 
   private async log(actor: string, action: string, params: Record<string, unknown>, ok: boolean, result?: unknown, error?: string) {
-    const safeParams = Object.fromEntries(Object.entries(params).map(([k, v]) => [k, k === 'csv' ? '<csv omitted>' : v]));
+    const safeParams: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(params)) {
+      if (k === 'csv') safeParams[k] = '<csv omitted>';
+      else if (k === 'settings' && v && typeof v === 'object') safeParams[k] = Object.fromEntries(Object.keys(v as object).map((key) => [key, SECRET_KEY.test(key) ? '****' : (v as Record<string, unknown>)[key]]));
+      else safeParams[k] = v;
+    }
     await this.prisma.auditLog.create({
       data: { actor, action, ok, error, params: safeParams as Prisma.InputJsonValue, result: (result ?? null) as Prisma.InputJsonValue },
     });
@@ -48,16 +55,19 @@ export class OpsService {
   private async execute(action: OpsAction, p: Record<string, unknown>): Promise<unknown> {
     switch (action) {
       case 'status': {
-        const [users, contents, orders, lastDeploy] = await Promise.all([
+        const [users, contents, orders, paid, lastDeploy, provider] = await Promise.all([
           this.prisma.user.count(),
           this.prisma.content.count({ where: { status: 'published' } }),
           this.prisma.order.count(),
+          this.prisma.order.count({ where: { status: 'paid' } }),
           this.prisma.auditLog.findFirst({ where: { action: 'deploy', ok: true }, orderBy: { createdAt: 'desc' } }),
+          this.settings.paymentProvider(),
         ]);
         return {
           env: env.APP_ENV,
-          version: '0.1.0',
-          counts: { users, publishedContents: contents, orders },
+          version: '0.2.0',
+          counts: { users, publishedContents: contents, orders, paidOrders: paid },
+          paymentProvider: provider,
           lastDeployAt: lastDeploy?.createdAt ?? null,
           services: { api: 'up', db: 'connected', redis: env.REDIS_URL ? 'configured' : 'not-configured' },
         };
@@ -65,10 +75,10 @@ export class OpsService {
       case 'deploy': {
         const target = String(p.target ?? 'all');
         if (!['web', 'api', 'all'].includes(target)) throw new Error('target must be web / api / all');
-        return { queued: true, target, note: 'P1: deploy platform API (Zeabur) not wired yet; recorded in audit' };
+        return { queued: true, target, note: 'deploy platform API (Zeabur) not wired yet; recorded in audit' };
       }
       case 'migrate':
-        return { queued: true, note: 'P1: run `npm run db:migrate` on the api service; recorded in audit' };
+        return { queued: true, note: 'run `npm run db:migrate` on the api service; recorded in audit' };
       case 'get_settings': {
         const rows = await this.prisma.setting.findMany({ orderBy: { key: 'asc' } });
         return Object.fromEntries(rows.map((r) => [r.key, r.isSecret ? '****' : r.value]));
@@ -84,6 +94,7 @@ export class OpsService {
             create: { key, value, isSecret: SECRET_KEY.test(key) },
           });
         }
+        this.settings.invalidate();
         return { updated: entries.map(([k]) => k) };
       }
       case 'import_content':

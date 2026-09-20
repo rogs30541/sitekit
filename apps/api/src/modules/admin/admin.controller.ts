@@ -10,15 +10,16 @@ export class AdminController {
 
   @Get('overview')
   async overview() {
-    const [users, contents, drafts, orders, redirects, settings] = await Promise.all([
+    const [users, contents, drafts, orders, paidOrders, redirects, settings] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.content.count({ where: { status: 'published' } }),
       this.prisma.content.count({ where: { status: 'draft' } }),
       this.prisma.order.count(),
+      this.prisma.order.count({ where: { status: 'paid' } }),
       this.prisma.redirect.count(),
       this.prisma.setting.count(),
     ]);
-    return { users, contents, drafts, orders, redirects, settings };
+    return { users, contents, drafts, orders, paidOrders, redirects, settings };
   }
 
   @Get('audit')

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { OPS_ACTIONS } from '@sitekit/shared';
 import { Section } from '@/components/Section';
 import { apiServer } from '@/lib/api-server';
@@ -8,6 +9,7 @@ interface Overview {
   contents: number;
   drafts: number;
   orders: number;
+  paidOrders: number;
   redirects: number;
   settings: number;
 }
@@ -28,6 +30,7 @@ export default async function AdminPage() {
         ['已發布內容', overview.contents],
         ['草稿', overview.drafts],
         ['訂單', overview.orders],
+        ['已付款', overview.paidOrders],
         ['301 導向', overview.redirects],
         ['設定鍵', overview.settings],
       ]
@@ -35,7 +38,12 @@ export default async function AdminPage() {
   return (
     <div className="space-y-4">
       <Section title="後台總覽" group="(admin)">
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+        <p className="mb-3 text-xs">
+          <Link href="/admin/orders" className="underline">
+            訂單管理
+          </Link>
+        </p>
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-7">
           {stats.map(([k, v]) => (
             <div key={k} className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
               <p className="text-xs" style={{ color: 'var(--muted)' }}>
