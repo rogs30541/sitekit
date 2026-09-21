@@ -50,22 +50,23 @@ enum ContentStatus {
 }
 
 model User {
-  id              String         @id @default(cuid())
-  email           String         @unique
+  id              String            @id @default(cuid())
+  email           String            @unique
   passwordHash    String?
   displayName     String?
-  role            Role           @default(user)
-  status          UserStatus     @default(active)
+  role            Role              @default(user)
+  status          UserStatus        @default(active)
   membershipTier  String?
-  allowedFeatures String[]       @default([])
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  allowedFeatures String[]          @default([])
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
   identities      Identity[]
   sessions        Session[]
   orders          Order[]
   entitlements    Entitlement[]
   ledger          CreditLedger[]
   jobs            AiJob[]
+  progress        ChapterProgress[]
 
   @@map("users")
 }
@@ -113,31 +114,61 @@ model Product {
   @@map("products")
 }
 
+/// 課程：封面影片／試看影片為銷售頁公開素材；觀看期限決定購買後授權到期
 model Course {
-  id          String    @id @default(cuid())
-  productId   String    @unique
-  slug        String    @unique
-  summary     String?
-  isPublished Boolean   @default(false)
-  product     Product   @relation(fields: [productId], references: [id])
-  chapters    Chapter[]
+  id                   String    @id @default(cuid())
+  productId            String    @unique
+  slug                 String    @unique
+  summary              String?
+  isPublished          Boolean   @default(false)
+  coverVideoProvider   String?
+  coverVideoId         String?
+  previewVideoProvider String?
+  previewVideoId       String?
+  accessMode           String    @default("unlimited")
+  accessDays           Int?
+  accessUntil          DateTime?
+  product              Product   @relation(fields: [productId], references: [id])
+  chapters             Chapter[]
 
   @@map("courses")
 }
 
+/// 章節：parentId 為 null 是根層（可當「單元」容器），有 parentId 是子章節；order 為同層排序
 model Chapter {
-  id              String  @id @default(cuid())
+  id              String            @id @default(cuid())
   courseId        String
+  parentId        String?
   order           Int
   title           String
-  videoProvider   String  @default("youtube")
+  body            String?
+  videoProvider   String            @default("youtube")
   videoProviderId String?
   durationSec     Int?
-  isPreview       Boolean @default(false)
-  course          Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  isPreview       Boolean           @default(false)
+  isPublished     Boolean           @default(true)
+  course          Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  parent          Chapter?          @relation("ChapterTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children        Chapter[]         @relation("ChapterTree")
+  progress        ChapterProgress[]
 
-  @@unique([courseId, order])
+  @@index([courseId, parentId, order])
   @@map("chapters")
+}
+
+/// 觀看進度：每人每章一筆；completedAt 有值＝已完成
+model ChapterProgress {
+  id          String    @id @default(cuid())
+  userId      String
+  chapterId   String
+  positionSec Int       @default(0)
+  completedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chapter     Chapter   @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, chapterId])
+  @@map("chapter_progress")
 }
 
 /// 影片庫：後台匯入的 YouTube（或其他來源）影片，章節從這裡選
@@ -227,7 +258,7 @@ model Invoice {
   @@map("invoices")
 }
 
-/// 課程／商品授權：唯一可寫入者是後端（金流回呼、免費訂單、管理員手動）
+/// 課程／商品授權：唯一可寫入者是後端（金流回呼、免費訂單、管理員手動）；expiresAt 由課程觀看期限決定
 model Entitlement {
   id        String    @id @default(cuid())
   userId    String

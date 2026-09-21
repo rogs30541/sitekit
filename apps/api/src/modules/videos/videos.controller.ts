@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { AdminSessionGuard } from '../../common/guards';
-import { VideosService } from './videos.service';
+import { VideosService, parseYouTubeId } from './videos.service';
 
 /** 後台影片庫（管理員 session）。前台永不直接讀這裡。 */
 @Controller('admin/videos')
@@ -11,6 +11,14 @@ export class AdminVideosController {
   @Get()
   list(@Query('provider') provider?: string) {
     return this.videos.list(provider);
+  }
+
+  /** 章節抽屜貼網址即時解析：只查 oEmbed，不寫庫。 */
+  @Get('resolve')
+  async resolve(@Query('url') url = '') {
+    const id = parseYouTubeId(url);
+    if (!id) throw new BadRequestException('not a YouTube URL or ID');
+    return this.videos.resolveYouTube(id);
   }
 
   @Post('youtube')

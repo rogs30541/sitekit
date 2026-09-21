@@ -24,7 +24,7 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 - 退款：用戶申請 → 管理員核准（藍新先 Cancel 再 Close）→ 撤銷授權、作廢發票
 - 發票：ezPay B2C 電子發票（`ezpay.enabled=true` 才開立）
 - 影片：**YouTube 為預設來源**（後台影片庫選單挑片、自製播放器隱藏 YouTube 介面、公開頁面不露 ID）；Bunny Stream 簽章播放可切換
-- 頁面：`/courses`、`/course/[slug]`（購買、播放）、`/pay/mock`、`/order-result`、會員訂單與退款申請、後台訂單管理（人工核帳、核准／駁回退款）、後台課程管理（章節編輯、YouTube 影片庫）
+- 頁面：`/courses`、`/course/[slug]`（封面／試看影片、購買）、`/classroom/[slug]/[chapterId]`（教室：章節樹、進度、完成、上下一個）、`/pay/mock`、`/order-result`、會員訂單與退款申請、後台訂單管理、後台課程管理（課程設定、兩層章節樹拖曳排序、章節抽屜貼網址即預覽、觀看期限、影片庫）
 
 ## 目錄
 

@@ -33,6 +33,10 @@ export interface PostList {
   limit: number;
 }
 
+export interface VideoRef {
+  provider: 'youtube' | 'bunny';
+  id: string;
+}
 export interface CourseSummary {
   id: string;
   slug: string;
@@ -42,11 +46,15 @@ export interface CourseSummary {
 }
 export interface Chapter {
   id: string;
+  parentId: string | null;
   order: number;
   title: string;
   durationSec: number | null;
   isPreview: boolean;
   hasVideo?: boolean;
+}
+export interface ChapterNode extends Chapter {
+  children: ChapterNode[];
 }
 export interface CourseDetail {
   id: string;
@@ -54,8 +62,39 @@ export interface CourseDetail {
   summary: string | null;
   product: { id: string; name: string; description: string | null; coverUrl: string | null; price: number; isActive: boolean };
   chapters: Chapter[];
+  coverVideo: VideoRef | null;
+  previewVideo: VideoRef | null;
+  accessMode: 'unlimited' | 'days' | 'until';
+  accessDays: number | null;
+  accessUntil: string | null;
   entitled?: boolean;
+  expiresAt?: string | null;
+  progress?: Record<string, { positionSec: number; completed: boolean }>;
+  summaryProgress?: { total: number; done: number; percent: number };
 }
+
+/** 扁平章節 → 兩層樹（根層可當單元容器） */
+export function buildTree<T extends Chapter>(chapters: T[]): (T & { children: T[] })[] {
+  const byParent = new Map<string | null, T[]>();
+  for (const ch of chapters) {
+    const k = ch.parentId ?? null;
+    if (!byParent.has(k)) byParent.set(k, []);
+    byParent.get(k)!.push(ch);
+  }
+  const sortOrder = (a: T, b: T) => a.order - b.order;
+  return (byParent.get(null) ?? []).sort(sortOrder).map((root) => ({ ...root, children: (byParent.get(root.id) ?? []).sort(sortOrder) }));
+}
+
+/** 教室播放順序：根層依序，遇到有子章節就先走子章節 */
+export function flattenPlayable<T extends Chapter>(chapters: T[]): T[] {
+  const out: T[] = [];
+  for (const root of buildTree(chapters)) {
+    if (root.hasVideo !== false) out.push(root);
+    for (const c of root.children) out.push(c);
+  }
+  return out;
+}
+
 export interface OrderItem {
   id: string;
   name: string;
@@ -79,3 +118,9 @@ export interface Order {
 }
 
 export const twd = (n: number) => `NT$ ${n.toLocaleString('zh-TW')}`;
+export const fmtDuration = (sec: number | null | undefined) => {
+  if (!sec) return '';
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  return h ? `${h} 時 ${m} 分` : `${m} 分`;
+};

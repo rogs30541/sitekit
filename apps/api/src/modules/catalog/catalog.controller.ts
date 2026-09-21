@@ -64,6 +64,11 @@ export class AdminCatalogController {
     return this.catalog.addChapter(id, body);
   }
 
+  @Patch('courses/:id/reorder')
+  reorder(@Param('id') id: string, @Body() body: unknown) {
+    return this.catalog.reorderChapters(id, body);
+  }
+
   @Patch('chapters/:id')
   updateChapter(@Param('id') id: string, @Body() body: unknown) {
     return this.catalog.updateChapter(id, body);

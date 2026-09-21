@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { YouTubePlayer } from './YouTubePlayer';
 
 interface Play {
@@ -15,8 +15,16 @@ interface Play {
   message?: string;
 }
 
+export interface PlayerProps {
+  chapterId: string;
+  autoLoad?: boolean;
+  startAt?: number;
+  onProgress?: (positionSec: number, durationSec: number) => void;
+  onEnded?: () => void;
+}
+
 /** 播放設定由 api 在授權檢查後即時回傳；SSR HTML 與公開 API 都不含影片來源。 */
-export function Player({ chapterId }: { chapterId: string }) {
+export function Player({ chapterId, autoLoad = false, startAt = 0, onProgress, onEnded }: PlayerProps) {
   const [play, setPlay] = useState<Play | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -31,30 +39,34 @@ export function Player({ chapterId }: { chapterId: string }) {
     }
   }
 
+  useEffect(() => {
+    setPlay(null);
+    if (autoLoad) void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chapterId, autoLoad]);
+
   if (!play) {
-    return (
+    return autoLoad ? (
+      <div className="aspect-video w-full rounded-lg bg-black" />
+    ) : (
       <button onClick={load} disabled={busy} className="mt-2 rounded border px-3 py-1 text-xs" style={{ borderColor: 'var(--line)' }}>
         {busy ? '取得播放授權…' : '播放'}
       </button>
     );
   }
   if (play.provider === 'youtube' && play.videoId) {
-    return (
-      <div className="mt-2">
-        <YouTubePlayer videoId={play.videoId} host={play.host ?? 'https://www.youtube-nocookie.com'} poster={play.poster ?? null} title={play.title ?? ''} />
-      </div>
-    );
+    return <YouTubePlayer videoId={play.videoId} host={play.host} poster={play.poster ?? null} title={play.title ?? ''} startAt={startAt} onProgress={onProgress} onEnded={onEnded} />;
   }
   if (play.embedUrl) {
     return (
-      <div className="mt-2 aspect-video w-full overflow-hidden rounded-lg bg-black">
+      <div className="aspect-video w-full overflow-hidden rounded-lg bg-black">
         <iframe src={play.embedUrl} className="h-full w-full" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowFullScreen />
       </div>
     );
   }
   return (
-    <p className="mt-2 text-xs" style={{ color: 'var(--muted)' }}>
-      已取得授權，但{play.message ?? '影片尚未接上'}。
-    </p>
+    <div className="flex aspect-video w-full items-center justify-center rounded-lg bg-neutral-900 text-xs text-white">
+      {play.message ?? '影片尚未接上'}
+    </div>
   );
 }

@@ -79,6 +79,19 @@ export class VideosService {
     return { imported, rejected, playlistCount };
   }
 
+  /** 解析單支（不寫庫）：給章節抽屜即時預覽；有結果時順便入庫，之後可從選單重用。 */
+  async resolveYouTube(id: string) {
+    const meta = await this.oembed(id);
+    if (meta.title) {
+      await this.prisma.videoAsset.upsert({
+        where: { provider_externalId: { provider: 'youtube', externalId: id } },
+        update: { title: meta.title, thumbnailUrl: meta.thumbnail_url ?? undefined, author: meta.author_name ?? undefined },
+        create: { provider: 'youtube', externalId: id, title: meta.title, thumbnailUrl: meta.thumbnail_url ?? `https://i.ytimg.com/vi/${id}/hqdefault.jpg`, author: meta.author_name ?? null },
+      });
+    }
+    return { provider: 'youtube', id, resolved: !!meta.title, title: meta.title ?? null, thumbnailUrl: meta.thumbnail_url ?? `https://i.ytimg.com/vi/${id}/hqdefault.jpg`, author: meta.author_name ?? null };
+  }
+
   private async oembed(id: string): Promise<OEmbed> {
     try {
       const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${id}`)}&format=json`, { headers: { accept: 'application/json' } });

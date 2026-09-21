@@ -93,10 +93,13 @@ export class OrdersService {
         include: ORDER_INCLUDE,
       });
       for (const item of o.items) {
+        // 觀看期限：課程設定 unlimited / days / until 決定授權到期日
+        const course = await tx.course.findUnique({ where: { productId: item.productId }, select: { accessMode: true, accessDays: true, accessUntil: true } });
+        const expiresAt = course?.accessMode === 'days' && course.accessDays ? new Date(Date.now() + course.accessDays * 86_400_000) : course?.accessMode === 'until' ? (course.accessUntil ?? null) : null;
         await tx.entitlement.upsert({
           where: { userId_productId: { userId: o.userId, productId: item.productId } },
-          update: { orderId: o.id, source: 'purchase' },
-          create: { userId: o.userId, productId: item.productId, orderId: o.id, source: 'purchase' },
+          update: { orderId: o.id, source: 'purchase', expiresAt },
+          create: { userId: o.userId, productId: item.productId, orderId: o.id, source: 'purchase', expiresAt },
         });
       }
       return updated;
