@@ -1,5 +1,6 @@
 'use client';
 
+import { fmtDateTime } from '@/lib/api-public';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -207,7 +208,7 @@ export function AdminStudioClient({ templates, jobs }: { templates: AdminTemplat
           <tbody>
             {jobs.map((j) => (
               <tr key={j.id} className="border-t" style={{ borderColor: 'var(--line)' }}>
-                <td className="py-1">{new Date(j.createdAt).toLocaleString('zh-TW')}</td>
+                <td className="py-1">{fmtDateTime(j.createdAt)}</td>
                 <td className="py-1">{j.user.email}</td>
                 <td className="py-1">{j.template?.name ?? '自由提示詞'}</td>
                 <td className="py-1">

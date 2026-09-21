@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { BRAND } from '@sitekit/shared';
-import { apiPublic, SITE_URL, type PostDetail } from '@/lib/api-public';
+import { apiPublic, SITE_URL, type PostDetail, fmtDate } from '@/lib/api-public';
 
 export const revalidate = 60;
 
@@ -49,7 +49,7 @@ export default async function PostPage({ params }: Params) {
           文章
         </Link>
         {' / '}
-        {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('zh-TW') : ''} {post.author ? `· ${post.author}` : ''}
+        {post.publishedAt ? fmtDate(post.publishedAt) : ''} {post.author ? `· ${post.author}` : ''}
       </p>
       <h1 className="mt-1 text-2xl font-bold">{post.title}</h1>
       {post.coverUrl ? <img src={post.coverUrl} alt="" className="mt-4 max-h-80 w-full rounded-lg object-cover" /> : null}

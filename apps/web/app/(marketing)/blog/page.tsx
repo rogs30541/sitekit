@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Section } from '@/components/Section';
-import { apiPublic, type PostList } from '@/lib/api-public';
+import { apiPublic, type PostList, fmtDate } from '@/lib/api-public';
 
 export const revalidate = 60;
 export const metadata = { title: '文章', description: '最新文章與知識庫' };
@@ -20,7 +20,7 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
                 {p.title}
               </Link>
               <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                {p.publishedAt ? new Date(p.publishedAt).toLocaleDateString('zh-TW') : ''} {p.author ? `· ${p.author}` : ''} {p.tags.length ? `· ${p.tags.join(', ')}` : ''}
+                {p.publishedAt ? fmtDate(p.publishedAt) : ''} {p.author ? `· ${p.author}` : ''} {p.tags.length ? `· ${p.tags.join(', ')}` : ''}
               </p>
               {p.excerpt ? <p className="mt-1">{p.excerpt}</p> : null}
             </li>

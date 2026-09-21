@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Section } from '@/components/Section';
-import { apiPublic, buildTree, fmtDuration, twd, type CourseDetail } from '@/lib/api-public';
+import { apiPublic, buildTree, fmtDuration, twd, type CourseDetail, fmtDate } from '@/lib/api-public';
 import { apiServer, getMe } from '@/lib/api-server';
 import { BuyButton } from './BuyButton';
 import { YouTubePlayer } from './YouTubePlayer';
@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return c ? { title: c.product.name, description: c.summary ?? c.product.description ?? undefined } : { title: '找不到課程' };
 }
 
-const ACCESS_LABEL = (c: CourseDetail) => (c.accessMode === 'days' && c.accessDays ? `購買後 ${c.accessDays} 天內觀看` : c.accessMode === 'until' && c.accessUntil ? `觀看至 ${new Date(c.accessUntil).toLocaleDateString('zh-TW')}` : '無限期觀看');
+const ACCESS_LABEL = (c: CourseDetail) => (c.accessMode === 'days' && c.accessDays ? `購買後 ${c.accessDays} 天內觀看` : c.accessMode === 'until' && c.accessUntil ? `觀看至 ${fmtDate(c.accessUntil)}` : '無限期觀看');
 
 /** 銷售頁：封面影片與試看影片是公開素材；正式章節影片只在教室頁、授權後播放。 */
 export default async function CoursePage({ params }: Params) {
@@ -47,7 +47,7 @@ export default async function CoursePage({ params }: Params) {
           <span className="text-lg font-bold">{course.product.price === 0 ? '免費' : twd(course.product.price)}</span>
           {entitled ? (
             <>
-              <span className="rounded bg-green-100 px-2 py-1 text-xs text-green-800">已擁有{course.expiresAt ? `（至 ${new Date(course.expiresAt).toLocaleDateString('zh-TW')}）` : ''}</span>
+              <span className="rounded bg-green-100 px-2 py-1 text-xs text-green-800">已擁有{course.expiresAt ? `（至 ${fmtDate(course.expiresAt)}）` : ''}</span>
               <Link href={`/classroom/${course.slug}`} className="rounded bg-black px-4 py-2 text-sm text-white">
                 進入教室
               </Link>

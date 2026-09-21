@@ -1,5 +1,6 @@
 'use client';
 
+import { fmtDateTime } from '@/lib/api-public';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -171,7 +172,7 @@ export function StudioClient({ templates, credits: initialCredits, byok }: { tem
                   {j.resultUrl ? <img src={j.resultUrl} alt="" className="mb-2 aspect-square w-full rounded object-cover" /> : <div className="mb-2 flex aspect-square w-full items-center justify-center rounded bg-neutral-100">{STATUS[j.status]}</div>}
                   <p className="font-semibold">{j.template?.name ?? '自由提示詞'}</p>
                   <p style={{ color: 'var(--muted)' }}>
-                    {STATUS[j.status]} · {j.quality === 'high' ? '印刷' : '標準'} · {j.byok ? 'BYOK' : `${j.costPoints} 點`} · {new Date(j.createdAt).toLocaleString('zh-TW')}
+                    {STATUS[j.status]} · {j.quality === 'high' ? '印刷' : '標準'} · {j.byok ? 'BYOK' : `${j.costPoints} 點`} · {fmtDateTime(j.createdAt)}
                   </p>
                   {j.error ? <p className="text-red-700">{j.error}</p> : null}
                   {j.status === 'queued' ? (

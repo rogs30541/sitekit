@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Section } from '@/components/Section';
-import { twd, type Order } from '@/lib/api-public';
+import { twd, type Order, fmtDateTime } from '@/lib/api-public';
 import { apiServer } from '@/lib/api-server';
 import { OrderActions } from './OrderActions';
 
@@ -40,7 +40,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
               <td className="py-2 font-mono">
                 {o.merchantOrderNo}
                 <br />
-                <span style={{ color: 'var(--muted)' }}>{new Date(o.createdAt).toLocaleString('zh-TW')}</span>
+                <span style={{ color: 'var(--muted)' }}>{fmtDateTime(o.createdAt)}</span>
               </td>
               <td className="py-2">{o.user?.email}</td>
               <td className="py-2">{o.items.map((i) => `${i.name} × ${i.qty}`).join('、')}</td>

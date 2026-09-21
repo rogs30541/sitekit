@@ -124,3 +124,8 @@ export const fmtDuration = (sec: number | null | undefined) => {
   const m = Math.floor((sec % 3600) / 60);
   return h ? `${h} 時 ${m} 分` : `${m} 分`;
 };
+
+/** 固定台北時區、24 小時制：SSR 與瀏覽器輸出一致，避免 hydration 不一致 */
+const TZ = { timeZone: "Asia/Taipei", hour12: false } as const;
+export const fmtDateTime = (iso: string | Date | null | undefined) => (iso ? new Date(iso).toLocaleString("zh-TW", { ...TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "");
+export const fmtDate = (iso: string | Date | null | undefined) => (iso ? new Date(iso).toLocaleDateString("zh-TW", { ...TZ, year: "numeric", month: "2-digit", day: "2-digit" }) : "");

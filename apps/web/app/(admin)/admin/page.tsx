@@ -1,3 +1,4 @@
+import { fmtDateTime } from '@/lib/api-public';
 import Link from 'next/link';
 import { OPS_ACTIONS } from '@sitekit/shared';
 import { Section } from '@/components/Section';
@@ -76,7 +77,7 @@ export default async function AdminPage() {
           <tbody>
             {(audit ?? []).map((a) => (
               <tr key={a.id} className="border-t" style={{ borderColor: 'var(--line)' }}>
-                <td className="py-1">{new Date(a.createdAt).toLocaleString('zh-TW')}</td>
+                <td className="py-1">{fmtDateTime(a.createdAt)}</td>
                 <td className="py-1 font-mono">{a.actor}</td>
                 <td className="py-1 font-mono">{a.action}</td>
                 <td className="py-1">{a.ok ? '成功' : `失敗：${a.error ?? ''}`}</td>

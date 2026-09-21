@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { LogoutButton } from '@/components/LogoutButton';
 import { Section } from '@/components/Section';
-import { twd, type Order } from '@/lib/api-public';
+import { twd, type Order, fmtDateTime } from '@/lib/api-public';
 import { apiServer, getMe } from '@/lib/api-server';
 import { ApiKeyForm } from './ApiKeyForm';
 import { RefundRequestButton } from './RefundRequestButton';
@@ -90,7 +90,7 @@ export default async function MemberPage() {
           <tbody>
             {(ledger ?? []).map((l) => (
               <tr key={l.id} className="border-t" style={{ borderColor: 'var(--line)' }}>
-                <td className="py-1">{new Date(l.createdAt).toLocaleString('zh-TW')}</td>
+                <td className="py-1">{fmtDateTime(l.createdAt)}</td>
                 <td className="py-1">{l.type}</td>
                 <td className={`py-1 text-right ${l.amount < 0 ? 'text-red-700' : 'text-green-700'}`}>{l.amount > 0 ? `+${l.amount}` : l.amount}</td>
                 <td className="py-1 text-right">{l.balanceAfter}</td>
@@ -130,7 +130,7 @@ export default async function MemberPage() {
                   <td className="py-2 font-mono">
                     {o.merchantOrderNo}
                     <br />
-                    <span style={{ color: 'var(--muted)' }}>{new Date(o.createdAt).toLocaleString('zh-TW')}</span>
+                    <span style={{ color: 'var(--muted)' }}>{fmtDateTime(o.createdAt)}</span>
                   </td>
                   <td className="py-2">{o.items.map((i) => `${i.name} × ${i.qty}`).join('、')}</td>
                   <td className="py-2">{twd(o.amount)}</td>

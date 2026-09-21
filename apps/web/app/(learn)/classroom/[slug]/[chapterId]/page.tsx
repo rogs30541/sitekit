@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { buildTree, flattenPlayable, fmtDuration, type CourseDetail } from '@/lib/api-public';
+import { buildTree, flattenPlayable, fmtDuration, type CourseDetail, fmtDate } from '@/lib/api-public';
 import { apiServer, getMe } from '@/lib/api-server';
 import { ChapterStage } from './ChapterStage';
 
@@ -60,7 +60,7 @@ export default async function ClassroomChapterPage({ params }: { params: Promise
         </div>
         {course.expiresAt ? (
           <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>
-            觀看期限至 {new Date(course.expiresAt).toLocaleDateString('zh-TW')}
+            觀看期限至 {fmtDate(course.expiresAt)}
           </p>
         ) : null}
         <ul className="mt-3 space-y-0.5">
