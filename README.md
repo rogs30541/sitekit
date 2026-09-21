@@ -23,8 +23,8 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 - 金流：藍新 NewebPay MPG（信用卡＋ATM 虛擬帳號、NotifyURL／ReturnURL、CheckCode 二次驗證、金額比對、回呼冪等）；本機 `mock` 假閘道（非 production）
 - 退款：用戶申請 → 管理員核准（藍新先 Cancel 再 Close）→ 撤銷授權、作廢發票
 - 發票：ezPay B2C 電子發票（`ezpay.enabled=true` 才開立）
-- 影片：Bunny Stream Token 簽章，播放網址即時簽發、1 小時時效、試看章節免授權
-- 頁面：`/courses`、`/course/[slug]`（購買、播放）、`/pay/mock`、`/order-result`、會員訂單與退款申請、後台訂單管理（人工核帳、核准／駁回退款）
+- 影片：**YouTube 為預設來源**（後台影片庫選單挑片、自製播放器隱藏 YouTube 介面、公開頁面不露 ID）；Bunny Stream 簽章播放可切換
+- 頁面：`/courses`、`/course/[slug]`（購買、播放）、`/pay/mock`、`/order-result`、會員訂單與退款申請、後台訂單管理（人工核帳、核准／駁回退款）、後台課程管理（章節編輯、YouTube 影片庫）
 
 ## 目錄
 
@@ -52,7 +52,7 @@ npm run dev:web                 # 視窗 3：http://localhost:3000
 本機種子把 `payment.provider` 設為 `mock`：購買時進入 `/pay/mock` 假閘道，按「模擬付款成功」即走完整回呼→授權流程。
 正式環境改由後台或 MCP 的 `update_settings` 寫入 `payment.provider=newebpay` 與藍新商店參數（見 `apps/api/.env.example`）。
 
-> 注意：web dev server 跑著時不要執行 `npm run build:web`，兩者共用 `.next` 會互相打壞；要建置先停 dev server。
+> 注意：dev server 跑著時不要執行建置（`build:web` 打壞 `.next`、`build:api` 清掉 dist 讓 watch 程序死掉）；要建置先停 dev server。
 
 ## 建置與 CI
 

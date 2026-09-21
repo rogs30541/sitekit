@@ -49,6 +49,7 @@ export default async function CoursePage({ params }: Params) {
                 <span>
                   {ch.order}. {ch.title}
                   {ch.isPreview ? <span className="ml-2 rounded bg-neutral-100 px-1.5 py-0.5 text-xs">試看</span> : null}
+                  {ch.hasVideo === false ? <span className="ml-2 text-xs" style={{ color: "var(--muted)" }}>（影片準備中）</span> : null}
                 </span>
                 <span className="text-xs" style={{ color: 'var(--muted)' }}>
                   {ch.durationSec ? `${Math.round(ch.durationSec / 60)} 分` : ''}

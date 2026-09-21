@@ -19,7 +19,7 @@ export class CatalogController {
 
   @Get('courses/:slug')
   course(@Param('slug') slug: string) {
-    return this.catalog.getCourse(slug, false);
+    return this.catalog.getCourse(slug);
   }
 }
 
@@ -32,6 +32,11 @@ export class AdminCatalogController {
   @Get('courses')
   courses() {
     return this.catalog.listAllCourses();
+  }
+
+  @Get('courses/:id')
+  course(@Param('id') id: string) {
+    return this.catalog.getCourseAdmin(id);
   }
 
   @Post('products')

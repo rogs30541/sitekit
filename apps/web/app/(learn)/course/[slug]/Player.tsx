@@ -1,16 +1,21 @@
 'use client';
 
 import { useState } from 'react';
+import { YouTubePlayer } from './YouTubePlayer';
 
 interface Play {
   provider: string;
   configured?: boolean;
   embedUrl?: string;
+  videoId?: string;
+  host?: string;
+  poster?: string | null;
+  title?: string;
   expires?: number;
   message?: string;
 }
 
-/** 播放網址由 api 即時簽發（Bunny token 1 小時），前端拿不到永久網址。 */
+/** 播放設定由 api 在授權檢查後即時回傳；SSR HTML 與公開 API 都不含影片來源。 */
 export function Player({ chapterId }: { chapterId: string }) {
   const [play, setPlay] = useState<Play | null>(null);
   const [busy, setBusy] = useState(false);
@@ -31,6 +36,13 @@ export function Player({ chapterId }: { chapterId: string }) {
       <button onClick={load} disabled={busy} className="mt-2 rounded border px-3 py-1 text-xs" style={{ borderColor: 'var(--line)' }}>
         {busy ? '取得播放授權…' : '播放'}
       </button>
+    );
+  }
+  if (play.provider === 'youtube' && play.videoId) {
+    return (
+      <div className="mt-2">
+        <YouTubePlayer videoId={play.videoId} host={play.host ?? 'https://www.youtube-nocookie.com'} poster={play.poster ?? null} title={play.title ?? ''} />
+      </div>
     );
   }
   if (play.embedUrl) {

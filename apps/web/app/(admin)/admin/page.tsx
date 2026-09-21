@@ -42,6 +42,10 @@ export default async function AdminPage() {
           <Link href="/admin/orders" className="underline">
             訂單管理
           </Link>
+          {" · "}
+          <Link href="/admin/courses" className="underline">
+            課程管理
+          </Link>
         </p>
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-7">
           {stats.map(([k, v]) => (

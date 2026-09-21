@@ -12,9 +12,10 @@ import { CatalogModule } from './modules/catalog/catalog.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { LearnModule } from './modules/learn/learn.module';
+import { VideosModule } from './modules/videos/videos.module';
 
 @Module({
-  imports: [PrismaModule, SettingsModule, AuthModule, MigrationModule, OpsModule, AdminAiModule, AdminModule, ContentModule, CatalogModule, OrdersModule, PaymentsModule, LearnModule],
+  imports: [PrismaModule, SettingsModule, AuthModule, MigrationModule, OpsModule, AdminAiModule, AdminModule, ContentModule, CatalogModule, OrdersModule, PaymentsModule, LearnModule, VideosModule],
   controllers: [HealthController],
 })
 export class AppModule {}

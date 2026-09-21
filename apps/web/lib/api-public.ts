@@ -46,6 +46,7 @@ export interface Chapter {
   title: string;
   durationSec: number | null;
   isPreview: boolean;
+  hasVideo?: boolean;
 }
 export interface CourseDetail {
   id: string;

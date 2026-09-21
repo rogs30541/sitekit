@@ -130,6 +130,7 @@ model Chapter {
   courseId        String
   order           Int
   title           String
+  videoProvider   String  @default("youtube")
   videoProviderId String?
   durationSec     Int?
   isPreview       Boolean @default(false)
@@ -137,6 +138,21 @@ model Chapter {
 
   @@unique([courseId, order])
   @@map("chapters")
+}
+
+/// 影片庫：後台匯入的 YouTube（或其他來源）影片，章節從這裡選
+model VideoAsset {
+  id           String   @id @default(cuid())
+  provider     String
+  externalId   String
+  title        String
+  thumbnailUrl String?
+  author       String?
+  durationSec  Int?
+  createdAt    DateTime @default(now())
+
+  @@unique([provider, externalId])
+  @@map("video_assets")
 }
 
 /// 訂單狀態機：pending → paid | failed | canceled；paid → refunded。授權只在 markPaid 寫入。

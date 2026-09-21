@@ -20,6 +20,7 @@ const courseInput = z.object({
 const chapterInput = z.object({
   order: z.number().int().min(1),
   title: z.string().trim().min(1).max(200),
+  videoProvider: z.enum(['bunny', 'youtube']).optional(),
   videoProviderId: z.string().trim().max(120).nullable().optional(),
   durationSec: z.number().int().min(0).nullable().optional(),
   isPreview: z.boolean().optional(),
@@ -31,7 +32,7 @@ function parse<T>(schema: z.ZodType<T>, input: unknown): T {
   return r.data;
 }
 
-/** 目錄：商品與課程共用 Product；公開讀取只回上架／已發布。 */
+/** 目錄：商品與課程共用 Product；公開讀取只回上架／已發布，且永不回傳影片來源與 ID。 */
 @Injectable()
 export class CatalogService {
   constructor(private readonly prisma: PrismaService) {}
@@ -53,19 +54,30 @@ export class CatalogService {
     });
   }
 
-  async getCourse(slug: string, includeVideoIds = false) {
+  async getCourse(slug: string) {
     const c = await this.prisma.course.findFirst({
       where: { slug, isPublished: true },
       include: {
         product: { select: { id: true, name: true, description: true, coverUrl: true, price: true, isActive: true } },
-        chapters: { orderBy: { order: 'asc' }, select: { id: true, order: true, title: true, durationSec: true, isPreview: true, videoProviderId: includeVideoIds } },
+        chapters: { orderBy: { order: 'asc' }, select: { id: true, order: true, title: true, durationSec: true, isPreview: true, videoProviderId: true } },
       },
     });
+    if (!c) throw new NotFoundException('course not found');
+    // 只告訴前端「有沒有影片」，不透露來源與 ID
+    return { ...c, chapters: c.chapters.map(({ videoProviderId, ...ch }) => ({ ...ch, hasVideo: !!videoProviderId })) };
+  }
+
+  // ---- 後台 ----
+  listAllCourses() {
+    return this.prisma.course.findMany({ orderBy: { product: { createdAt: 'desc' } }, include: { product: true, _count: { select: { chapters: true } } } });
+  }
+
+  async getCourseAdmin(id: string) {
+    const c = await this.prisma.course.findUnique({ where: { id }, include: { product: true, chapters: { orderBy: { order: 'asc' } } } });
     if (!c) throw new NotFoundException('course not found');
     return c;
   }
 
-  // ---- 後台 ----
   createProduct(input: unknown) {
     return this.prisma.product.create({ data: parse(productInput, input) });
   }
@@ -101,9 +113,5 @@ export class CatalogService {
 
   deleteChapter(id: string) {
     return this.prisma.chapter.delete({ where: { id } });
-  }
-
-  listAllCourses() {
-    return this.prisma.course.findMany({ orderBy: { product: { createdAt: 'desc' } }, include: { product: true, _count: { select: { chapters: true } } } });
   }
 }

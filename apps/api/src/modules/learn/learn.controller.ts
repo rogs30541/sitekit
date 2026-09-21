@@ -10,7 +10,11 @@ export function bunnySign(signingKey: string, videoId: string, expires: number) 
   return createHash('sha256').update(`${signingKey}${videoId}${expires}`).digest('hex');
 }
 
-/** 登入後的學習 API：授權檢查在後端，影片網址即時簽發、帶時效。 */
+/**
+ * 登入後的學習 API：授權檢查在後端，播放設定只在通過檢查後回傳。
+ * - bunny：簽章網址 1 小時時效
+ * - youtube：回傳 nocookie 內嵌參數；前端用自製播放器蓋掉 YouTube UI。影片 ID 不出現在任何公開頁面或 SSR HTML。
+ */
 @Controller('learn')
 @UseGuards(UserSessionGuard)
 export class LearnController {
@@ -27,7 +31,7 @@ export class LearnController {
 
   @Get('courses/:slug')
   async course(@Param('slug') slug: string, @Req() req: AuthedRequest) {
-    const c = await this.catalog.getCourse(slug, false);
+    const c = await this.catalog.getCourse(slug);
     const entitled = await this.entitled(req.session!.user.id, c.product.id);
     return { ...c, entitled };
   }
@@ -38,6 +42,20 @@ export class LearnController {
     if (!ch || !ch.course.isPublished) throw new NotFoundException('chapter not found');
     if (!ch.isPreview && !(await this.entitled(req.session!.user.id, ch.course.productId))) throw new ForbiddenException('not entitled');
     if (!ch.videoProviderId) return { provider: 'none', message: 'video not attached yet' };
+
+    if (ch.videoProvider === 'youtube') {
+      const asset = await this.prisma.videoAsset.findUnique({ where: { provider_externalId: { provider: 'youtube', externalId: ch.videoProviderId } } });
+      return {
+        provider: 'youtube',
+        configured: true,
+        videoId: ch.videoProviderId,
+        host: 'https://www.youtube-nocookie.com',
+        poster: asset?.thumbnailUrl ?? null,
+        title: ch.title,
+        expires: Math.floor(Date.now() / 1000) + 3600,
+      };
+    }
+
     const bunny = await this.settings.bunny();
     if (!bunny.configured) return { provider: 'bunny', configured: false, message: 'bunny is not configured' };
     const expires = Math.floor(Date.now() / 1000) + 3600;

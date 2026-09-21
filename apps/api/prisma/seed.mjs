@@ -63,8 +63,8 @@ async function main() {
     create: { productId: product.id, slug: 'demo-course', summary: '用來驗證購買、授權與播放流程的示範課程。', isPublished: true },
   });
   const chapters = [
-    { order: 1, title: '第一章：課程介紹（免費試看）', isPreview: true, durationSec: 300 },
-    { order: 2, title: '第二章：正式內容', isPreview: false, durationSec: 1200 },
+    { order: 1, title: '第一章：課程介紹（免費試看）', isPreview: true, durationSec: 300, videoProvider: 'youtube' },
+    { order: 2, title: '第二章：正式內容', isPreview: false, durationSec: 1200, videoProvider: 'youtube' },
   ];
   for (const ch of chapters) {
     await prisma.chapter.upsert({ where: { courseId_order: { courseId: course.id, order: ch.order } }, update: {}, create: { courseId: course.id, ...ch } });
