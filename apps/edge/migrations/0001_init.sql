@@ -61,7 +61,7 @@ CREATE TABLE email_logs (
 );
 
 INSERT INTO settings (key, value, is_secret, updated_at) VALUES
-  ('brand.name', 'SiteKit', 0, 0),
+  ('brand.name', 'AIGC創客', 0, 0),
   ('storage.driver', 'r2', 0, 0),
   ('payment.provider', 'none', 0, 0);
 

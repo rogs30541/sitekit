@@ -21,8 +21,8 @@ async function main() {
   });
 
   const settings = [
-    ['brand.name', 'SiteKit', false],
-    ['brand.siteName', 'SiteKit 架站套件', false],
+    ['brand.name', 'AIGC創客', false],
+    ['brand.siteName', 'AIGC創客架站套件', false],
     ['storage.driver', 'local', false],
     // 非 production 預設用本機假閘道；正式環境改 newebpay 並填入商店參數
     ['payment.provider', isProd ? 'none' : 'mock', false],

@@ -1,4 +1,4 @@
-# SiteKit 架站套件
+# AIGC創客架站套件（代號 SiteKit）
 
 電商開店／線上課程／品牌網站共用的通用架站骨架。一副骨架長出官網、商城、課程、AI 工作站、會員中心與後台，
 部署成 `web`（Next.js）與 `api`（NestJS）兩個可獨立擴展的服務，資料庫用 PostgreSQL。
