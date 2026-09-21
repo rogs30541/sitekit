@@ -152,6 +152,17 @@ export class NotifyService {
     await this.sendMail('welcome', { to: email, subject: '歡迎加入', html: this.layout('歡迎加入', `<p>${esc(displayName ?? email)} 您好，您的帳號已建立。</p><p><a href="${esc(site)}/member">前往會員中心</a></p>`, site) });
   }
 
+  async newQuestion(i: { courseName: string; question: string; from: string; courseId: string }) {
+    const { adminTo, site } = await this.config();
+    await this.pushLine('new_question', `❓ 新提問「${i.courseName}」\n${i.question.slice(0, 300)}\n— ${i.from}`);
+    if (adminTo) await this.sendMail('new_question', { to: adminTo, subject: `【新提問】${i.courseName}`, html: this.layout('學員提問', `<p>${esc(i.from)}</p><blockquote>${esc(i.question)}</blockquote><p><a href="${esc(site)}/admin/courses/${esc(i.courseId)}">前往後台回覆</a></p>`, site) });
+  }
+
+  async questionAnswered(i: { to: string; name: string | null; courseName: string; slug: string; question: string; answer: string }) {
+    const { site } = await this.config();
+    await this.sendMail('question_answered', { to: i.to, subject: `【已回覆】${i.courseName}`, html: this.layout('您的提問已回覆', `<p>${esc(i.name ?? i.to)} 您好：</p><blockquote>${esc(i.question)}</blockquote><p><strong>回覆：</strong></p><p>${esc(i.answer).replace(/\n/g, '<br>')}</p><p><a href="${esc(site)}/classroom/${esc(i.slug)}">回到教室</a></p>`, site) });
+  }
+
   /** 後台／MCP 測試：送一封測試信與一則 LINE 推播 */
   async sendTest(to?: string) {
     const cfg = await this.config();

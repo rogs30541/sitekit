@@ -70,6 +70,8 @@ model User {
   jobs            AiJob[]
   progress        ChapterProgress[]
   apiKeys         UserApiKey[]
+  passwordResets  PasswordReset[]
+  questions       CourseQuestion[]
 
   @@map("users")
 }
@@ -103,6 +105,19 @@ model AdminUser {
   @@map("admin_users")
 }
 
+/// 後台註冊 Email 驗證碼（6 碼、15 分鐘、最多 5 次嘗試；只存 SHA-256）
+model AdminVerification {
+  id        String   @id @default(cuid())
+  email     String
+  codeHash  String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@map("admin_verifications")
+}
+
 model AdminSession {
   id        String    @id
   adminId   String
@@ -113,6 +128,57 @@ model AdminSession {
 
   @@index([adminId])
   @@map("admin_sessions")
+}
+
+/// 忘記密碼：一次性 token（只存 SHA-256），1 小時到期
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_resets")
+}
+
+/// 課程問答：學員提問、管理員回覆；isPublic＝其他學員可見
+model CourseQuestion {
+  id         String    @id @default(cuid())
+  courseId   String
+  chapterId  String?
+  userId     String
+  body       String
+  answer     String?
+  answeredAt DateTime?
+  answeredBy String?
+  isPublic   Boolean   @default(true)
+  status     String    @default("open")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  course     Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  chapter    Chapter?  @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([courseId, createdAt])
+  @@map("course_questions")
+}
+
+/// 課程公告
+model CourseAnnouncement {
+  id          String   @id @default(cuid())
+  courseId    String
+  title       String
+  body        String
+  isPublished Boolean  @default(true)
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId, publishedAt])
+  @@map("course_announcements")
 }
 
 model Identity {
@@ -184,6 +250,8 @@ model Course {
   accessUntil          DateTime?
   product              Product   @relation(fields: [productId], references: [id])
   chapters             Chapter[]
+  questions            CourseQuestion[]
+  announcements        CourseAnnouncement[]
 
   @@map("courses")
 }
@@ -204,6 +272,7 @@ model Chapter {
   course          Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
   parent          Chapter?          @relation("ChapterTree", fields: [parentId], references: [id], onDelete: SetNull)
   children        Chapter[]         @relation("ChapterTree")
+  questions       CourseQuestion[]
   progress        ChapterProgress[]
 
   @@index([courseId, parentId, order])

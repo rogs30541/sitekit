@@ -22,10 +22,16 @@ export class AdminAuthController {
     return { needsBootstrap: (await this.admins.count()) === 0 };
   }
 
-  /** 只有 admin_users 為空時可用：建立第一位 superadmin 並登入 */
-  @Post('bootstrap')
-  async bootstrap(@Body() body: unknown, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const admin = await this.admins.bootstrap(body);
+  /** 註冊管理員第 1 步：寄 Email 驗證碼（第一位管理員或白名單 email 才會寄；回應一律 ok 防列舉） */
+  @Post('register/request')
+  requestRegister(@Body() body: unknown) {
+    return this.admins.requestRegister(body);
+  }
+
+  /** 註冊管理員第 2 步：驗證碼＋密碼 → 建立並登入 */
+  @Post('register/confirm')
+  async confirmRegister(@Body() body: unknown, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const admin = await this.admins.confirmRegister(body);
     await this.issue(admin.id, req, res);
     return { ok: true, admin };
   }

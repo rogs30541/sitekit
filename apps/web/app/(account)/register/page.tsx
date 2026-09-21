@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { AuthForm } from '@/components/AuthForm';
+import { OAuthButtons } from '@/components/OAuthButtons';
 import { Section } from '@/components/Section';
 
 export const metadata = { title: '註冊', robots: { index: false } };
@@ -13,6 +14,9 @@ export default function RegisterPage() {
       </p>
       <Suspense>
         <AuthForm mode="register" />
+      </Suspense>
+      <Suspense>
+        <OAuthButtons />
       </Suspense>
       <p className="mt-4 text-xs" style={{ color: 'var(--muted)' }}>
         已有帳號？{' '}

@@ -7,7 +7,8 @@ export const dynamic = 'force-dynamic';
 
 /** 管理員帳號（admin_users）：僅 superadmin 可管理；與前台會員完全分離。 */
 export default async function AdminAccountsPage() {
-  const [me, rows] = await Promise.all([getAdminMe(), apiServer<AdminRow[]>('/api/admin/auth/users')]);
+  const [me, rows, settings] = await Promise.all([getAdminMe(), apiServer<AdminRow[]>('/api/admin/auth/users'), apiServer<{ ok: boolean; data?: Record<string, string> }>('/api/admin/ai/act', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'get_settings' }) })]);
+  const allowlist = settings?.data?.['admin.registerAllowlist'] ?? '';
   return (
     <Section title="管理員帳號" group="(admin)">
       <p className="mb-3 text-xs" style={{ color: 'var(--muted)' }}>
@@ -16,7 +17,7 @@ export default async function AdminAccountsPage() {
         </Link>
         {' · 後台帳號與前台會員分離；也可由 MCP create_admin／update_admin／delete_admin 操作'}
       </p>
-      {me?.admin?.role === 'superadmin' ? <AccountsClient rows={rows ?? []} selfId={me.admin.id} /> : <p>只有超級管理員可以管理帳號。</p>}
+      {me?.admin?.role === 'superadmin' ? <AccountsClient rows={rows ?? []} selfId={me.admin.id} allowlist={allowlist} /> : <p>只有超級管理員可以管理帳號。</p>}
     </Section>
   );
 }

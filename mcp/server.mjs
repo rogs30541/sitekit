@@ -49,7 +49,7 @@ server.tool('sitekit_get_settings', '讀取系統設定（機密值遮蔽）', {
 
 server.tool(
   'sitekit_update_settings',
-  '更新系統設定鍵值。金流：payment.methods（逗號清單，第一個為預設：newebpay,payuni,ecpay,linepay,pchomepay）、各家 <provider>.merchantId/hashKey/hashIv（LINE Pay 用 linepay.channelId/channelSecret；支付連用 pchomepay.appId/appSecret）、<provider>.testMode=true|false；其他：site.url、brand.name、ai.provider',
+  '更新系統設定鍵值。金流：payment.methods（逗號清單，第一個為預設：newebpay,payuni,ecpay,linepay,pchomepay）、各家 <provider>.merchantId/hashKey/hashIv（LINE Pay 用 linepay.channelId/channelSecret；支付連用 pchomepay.appId/appSecret）、<provider>.testMode=true|false；其他：site.url、brand.name、ai.provider、admin.registerAllowlist（後台自助註冊白名單，email 或 @網域逗號清單）、google.clientId/clientSecret、line.loginChannelId/loginChannelSecret',
   { settings: z.record(z.string()) },
   async ({ settings }) => asText(await ops('update_settings', { settings })),
 );
@@ -111,6 +111,10 @@ server.tool(
   { csv: z.string().optional(), filePath: z.string().optional(), dryRun: z.boolean().default(true), updateStock: z.boolean().default(false).describe('既有商品是否覆寫庫存') },
   async (p) => asText(await ops('import_products', p)),
 );
+
+server.tool('sitekit_list_questions', '列出課程學員提問（可依課程 slug／狀態篩選）', { slug: z.string().optional(), courseId: z.string().optional(), status: z.enum(['open', 'answered', 'hidden']).optional() }, async (p) => asText(await ops('list_questions', p)));
+server.tool('sitekit_answer_question', '回覆學員提問並通知提問者', { id: z.string(), answer: z.string().min(1), isPublic: z.boolean().optional() }, async (p) => asText(await ops('answer_question', p)));
+server.tool('sitekit_post_announcement', '發布課程公告', { slug: z.string().optional(), courseId: z.string().optional(), title: z.string(), body: z.string() }, async (p) => asText(await ops('post_announcement', p)));
 
 server.tool(
   'sitekit_upsert_content',

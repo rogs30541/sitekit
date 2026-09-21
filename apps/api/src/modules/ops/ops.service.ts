@@ -161,6 +161,30 @@ export class OpsService {
         return this.orders.expirePending(p.hours === undefined ? undefined : Number(p.hours));
       case 'import_products':
         return this.migration.runProducts(p);
+      case 'list_questions': {
+        const course = p.slug ? await this.prisma.course.findUnique({ where: { slug: String(p.slug) }, select: { id: true } }) : null;
+        const courseId = p.courseId ? String(p.courseId) : course?.id;
+        return this.prisma.courseQuestion.findMany({ where: { ...(courseId ? { courseId } : {}), ...(p.status ? { status: String(p.status) } : {}) }, orderBy: { createdAt: 'desc' }, take: 200, select: { id: true, courseId: true, chapterId: true, body: true, answer: true, status: true, isPublic: true, createdAt: true, user: { select: { email: true, displayName: true } }, course: { select: { slug: true } } } });
+      }
+      case 'answer_question': {
+        const id = String(p.id ?? '');
+        const answer = String(p.answer ?? '').trim();
+        if (!id || !answer) throw new Error('id and answer are required');
+        const q = await this.prisma.courseQuestion.findUnique({ where: { id }, include: { user: { select: { email: true, displayName: true } }, course: { select: { slug: true, product: { select: { name: true } } } } } });
+        if (!q) throw new Error('question not found');
+        const u = await this.prisma.courseQuestion.update({ where: { id }, data: { answer, answeredAt: new Date(), answeredBy: 'ops', status: 'answered', ...(p.isPublic !== undefined ? { isPublic: !!p.isPublic } : {}) } });
+        this.notify.questionAnswered({ to: q.user.email, name: q.user.displayName, courseName: q.course.product.name, slug: q.course.slug, question: q.body, answer }).catch(() => undefined);
+        return { id: u.id, status: u.status, answeredAt: u.answeredAt };
+      }
+      case 'post_announcement': {
+        const course = p.slug ? await this.prisma.course.findUnique({ where: { slug: String(p.slug) }, select: { id: true } }) : p.courseId ? await this.prisma.course.findUnique({ where: { id: String(p.courseId) }, select: { id: true } }) : null;
+        if (!course) throw new Error('course not found (courseId or slug)');
+        const title = String(p.title ?? '').trim();
+        const body = String(p.body ?? '').trim();
+        if (!title || !body) throw new Error('title and body are required');
+        const a = await this.prisma.courseAnnouncement.create({ data: { courseId: course.id, title, body } });
+        return { id: a.id, courseId: a.courseId, title: a.title, publishedAt: a.publishedAt };
+      }
       case 'list_content':
         return this.prisma.content.findMany({ where: { ...(p.type ? { type: String(p.type) } : {}), ...(p.status ? { status: p.status as 'draft' | 'published' | 'archived' } : {}) }, orderBy: { updatedAt: 'desc' }, take: 200, select: { id: true, type: true, title: true, slug: true, status: true, publishedAt: true, updatedAt: true } });
       case 'upsert_content': {

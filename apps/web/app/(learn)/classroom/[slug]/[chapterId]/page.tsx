@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { buildTree, flattenPlayable, fmtDuration, type CourseDetail, fmtDate } from '@/lib/api-public';
 import { apiServer, getMe } from '@/lib/api-server';
 import { ChapterStage } from './ChapterStage';
+import { CommunityPanel } from './CommunityPanel';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { robots: { index: false, follow: false } };
@@ -109,6 +110,7 @@ export default async function ClassroomChapterPage({ params }: { params: Promise
             </Link>
           </div>
         )}
+        <CommunityPanel slug={slug} chapterId={chapterId} entitled={entitled} />
       </section>
     </div>
   );

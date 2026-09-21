@@ -5,6 +5,7 @@ import { apiServer } from '@/lib/api-server';
 import { ChapterTree, type AdminChapter } from './ChapterTree';
 import { CourseSettingsForm, type AdminCourse } from './CourseSettingsForm';
 import { VideoLibrary, type VideoAsset } from './VideoLibrary';
+import { CourseCommunityAdmin } from './CourseCommunityAdmin';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +33,9 @@ export default async function AdminCourseDetailPage({ params }: { params: Promis
       </Section>
       <Section title="章節" group="(admin)">
         <ChapterTree courseId={course.id} chapters={course.chapters} videos={videos ?? []} />
+      </Section>
+      <Section title="問答與公告" group="(admin)">
+        <CourseCommunityAdmin courseId={course.id} />
       </Section>
       <Section title="YouTube 影片庫" group="(admin)">
         <VideoLibrary videos={videos ?? []} />

@@ -14,8 +14,9 @@ export interface AdminRow {
 }
 const input = 'rounded border px-2 py-1 text-sm';
 
-export function AccountsClient({ rows, selfId }: { rows: AdminRow[]; selfId: string }) {
+export function AccountsClient({ rows, selfId, allowlist }: { rows: AdminRow[]; selfId: string; allowlist: string }) {
   const router = useRouter();
+  const [wl, setWl] = useState(allowlist);
   const [form, setForm] = useState({ email: '', password: '', displayName: '', role: 'admin' });
   const [msg, setMsg] = useState('');
 
@@ -29,6 +30,26 @@ export function AccountsClient({ rows, selfId }: { rows: AdminRow[]; selfId: str
 
   return (
     <div className="space-y-4">
+      <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
+        <p className="mb-1 text-sm font-semibold">自助註冊白名單（Email 驗證）</p>
+        <p className="mb-2 text-xs" style={{ color: 'var(--muted)' }}>
+          後台登入頁的「註冊管理員」只寄驗證碼給這裡列出的 Email 或 @網域（逗號分隔）；註冊者角色為 admin。
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <input className={`${input} w-96`} style={{ borderColor: 'var(--line)' }} placeholder="ops@your.domain, @your.domain" value={wl} onChange={(e) => setWl(e.target.value)} />
+          <button
+            onClick={async () => {
+              const r = await fetch('/api/admin/ai/act', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'update_settings', params: { settings: { 'admin.registerAllowlist': wl } } }) });
+              const j = await r.json().catch(() => ({}));
+              setMsg(j.ok ? '白名單已更新' : `失敗：${j.error ?? r.status}`);
+            }}
+            className="rounded border px-3 py-1.5 text-sm"
+            style={{ borderColor: 'var(--line)' }}
+          >
+            儲存白名單
+          </button>
+        </div>
+      </div>
       <div className="flex flex-wrap items-end gap-2 rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
         <input className={`${input} w-56`} style={{ borderColor: 'var(--line)' }} type="email" placeholder="Email" autoComplete="off" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
         <input className={`${input} w-44`} style={{ borderColor: 'var(--line)' }} type="password" placeholder="密碼（≥8）" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />

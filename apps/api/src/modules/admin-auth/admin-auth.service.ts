@@ -1,10 +1,13 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomInt } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import type { AdminSession, AdminUser } from '@prisma/client';
 import { z } from 'zod';
 import { isProd } from '../../config/env';
+import { SETTING_KEYS } from '@sitekit/shared';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotifyService } from '../notify/notify.service';
+import { SettingsService } from '../settings/settings.service';
 
 export const ADMIN_COOKIE = 'sk_admin';
 const TTL_MS = 12 * 3600_000; // 後台 session 12 小時
@@ -29,7 +32,55 @@ export type ResolvedAdminSession = AdminSession & { admin: AdminUser };
  */
 @Injectable()
 export class AdminAuthService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notify: NotifyService,
+    private readonly settings: SettingsService,
+  ) {}
+
+  /**
+   * 後台註冊資格：admin_users 為空（第一位＝superadmin）或 email 在 `admin.registerAllowlist`
+   *（逗號清單，可為完整 email 或 @網域）。不符資格一律不寄信、回相同訊息（防列舉）。
+   */
+  async registerEligibility(email: string): Promise<{ allowed: boolean; first: boolean }> {
+    const first = (await this.count()) === 0;
+    if (first) return { allowed: true, first: true };
+    const raw = await this.settings.get(SETTING_KEYS.adminRegisterAllowlist, 'ADMIN_REGISTER_ALLOWLIST');
+    const list = raw.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+    const e = email.toLowerCase();
+    const domain = e.slice(e.indexOf('@'));
+    return { allowed: list.includes(e) || list.includes(domain), first: false };
+  }
+
+  /** 註冊第 1 步：寄 6 碼驗證碼（15 分鐘）。非 production 回 devCode 供 E2E。 */
+  async requestRegister(input: unknown) {
+    const { email } = z.object({ email: z.string().trim().toLowerCase().email() }).parse(input);
+    const elig = await this.registerEligibility(email);
+    if (!elig.allowed) return { ok: true, sent: false as const };
+    if (await this.prisma.adminUser.findUnique({ where: { email } })) throw new ConflictException('admin email already exists');
+    const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+    await this.prisma.adminVerification.deleteMany({ where: { email } });
+    await this.prisma.adminVerification.create({ data: { email, codeHash: createHash('sha256').update(`${email}:${code}`).digest('hex'), expiresAt: new Date(Date.now() + 15 * 60_000) } });
+    const site = await this.settings.siteUrl();
+    await this.notify.sendMail('admin_register', { to: email, subject: '【後台管理員註冊】驗證碼', html: `<p>您的後台管理員註冊驗證碼：</p><p style="font-size:28px;font-weight:700;letter-spacing:6px">${code}</p><p>15 分鐘內有效。${elig.first ? '此帳號將成為第一位超級管理員。' : ''}</p><p><a href="${site}/admin/login">${site}/admin/login</a></p>` }).catch(() => undefined);
+    return { ok: true, sent: true as const, first: elig.first, ...(isProd ? {} : { devCode: code }) };
+  }
+
+  /** 註冊第 2 步：驗證碼＋密碼 → 建立管理員（第一位 superadmin，其餘 admin）。 */
+  async confirmRegister(input: unknown): Promise<PublicAdmin> {
+    const d = z.object({ email: z.string().trim().toLowerCase().email(), code: z.string().regex(/^\d{6}$/), password: z.string().min(8).max(200), displayName: z.string().trim().max(60).optional() }).parse(input);
+    const v = await this.prisma.adminVerification.findFirst({ where: { email: d.email }, orderBy: { createdAt: 'desc' } });
+    if (!v || v.expiresAt < new Date()) throw new BadRequestException('驗證碼已過期，請重新申請');
+    if (v.attempts >= 5) throw new BadRequestException('嘗試次數過多，請重新申請驗證碼');
+    if (v.codeHash !== createHash('sha256').update(`${d.email}:${d.code}`).digest('hex')) {
+      await this.prisma.adminVerification.update({ where: { id: v.id }, data: { attempts: { increment: 1 } } });
+      throw new BadRequestException('驗證碼不正確');
+    }
+    const elig = await this.registerEligibility(d.email);
+    if (!elig.allowed) throw new ForbiddenException('此 Email 不在管理員註冊白名單');
+    await this.prisma.adminVerification.deleteMany({ where: { email: d.email } });
+    return this.create({ email: d.email, password: d.password, displayName: d.displayName, role: elig.first ? 'superadmin' : 'admin' });
+  }
 
   async count() {
     return this.prisma.adminUser.count();

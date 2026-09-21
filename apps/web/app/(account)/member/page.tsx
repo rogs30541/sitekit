@@ -5,6 +5,7 @@ import { SHIPPING_LABELS } from '@sitekit/shared';
 import { twd, type Order, fmtDateTime } from '@/lib/api-public';
 import { apiServer, getMe } from '@/lib/api-server';
 import { ApiKeyForm } from './ApiKeyForm';
+import { ProfileForm } from './ProfileForm';
 import { RefundRequestButton } from './RefundRequestButton';
 
 export const metadata = { title: '會員中心', robots: { index: false } };
@@ -65,12 +66,8 @@ export default async function MemberPage() {
           <Link href="/studio" className="rounded border px-3 py-1 text-xs" style={{ borderColor: 'var(--line)' }}>
             AI 工作站
           </Link>
-          {u.role !== 'user' ? (
-            <Link href="/admin" className="rounded border px-3 py-1 text-xs" style={{ borderColor: 'var(--line)' }}>
-              進入後台
-            </Link>
-          ) : null}
         </div>
+        <ProfileForm displayName={u.displayName ?? ''} />
       </Section>
       <Section title="點數" group="(account)">
         <div className="grid grid-cols-3 gap-3 text-center">
