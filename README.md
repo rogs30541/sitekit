@@ -52,7 +52,21 @@ npm run dev:web                 # 視窗 3：http://localhost:3000
 ```
 
 本機種子把 `payment.provider` 設為 `mock`：購買時進入 `/pay/mock` 假閘道，按「模擬付款成功」即走完整回呼→授權流程。
-正式環境改由後台或 MCP 的 `update_settings` 寫入 `payment.provider=newebpay` 與藍新商店參數（見 `apps/api/.env.example`）。
+正式環境改由後台「金流設定」（/admin/payments，走 AI API 路徑）或 MCP 的 `update_settings` 寫入商店參數（見 `apps/api/.env.example`）。
+
+### 金流接口（多家並存）
+
+| 供應商 | 設定鍵 | 結帳方式 | 伺服器驗證 | 退款 API |
+|---|---|---|---|---|
+| 藍新 NewebPay MPG | `newebpay.merchantId/hashKey/hashIv/testMode` | 表單 POST | TradeSha＋AES 解密＋CheckCode | Cancel→Close |
+| 統一金流 PAYUNi UPP | `payuni.merchantId/hashKey/hashIv/testMode` | 表單 POST | HashInfo＋AES-256-GCM | cancel→close |
+| 綠界 ECPay AIO | `ecpay.merchantId/hashKey/hashIv/testMode` | 表單 POST | CheckMacValue | DoAction N→R |
+| LINE Pay v3 | `linepay.channelId/channelSecret/testMode` | 導向 paymentUrl | Confirm API | refund |
+| 支付連 PChomePay v2 | `pchomepay.appId/appSecret/testMode` | 導向 payment_url | 回查 /v2/payment | /v2/refund |
+
+- `payment.methods`＝逗號清單（第一個為預設），結帳頁 `GET /api/payments/methods` 只列「已設定完成」者；`<provider>.testMode` 預設 true（沙箱），上正式才改 `false`。
+- 回呼網址一律 `<site.url>/api/payments/<provider>/notify`（伺服器對伺服器）與 `/return`（前景導回，POST 或 GET）；各家商店後台要允許這兩個網址。
+- 藍新已用測試商店實測（表單→ccore 支付頁、模擬回呼→授權）；其餘四家依各家公開文件實作、adapter 自測通過（簽章／加解密／回呼解讀），**尚待各家沙箱帳號實測**，支付連的回查欄位名稱以實測為準。
 
 > 注意：dev server 跑著時不要執行建置（`build:web` 打壞 `.next`、`build:api` 清掉 dist 讓 watch 程序死掉）；要建置先停 dev server。
 

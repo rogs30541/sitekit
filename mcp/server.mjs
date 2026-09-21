@@ -49,7 +49,7 @@ server.tool('sitekit_get_settings', '讀取系統設定（機密值遮蔽）', {
 
 server.tool(
   'sitekit_update_settings',
-  '更新系統設定鍵值（例：brand.name、storage.driver、payment.provider）',
+  '更新系統設定鍵值。金流：payment.methods（逗號清單，第一個為預設：newebpay,payuni,ecpay,linepay,pchomepay）、各家 <provider>.merchantId/hashKey/hashIv（LINE Pay 用 linepay.channelId/channelSecret；支付連用 pchomepay.appId/appSecret）、<provider>.testMode=true|false；其他：site.url、brand.name、ai.provider',
   { settings: z.record(z.string()) },
   async ({ settings }) => asText(await ops('update_settings', { settings })),
 );

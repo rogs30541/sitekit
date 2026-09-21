@@ -13,9 +13,22 @@ export const ADMIN_ROLES: readonly Role[] = ['admin', 'superadmin'];
 export const FEATURES = ['shop', 'courses', 'studio', 'credits', 'storage', 'byok'] as const;
 export type Feature = (typeof FEATURES)[number];
 
-/** 金流供應商：none＝未設定、mock＝本機假閘道（非 production）、newebpay＝藍新 MPG */
-export const PAYMENT_PROVIDERS = ['none', 'mock', 'newebpay'] as const;
+/**
+ * 金流供應商：none＝未設定、mock＝本機假閘道（非 production）；
+ * newebpay＝藍新 MPG、payuni＝統一金流 UPP、ecpay＝綠界 AIO、linepay＝LINE Pay v3、pchomepay＝支付連。
+ * 結帳可同時開放多個（settings `payment.methods` 逗號清單；空＝只用 `payment.provider`）。
+ */
+export const PAYMENT_PROVIDERS = ['none', 'mock', 'newebpay', 'payuni', 'ecpay', 'linepay', 'pchomepay'] as const;
 export type PaymentProvider = (typeof PAYMENT_PROVIDERS)[number];
+/** 可對外提供的付款方式（排除 none）與顯示名稱 */
+export const PAYMENT_METHOD_LABELS: Record<Exclude<PaymentProvider, 'none'>, string> = {
+  mock: '測試假閘道',
+  newebpay: '藍新金流',
+  payuni: '統一金流 PAYUNi',
+  ecpay: '綠界科技',
+  linepay: 'LINE Pay',
+  pchomepay: '支付連',
+};
 
 export const ORDER_STATUSES = ['pending', 'paid', 'failed', 'refunded', 'canceled'] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
@@ -28,6 +41,22 @@ export const SETTING_KEYS = {
   newebpayHashKey: 'newebpay.hashKey',
   newebpayHashIv: 'newebpay.hashIv',
   newebpayGatewayUrl: 'newebpay.gatewayUrl',
+  newebpayTestMode: 'newebpay.testMode',
+  paymentMethods: 'payment.methods',
+  payuniMerchantId: 'payuni.merchantId',
+  payuniHashKey: 'payuni.hashKey',
+  payuniHashIv: 'payuni.hashIv',
+  payuniTestMode: 'payuni.testMode',
+  ecpayMerchantId: 'ecpay.merchantId',
+  ecpayHashKey: 'ecpay.hashKey',
+  ecpayHashIv: 'ecpay.hashIv',
+  ecpayTestMode: 'ecpay.testMode',
+  linepayChannelId: 'linepay.channelId',
+  linepayChannelSecret: 'linepay.channelSecret',
+  linepayTestMode: 'linepay.testMode',
+  pchomepayAppId: 'pchomepay.appId',
+  pchomepayAppSecret: 'pchomepay.appSecret',
+  pchomepayTestMode: 'pchomepay.testMode',
   ezpayEnabled: 'ezpay.enabled',
   ezpayMerchantId: 'ezpay.merchantId',
   ezpayHashKey: 'ezpay.hashKey',

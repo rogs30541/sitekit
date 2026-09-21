@@ -57,19 +57,21 @@ export class OpsService {
   private async execute(action: OpsAction, p: Record<string, unknown>): Promise<unknown> {
     switch (action) {
       case 'status': {
-        const [users, contents, orders, paid, lastDeploy, provider] = await Promise.all([
+        const [users, contents, orders, paid, lastDeploy, provider, paymentMethods] = await Promise.all([
           this.prisma.user.count(),
           this.prisma.content.count({ where: { status: 'published' } }),
           this.prisma.order.count(),
           this.prisma.order.count({ where: { status: 'paid' } }),
           this.prisma.auditLog.findFirst({ where: { action: 'deploy', ok: true }, orderBy: { createdAt: 'desc' } }),
           this.settings.paymentProvider(),
+          this.settings.paymentMethods(),
         ]);
         return {
           env: env.APP_ENV,
           version: '0.2.0',
           counts: { users, publishedContents: contents, orders, paidOrders: paid },
           paymentProvider: provider,
+          paymentMethods,
           lastDeployAt: lastDeploy?.createdAt ?? null,
           services: { api: 'up', db: 'connected', redis: env.REDIS_URL ? 'configured' : 'not-configured' },
         };

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { SETTING_KEYS } from '@sitekit/shared';
+import { PAYMENT_PROVIDERS, SETTING_KEYS, type PaymentProvider } from '@sitekit/shared';
 import { env } from '../../config/env';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -39,14 +39,53 @@ export class SettingsService {
     return this.get(SETTING_KEYS.paymentProvider, 'PAYMENT_PROVIDER', 'none');
   }
 
+  /** 結帳可選的付款方式：`payment.methods` 逗號清單（依序）；空＝只用 `payment.provider`。過濾未知值與 none。 */
+  async paymentMethods(): Promise<Exclude<PaymentProvider, 'none'>[]> {
+    const raw = await this.get(SETTING_KEYS.paymentMethods, 'PAYMENT_METHODS');
+    const list = raw ? raw.split(',').map((s) => s.trim()) : [await this.paymentProvider()];
+    const valid = new Set<string>(PAYMENT_PROVIDERS);
+    return [...new Set(list.filter((p) => p && p !== 'none' && valid.has(p)))] as Exclude<PaymentProvider, 'none'>[];
+  }
+
+  /** 各金流商設定：DB 優先、環境變數備援。testMode 預設 true（未明確設 false 一律走測試環境）。 */
+  async gateway(provider: PaymentProvider): Promise<{ provider: PaymentProvider; testMode: boolean; configured: boolean; merchantId: string; hashKey: string; hashIv: string; gatewayUrl?: string }> {
+    const bool = (v: string) => v !== 'false' && v !== '0';
+    const cfg = async (idKey: string, keyKey: string, ivKey: string, testKey: string, envPrefix: string) => {
+      const [merchantId, hashKey, hashIv, test] = await Promise.all([
+        this.get(idKey, `${envPrefix}_MERCHANT_ID`),
+        this.get(keyKey, `${envPrefix}_HASH_KEY`),
+        this.get(ivKey, `${envPrefix}_HASH_IV`),
+        this.get(testKey, `${envPrefix}_TEST_MODE`, 'true'),
+      ]);
+      return { provider, testMode: bool(test), merchantId, hashKey, hashIv, configured: !!(merchantId && hashKey && (hashIv || provider === 'linepay' || provider === 'pchomepay')) };
+    };
+    switch (provider) {
+      case 'newebpay': {
+        const c = await cfg(SETTING_KEYS.newebpayMerchantId, SETTING_KEYS.newebpayHashKey, SETTING_KEYS.newebpayHashIv, SETTING_KEYS.newebpayTestMode, 'NEWEBPAY');
+        const gatewayUrl = await this.get(SETTING_KEYS.newebpayGatewayUrl, 'NEWEBPAY_API_URL');
+        return { ...c, gatewayUrl: gatewayUrl || undefined };
+      }
+      case 'payuni':
+        return cfg(SETTING_KEYS.payuniMerchantId, SETTING_KEYS.payuniHashKey, SETTING_KEYS.payuniHashIv, SETTING_KEYS.payuniTestMode, 'PAYUNI');
+      case 'ecpay':
+        return cfg(SETTING_KEYS.ecpayMerchantId, SETTING_KEYS.ecpayHashKey, SETTING_KEYS.ecpayHashIv, SETTING_KEYS.ecpayTestMode, 'ECPAY');
+      case 'linepay': {
+        const [merchantId, hashKey, test] = await Promise.all([this.get(SETTING_KEYS.linepayChannelId, 'LINEPAY_CHANNEL_ID'), this.get(SETTING_KEYS.linepayChannelSecret, 'LINEPAY_CHANNEL_SECRET'), this.get(SETTING_KEYS.linepayTestMode, 'LINEPAY_TEST_MODE', 'true')]);
+        return { provider, testMode: bool(test), merchantId, hashKey, hashIv: '', configured: !!(merchantId && hashKey) };
+      }
+      case 'pchomepay': {
+        const [merchantId, hashKey, test] = await Promise.all([this.get(SETTING_KEYS.pchomepayAppId, 'PCHOMEPAY_APP_ID'), this.get(SETTING_KEYS.pchomepayAppSecret, 'PCHOMEPAY_APP_SECRET'), this.get(SETTING_KEYS.pchomepayTestMode, 'PCHOMEPAY_TEST_MODE', 'true')]);
+        return { provider, testMode: bool(test), merchantId, hashKey, hashIv: '', configured: !!(merchantId && hashKey) };
+      }
+      default:
+        return { provider, testMode: true, merchantId: '', hashKey: '', hashIv: '', configured: provider === 'mock' };
+    }
+  }
+
+  /** 相容舊呼叫：藍新設定 */
   async newebpay() {
-    const [merchantId, hashKey, hashIv, gatewayUrl] = await Promise.all([
-      this.get(SETTING_KEYS.newebpayMerchantId, 'NEWEBPAY_MERCHANT_ID'),
-      this.get(SETTING_KEYS.newebpayHashKey, 'NEWEBPAY_HASH_KEY'),
-      this.get(SETTING_KEYS.newebpayHashIv, 'NEWEBPAY_HASH_IV'),
-      this.get(SETTING_KEYS.newebpayGatewayUrl, 'NEWEBPAY_API_URL', 'https://ccore.newebpay.com/MPG/mpg_gateway'),
-    ]);
-    return { merchantId, hashKey, hashIv, gatewayUrl, configured: !!(merchantId && hashKey && hashIv) };
+    const c = await this.gateway('newebpay');
+    return { ...c, gatewayUrl: c.gatewayUrl ?? (c.testMode ? 'https://ccore.newebpay.com/MPG/mpg_gateway' : 'https://core.newebpay.com/MPG/mpg_gateway') };
   }
 
   async ezpay() {
