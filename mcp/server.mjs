@@ -112,6 +112,13 @@ server.tool(
   async (p) => asText(await ops('import_products', p)),
 );
 
+server.tool('sitekit_get_menu', '讀取網站架構樹（前台導覽選單）', {}, async () => asText(await ops('get_menu')));
+server.tool(
+  'sitekit_set_menu',
+  '整棵覆寫網站架構樹（兩層）。kind=page 綁 contentId（用 sitekit_list_content 取得）、route 填站內路徑 href、link 填外部網址',
+  { items: z.array(z.object({ label: z.string(), kind: z.enum(['page', 'route', 'link']).default('route'), contentId: z.string().optional(), href: z.string().optional(), isVisible: z.boolean().optional(), newTab: z.boolean().optional(), children: z.array(z.object({ label: z.string(), kind: z.enum(['page', 'route', 'link']).default('route'), contentId: z.string().optional(), href: z.string().optional(), isVisible: z.boolean().optional(), newTab: z.boolean().optional() })).optional() })) },
+  async (p) => asText(await ops('set_menu', p)),
+);
 server.tool('sitekit_list_questions', '列出課程學員提問（可依課程 slug／狀態篩選）', { slug: z.string().optional(), courseId: z.string().optional(), status: z.enum(['open', 'answered', 'hidden']).optional() }, async (p) => asText(await ops('list_questions', p)));
 server.tool('sitekit_answer_question', '回覆學員提問並通知提問者', { id: z.string(), answer: z.string().min(1), isPublic: z.boolean().optional() }, async (p) => asText(await ops('answer_question', p)));
 server.tool('sitekit_post_announcement', '發布課程公告', { slug: z.string().optional(), courseId: z.string().optional(), title: z.string(), body: z.string() }, async (p) => asText(await ops('post_announcement', p)));

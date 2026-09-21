@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic';
 const MENU = [
   { href: '/admin', label: '總覽' },
   { href: '/admin/content', label: '內容編輯' },
+  { href: '/admin/menu', label: '網站架構' },
   { href: '/admin/products', label: '商品' },
   { href: '/admin/courses', label: '課程' },
   { href: '/admin/orders', label: '訂單' },

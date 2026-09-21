@@ -515,10 +515,32 @@ model Content {
   raw          Json?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+  menuItems    MenuItem[]
 
   @@unique([source, externalId])
   @@index([status, publishedAt])
   @@map("contents")
+}
+
+/// 網站架構樹＝前台導覽選單：兩層、拖曳排序；kind page（綁內容頁）｜route（站內路徑）｜link（外部網址）
+model MenuItem {
+  id        String     @id @default(cuid())
+  parentId  String?
+  order     Int        @default(0)
+  label     String
+  kind      String     @default("route")
+  contentId String?
+  href      String?
+  isVisible Boolean    @default(true)
+  newTab    Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  parent    MenuItem?  @relation("MenuTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  MenuItem[] @relation("MenuTree")
+  content   Content?   @relation(fields: [contentId], references: [id], onDelete: SetNull)
+
+  @@index([parentId, order])
+  @@map("menu_items")
 }
 
 model Redirect {

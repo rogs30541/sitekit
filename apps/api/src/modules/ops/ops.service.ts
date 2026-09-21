@@ -14,6 +14,7 @@ import { NotifyService } from '../notify/notify.service';
 import { StorageService } from '../storage/storage.service';
 import { AdminAuthService } from '../admin-auth/admin-auth.service';
 import { sanitizeHtml } from '../migration/normalize';
+import { MenuService } from '../content/menu.controller';
 
 const SECRET_KEY = /secret|key|token|password|hashiv|hash_iv|signing/i;
 const SECRET_PARAM = /^(password|apiKey)$/i;
@@ -36,6 +37,7 @@ export class OpsService {
     private readonly notify: NotifyService,
     private readonly storage: StorageService,
     private readonly admins: AdminAuthService,
+    private readonly menu: MenuService,
   ) {}
 
   listActions() {
@@ -161,6 +163,10 @@ export class OpsService {
         return this.orders.expirePending(p.hours === undefined ? undefined : Number(p.hours));
       case 'import_products':
         return this.migration.runProducts(p);
+      case 'get_menu':
+        return this.menu.tree(false);
+      case 'set_menu':
+        return this.menu.replace({ items: p.items ?? [] });
       case 'list_questions': {
         const course = p.slug ? await this.prisma.course.findUnique({ where: { slug: String(p.slug) }, select: { id: true } }) : null;
         const courseId = p.courseId ? String(p.courseId) : course?.id;

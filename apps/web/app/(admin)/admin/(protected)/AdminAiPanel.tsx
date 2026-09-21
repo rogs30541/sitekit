@@ -15,6 +15,8 @@ const PRESETS: Record<string, string> = {
   adjust_stock: '{ "sku": "SKU-001", "delta": 10 }',
   expire_orders: '{ "hours": 72 }',
   send_test_notification: '{ "to": "you@example.com" }',
+  get_menu: '{}',
+  set_menu: '{ "items": [ { "label": "官網", "kind": "route", "href": "/" }, { "label": "關於", "kind": "page", "contentId": "<contentId>" } ] }',
   list_questions: '{ "status": "open" }',
   answer_question: '{ "id": "<questionId>", "answer": "回覆內容" }',
   post_announcement: '{ "slug": "demo-course", "title": "公告標題", "body": "公告內容" }',

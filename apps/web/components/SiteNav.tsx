@@ -4,30 +4,60 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BRAND } from '@sitekit/shared';
 
-/** 前台導覽：不含後台入口（後台走獨立登入頁 /admin/login，前台完全不顯示）。 */
-const NAV = [
-  { href: '/', label: '官網' },
-  { href: '/store', label: '商城' },
-  { href: '/courses', label: '課程' },
-  { href: '/studio', label: '工作站' },
-  { href: '/member', label: '會員' },
+export interface NavItem {
+  id: string;
+  label: string;
+  href: string;
+  newTab: boolean;
+  children: NavItem[];
+}
+
+/** 後台「網站架構」尚未設定時的預設導覽 */
+export const DEFAULT_NAV: NavItem[] = [
+  { id: 'home', label: '官網', href: '/', newTab: false, children: [] },
+  { id: 'store', label: '商城', href: '/store', newTab: false, children: [] },
+  { id: 'courses', label: '課程', href: '/courses', newTab: false, children: [] },
+  { id: 'studio', label: '工作站', href: '/studio', newTab: false, children: [] },
+  { id: 'member', label: '會員', href: '/member', newTab: false, children: [] },
 ];
 
-export function SiteNav() {
+/** 前台導覽：讀後台維護的網站架構樹（兩層，子項以下拉顯示）；不含後台入口（後台走 /admin/login）。 */
+export function SiteNav({ items }: { items?: NavItem[] }) {
   const pathname = usePathname();
   if (pathname?.startsWith('/admin')) return null;
+  const nav = items && items.length ? items : DEFAULT_NAV;
+  const A = ({ n, className }: { n: NavItem; className?: string }) =>
+    n.href.startsWith('/') ? (
+      <Link href={n.href} className={className} target={n.newTab ? '_blank' : undefined}>
+        {n.label}
+      </Link>
+    ) : (
+      <a href={n.href} className={className} target={n.newTab ? '_blank' : undefined} rel="noopener">
+        {n.label}
+      </a>
+    );
   return (
     <header className="border-b" style={{ borderColor: 'var(--line)', background: 'var(--card)' }}>
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-4 py-3">
         <Link href="/" className="font-bold">
           {BRAND.siteName}
         </Link>
-        <nav className="flex gap-4 text-sm">
-          {NAV.map((n) => (
-            <Link key={n.href} href={n.href} className="hover:underline">
-              {n.label}
-            </Link>
-          ))}
+        <nav className="flex flex-wrap gap-4 text-sm">
+          {nav.map((n) =>
+            n.children.length ? (
+              <details key={n.id} className="group relative">
+                <summary className="cursor-pointer list-none hover:underline">{n.label} ▾</summary>
+                <div className="absolute left-0 z-10 mt-1 min-w-40 rounded-lg border p-2 shadow" style={{ borderColor: 'var(--line)', background: 'var(--card)' }}>
+                  <A n={n} className="block px-2 py-1 hover:underline" />
+                  {n.children.map((c) => (
+                    <A key={c.id} n={c} className="block px-2 py-1 hover:underline" />
+                  ))}
+                </div>
+              </details>
+            ) : (
+              <A key={n.id} n={n} className="hover:underline" />
+            ),
+          )}
         </nav>
       </div>
     </header>

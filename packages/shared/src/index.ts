@@ -108,6 +108,8 @@ export const OPS_ACTIONS = {
   manage_coupon: { desc: '折扣碼建立／修改／停用（op create|update|disable、code、type percent|fixed、value、minAmount、maxUses、expiresAt）', mutating: true },
   adjust_stock: { desc: '調整商品庫存（sku 或 productId；set 絕對值或 delta 增減；null＝不追蹤）', mutating: true },
   expire_orders: { desc: '取消逾期未付款訂單並回補庫存（hours 預設讀 order.expireHours）', mutating: true },
+  get_menu: { desc: '讀取網站架構樹（前台導覽選單，含隱藏節點）', mutating: false },
+  set_menu: { desc: '整棵覆寫網站架構樹：items[{label, kind page|route|link, contentId 或 href, isVisible, newTab, children[]}]（兩層）', mutating: true },
   list_questions: { desc: '列出課程問答（courseId 或 slug 可選、status open|answered|hidden）', mutating: false },
   answer_question: { desc: '回覆學員提問（id、answer；isPublic 可選）——會通知提問者', mutating: true },
   post_announcement: { desc: '發布課程公告（courseId 或 slug、title、body）', mutating: true },
