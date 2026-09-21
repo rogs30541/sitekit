@@ -128,6 +128,16 @@ export interface Order {
   carrier?: string | null;
   trackingNo?: string | null;
   shippedAt?: string | null;
+  shippingMethod?: string | null;
+  cvsStoreId?: string | null;
+  cvsStoreName?: string | null;
+  cvsStoreAddress?: string | null;
+  logisticsId?: string | null;
+  logisticsPaymentNo?: string | null;
+  logisticsStatus?: string | null;
+  invoiceType?: string | null;
+  invoiceTaxId?: string | null;
+  invoices?: { number: string | null; status: string; provider: string }[];
   provider: string | null;
   paymentType: string | null;
   paidAt: string | null;

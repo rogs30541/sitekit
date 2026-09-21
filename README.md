@@ -28,6 +28,14 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 **P3 產品化（完成）**：點數帳本（保留再結算、失敗釋放）、AI Provider 抽象層（mock／OpenAI、平台金鑰或 BYOK）、程序內任務佇列（可換 BullMQ）、`/studio` AI 創作工作站、`/admin/studio` 模板管理與點數調整、MCP／AI API 的 `adjust_credits`。
 
+## P8 物流與電子發票（2026-09-21，v0.7.0）
+
+- **物流設定**（`/admin/shipping`）：物流商＝不串接／綠界物流（測試環境 logistics-stage）；配送方式逐一啟用與運費（自行配送、7-ELEVEN／全家／萊爾富／OK 超商取貨 C2C、黑貓、宅配通）、滿額免運、寄件人資料。設定鍵 `logistics.*`、`ecpayLogistics.*`（MCP `update_settings`）。
+- **結帳**：購物車選配送方式 → 超商取貨開綠界電子地圖選門市（`POST /api/logistics/ecpay/map` 取表單 → 綠界 POST 回 `/api/logistics/ecpay/map-reply` → 303 回購物車帶 HMAC 簽章門市 token → 建單時伺服器驗章落地門市）；宅配需地址；運費依方式與免運門檻由 `quote` 計算。
+- **物流單**：後台訂單頁「建立物流單」（`POST /Express/Create`，MD5 CheckMacValue）、「列印託運單」（四家超商各自列印端點／宅配寄貨單）；綠界狀態通知 `POST /api/logistics/ecpay/notify` 驗章後更新物流狀態（狀態碼對映 pending／shipped／delivered／returned）並通知買家；MCP `create_logistics_order`。
+- **電子發票**（`/admin/invoice`）：供應商＝不開立／藍新 ezPay（測試 cinv）／綠界電子發票（測試 einvoice-stage，AES-128-CBC JSON API）；開立時機＝付款成功自動或人工；結帳可選個人（Email 載具）／手機條碼／自然人憑證／公司統編＋抬頭（三聯式 B2B）／捐贈愛心碼，格式伺服器驗證；訂單頁開立／作廢、發票紀錄列表；退款自動作廢；MCP `issue_invoice`／`invalidate_invoice`／`list_invoices`。
+- 驗證：綠界物流簽章、回呼、地圖 token、託運單表單與 ezPay 請求格式（測試環境實際回應「取得商店申請資格失敗」＝請求格式正確、需真實商店）皆以本機 E2E 覆蓋；綠界發票僅驗加解密往返，**待各家測試商店參數實測**。
+
 ## P7 品牌外觀與首頁版面（2026-09-21，v0.6.0）
 
 - **網站設定**（`/admin/site`）：品牌名稱／網站名稱／描述／標語／Logo／主色／聯絡 Email、電話、地址／社群連結／頁尾文字／OG 分享圖／GA 評估 ID 全部走 settings（`brand.*`、`seo.*`，MCP `update_settings` 可改）；前台 root layout 讀 `GET /api/content/site`（品牌＋主選單＋頁尾選單＋首頁區塊，ISR 60 秒），標題／描述／OG／favicon／GA／主色（`--accent`）自動套用；`BRAND` 常數只剩後備。

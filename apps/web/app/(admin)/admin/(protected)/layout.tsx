@@ -20,6 +20,8 @@ const MENU = [
   { href: '/admin/reports', label: '報表' },
   { href: '/admin/studio', label: 'AI 工作站' },
   { href: '/admin/payments', label: '金流' },
+  { href: '/admin/shipping', label: '物流' },
+  { href: '/admin/invoice', label: '發票' },
   { href: '/admin/integrations', label: '儲存與通知' },
   { href: '/admin/accounts', label: '管理員' },
 ];

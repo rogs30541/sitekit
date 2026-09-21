@@ -98,6 +98,24 @@ export const SETTING_KEYS = {
   seoOgImage: 'seo.ogImage',
   seoGaId: 'seo.gaId',
   homeSections: 'home.sections',
+  logisticsProvider: 'logistics.provider',
+  logisticsMethods: 'logistics.methods',
+  logisticsFees: 'logistics.fees',
+  logisticsSenderName: 'logistics.senderName',
+  logisticsSenderPhone: 'logistics.senderPhone',
+  logisticsSenderZip: 'logistics.senderZip',
+  logisticsSenderAddress: 'logistics.senderAddress',
+  ecpayLogisticsMerchantId: 'ecpayLogistics.merchantId',
+  ecpayLogisticsHashKey: 'ecpayLogistics.hashKey',
+  ecpayLogisticsHashIv: 'ecpayLogistics.hashIv',
+  ecpayLogisticsTestMode: 'ecpayLogistics.testMode',
+  invoiceProvider: 'invoice.provider',
+  invoiceIssueTiming: 'invoice.issueTiming',
+  ezpayTestMode: 'ezpay.testMode',
+  ecpayInvoiceMerchantId: 'ecpayInvoice.merchantId',
+  ecpayInvoiceHashKey: 'ecpayInvoice.hashKey',
+  ecpayInvoiceHashIv: 'ecpayInvoice.hashIv',
+  ecpayInvoiceTestMode: 'ecpayInvoice.testMode',
   googleClientId: 'google.clientId',
   googleClientSecret: 'google.clientSecret',
   lineLoginChannelId: 'line.loginChannelId',
@@ -127,6 +145,10 @@ export const OPS_ACTIONS = {
   expire_orders: { desc: '取消逾期未付款訂單並回補庫存（hours 預設讀 order.expireHours）', mutating: true },
   get_menu: { desc: '讀取網站架構樹（location header 主選單｜footer 頁尾，含隱藏節點）', mutating: false },
   set_menu: { desc: '整棵覆寫網站架構樹：location header|footer、items[{label, kind page|route|link, contentId 或 href, isVisible, newTab, children[]}]（兩層）', mutating: true },
+  create_logistics_order: { desc: '為已付款的超商取貨／宅配訂單建立綠界物流單（orderNo）', mutating: true },
+  issue_invoice: { desc: '手動開立電子發票（orderNo；依 invoice.provider）', mutating: true },
+  invalidate_invoice: { desc: '作廢訂單的電子發票（orderNo）', mutating: true },
+  list_invoices: { desc: '列出電子發票（status issued|failed|invalid 可選）', mutating: false },
   get_site: { desc: '讀取站台外觀（品牌／聯絡／社群／SEO 設定值、首頁區塊、選單）', mutating: false },
   set_home_sections: { desc: '設定首頁版面區塊 sections[]（hero／features／courses／products／posts／html／cta；伺服器驗證）', mutating: true },
   list_questions: { desc: '列出課程問答（courseId 或 slug 可選、status open|answered|hidden）', mutating: false },
@@ -147,6 +169,13 @@ export const SHIPPING_STATUSES = ['pending', 'shipped', 'delivered', 'returned']
 export type ShippingStatus = (typeof SHIPPING_STATUSES)[number];
 export const SHIPPING_LABELS: Record<ShippingStatus, string> = { pending: '待出貨', shipped: '已出貨', delivered: '已送達', returned: '已退回' };
 export const COUPON_TYPES = ['percent', 'fixed'] as const;
+
+/** 配送方式（綠界物流子類型＋自行配送） */
+export const LOGISTICS_METHOD_LABELS = { manual: '自行配送／宅配', UNIMARTC2C: '7-ELEVEN 超商取貨', FAMIC2C: '全家超商取貨', HILIFEC2C: '萊爾富超商取貨', OKMARTC2C: 'OK 超商取貨', TCAT: '黑貓宅急便', ECAN: '宅配通' } as const;
+export type LogisticsMethodId = keyof typeof LOGISTICS_METHOD_LABELS;
+/** 發票類型 */
+export const INVOICE_TYPE_LABELS: Record<string, string> = { personal: '個人（Email／會員載具）', mobile: '手機條碼載具', citizen: '自然人憑證', company: '公司統編（三聯式）', donate: '捐贈' };
+export const INVOICE_STATUS_LABELS: Record<string, string> = { issued: '已開立', failed: '開立失敗', invalid: '已作廢' };
 
 /** 介面顯示用中文標籤（前後台共用；未知值回原字串） */
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = { pending: '待付款', paid: '已付款', failed: '付款失敗', refunded: '已退款', canceled: '已取消' };

@@ -7,13 +7,23 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { InvoiceService } from '../invoice/invoice.service';
 import { SettingsService } from '../settings/settings.service';
 import { CouponsService } from './coupons.service';
+import { LogisticsService } from '../logistics/logistics.service';
 import { NotifyService } from '../notify/notify.service';
 
-const shippingInput = z.object({ name: z.string().trim().min(1).max(60), phone: z.string().trim().min(6).max(30), address: z.string().trim().min(5).max(200) });
+const shippingInput = z.object({
+  method: z.string().trim().max(20).optional(),
+  name: z.string().trim().min(1).max(60),
+  phone: z.string().trim().min(6).max(30),
+  address: z.string().trim().max(200).optional().default(''),
+  /** 超商取貨：電子地圖回傳的簽章 token（伺服器驗章解出門市） */
+  storeToken: z.string().max(2000).optional(),
+});
+const invoiceInput = z.object({ type: z.enum(['personal', 'mobile', 'citizen', 'company', 'donate']).default('personal'), carrierNum: z.string().trim().max(30).nullable().optional(), taxId: z.string().trim().max(8).nullable().optional(), title: z.string().trim().max(60).nullable().optional(), loveCode: z.string().trim().max(7).nullable().optional() });
 const createInput = z.object({
   items: z.array(z.object({ productId: z.string().min(1), qty: z.number().int().min(1).max(99).default(1) })).min(1).max(20),
   couponCode: z.string().trim().max(40).optional(),
   shipping: shippingInput.optional(),
+  invoice: invoiceInput.optional(),
 });
 const shippingUpdate = z.object({ status: z.enum(SHIPPING_STATUSES), carrier: z.string().trim().max(60).nullable().optional(), trackingNo: z.string().trim().max(80).nullable().optional() });
 
@@ -25,7 +35,7 @@ export interface PaidInfo {
   note?: string;
 }
 
-const ORDER_INCLUDE = { items: true, user: { select: { email: true, displayName: true } } } as const;
+const ORDER_INCLUDE = { items: true, user: { select: { email: true, displayName: true } }, invoices: { select: { number: true, status: true, provider: true }, orderBy: { createdAt: 'desc' as const }, take: 1 } } as const;
 type Tx = Prisma.TransactionClient;
 
 /** 藍新 MerchantOrderNo：英數 ≤30 字（綠界 ≤20）。 */
@@ -48,6 +58,7 @@ export class OrdersService implements OnModuleInit {
     private readonly settings: SettingsService,
     private readonly coupons: CouponsService,
     private readonly notify: NotifyService,
+    private readonly logistics: LogisticsService,
   ) {}
 
   /** 每小時掃一次逾期未付款訂單（可由 ops expire_orders 手動觸發）。 */
@@ -77,12 +88,15 @@ export class OrdersService implements OnModuleInit {
       discount = c.discount;
       couponCode = c.code;
     }
-    const [feeRaw, freeOverRaw] = await Promise.all([this.settings.get(SETTING_KEYS.shippingFee, 'SHIPPING_FEE', '0'), this.settings.get(SETTING_KEYS.shippingFreeOver, 'SHIPPING_FREE_OVER', '')]);
-    const fee = Number(feeRaw) || 0;
-    const freeOver = freeOverRaw ? Number(freeOverRaw) : null;
-    const shippingFee = needsShipping && !(freeOver !== null && subtotal - discount >= freeOver) ? fee : 0;
+    const ship = needsShipping ? await this.logistics.feeFor(r.data.shipping?.method, subtotal - discount) : null;
+    const shippingFee = ship?.fee ?? 0;
+    const shippingMethod = ship?.method ?? null;
+    const store = r.data.shipping?.storeToken ? this.logistics.verifyStoreToken(r.data.shipping.storeToken) : null;
+    if (needsShipping && shippingMethod?.kind === 'cvs' && !store) throw new BadRequestException('超商取貨請先選擇門市');
+    if (needsShipping && shippingMethod && shippingMethod.kind !== 'cvs' && r.data.shipping && !r.data.shipping.address) throw new BadRequestException('宅配需填寫地址');
     const amount = Math.max(0, subtotal - discount) + shippingFee;
-    return { items, subtotal, discount, couponCode, shippingFee, needsShipping, amount, shipping: r.data.shipping ?? null };
+    const invoice = this.invoice.validateRequest(r.data.invoice);
+    return { items, subtotal, discount, couponCode, shippingFee, needsShipping, amount, shipping: r.data.shipping ?? null, shippingMethod, store, invoice };
   }
 
   async create(userId: string, input: unknown) {
@@ -101,8 +115,17 @@ export class OrdersService implements OnModuleInit {
           shippingFee: q.shippingFee,
           shippingName: q.shipping?.name ?? null,
           shippingPhone: q.shipping?.phone ?? null,
-          shippingAddress: q.shipping?.address ?? null,
+          shippingAddress: q.store ? q.store.address : (q.shipping?.address || null),
           shippingStatus: q.needsShipping ? 'pending' : null,
+          shippingMethod: q.needsShipping ? (q.shippingMethod?.id ?? 'manual') : null,
+          cvsStoreId: q.store?.id ?? null,
+          cvsStoreName: q.store?.name ?? null,
+          cvsStoreAddress: q.store?.address ?? null,
+          invoiceType: q.invoice.type,
+          invoiceCarrierNum: q.invoice.carrierNum,
+          invoiceTaxId: q.invoice.taxId,
+          invoiceTitle: q.invoice.title,
+          invoiceLoveCode: q.invoice.loveCode,
           items: { create: q.items.map(({ productId, name, qty, unitPrice }) => ({ productId, name, qty, unitPrice })) },
         },
         include: ORDER_INCLUDE,

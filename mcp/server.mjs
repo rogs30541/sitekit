@@ -49,7 +49,7 @@ server.tool('sitekit_get_settings', '讀取系統設定（機密值遮蔽）', {
 
 server.tool(
   'sitekit_update_settings',
-  '更新系統設定鍵值。金流：payment.methods（逗號清單，第一個為預設：newebpay,payuni,ecpay,linepay,pchomepay）、各家 <provider>.merchantId/hashKey/hashIv（LINE Pay 用 linepay.channelId/channelSecret；支付連用 pchomepay.appId/appSecret）、<provider>.testMode=true|false；其他：site.url、brand.name、ai.provider、admin.registerAllowlist（後台自助註冊白名單，email 或 @網域逗號清單）、brand.name/siteName/description/tagline/logoUrl/primaryColor/contactEmail/phone/address/facebook/instagram/line/youtube/footerText、seo.ogImage/gaId、google.clientId/clientSecret、line.loginChannelId/loginChannelSecret',
+  '更新系統設定鍵值。金流：payment.methods（逗號清單，第一個為預設：newebpay,payuni,ecpay,linepay,pchomepay）、各家 <provider>.merchantId/hashKey/hashIv（LINE Pay 用 linepay.channelId/channelSecret；支付連用 pchomepay.appId/appSecret）、<provider>.testMode=true|false；其他：site.url、brand.name、ai.provider、admin.registerAllowlist（後台自助註冊白名單，email 或 @網域逗號清單）、brand.*、seo.*、物流：logistics.provider none|ecpay、logistics.methods（manual,UNIMARTC2C,FAMIC2C,HILIFEC2C,OKMARTC2C,TCAT,ECAN 逗號清單）、logistics.fees（UNIMARTC2C=60,TCAT=120）、logistics.senderName/senderPhone/senderZip/senderAddress、ecpayLogistics.merchantId/hashKey/hashIv/testMode；發票：invoice.provider none|ezpay|ecpay、invoice.issueTiming paid|manual、ezpay.merchantId/hashKey/hashIv/testMode、ecpayInvoice.merchantId/hashKey/hashIv/testMode、google.clientId/clientSecret、line.loginChannelId/loginChannelSecret',
   { settings: z.record(z.string()) },
   async ({ settings }) => asText(await ops('update_settings', { settings })),
 );
@@ -113,6 +113,10 @@ server.tool(
 );
 
 server.tool('sitekit_get_menu', '讀取網站架構樹（location=header 主選單｜footer 頁尾）', { location: z.enum(['header', 'footer']).default('header') }, async (p) => asText(await ops('get_menu', p)));
+server.tool('sitekit_create_logistics_order', '為已付款的超商取貨／宅配訂單建立綠界物流單', { orderNo: z.string() }, async (p) => asText(await ops('create_logistics_order', p)));
+server.tool('sitekit_issue_invoice', '手動開立電子發票（ezPay 或綠界，依 invoice.provider）', { orderNo: z.string() }, async (p) => asText(await ops('issue_invoice', p)));
+server.tool('sitekit_invalidate_invoice', '作廢訂單的電子發票', { orderNo: z.string(), reason: z.string().optional() }, async (p) => asText(await ops('invalidate_invoice', p)));
+server.tool('sitekit_list_invoices', '列出電子發票', { status: z.enum(['issued', 'failed', 'invalid']).optional() }, async (p) => asText(await ops('list_invoices', p)));
 server.tool('sitekit_get_site', '讀取站台外觀：品牌／聯絡／社群／SEO 設定值、首頁區塊、主選單與頁尾選單', {}, async () => asText(await ops('get_site')));
 server.tool(
   'sitekit_set_home_sections',

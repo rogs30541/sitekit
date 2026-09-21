@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { INVOICE_TYPE_LABELS } from '@sitekit/shared';
 import { twd, type Product } from '@/lib/api-public';
 import { clearCart, onCartChange, readCart, setQty, type CartLine } from '@/lib/cart';
 import { fetchPaymentMethods, startCheckout, type PaymentMethod } from '@/lib/checkout';
@@ -14,11 +16,21 @@ interface Quote {
   shippingFee: number;
   needsShipping: boolean;
   amount: number;
+  shippingMethod?: { id: string; label: string; kind: 'cvs' | 'home' | 'manual' } | null;
+  store?: { id: string; name: string; address: string } | null;
 }
+interface ShipMethod {
+  id: string;
+  label: string;
+  fee: number;
+  kind: 'cvs' | 'home' | 'manual';
+}
+type InvoiceType = 'personal' | 'mobile' | 'citizen' | 'company' | 'donate';
 const input = 'w-full rounded border px-2 py-1 text-sm';
 
-/** 購物車：金額一律由 /api/orders/quote 試算（折扣碼、運費）；實體商品需收件資料；建單後走共用結帳。 */
+/** 購物車：金額由 /api/orders/quote 試算（折扣碼、配送方式運費）；超商取貨走綠界電子地圖；發票資訊隨訂單送出。 */
 export function CartClient() {
+  const search = useSearchParams();
   const [lines, setLines] = useState<CartLine[]>([]);
   const [products, setProducts] = useState<Record<string, Product>>({});
   const [coupon, setCoupon] = useState('');
@@ -26,6 +38,11 @@ export function CartClient() {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteError, setQuoteError] = useState('');
   const [ship, setShip] = useState({ name: '', phone: '', address: '' });
+  const [shipMethods, setShipMethods] = useState<ShipMethod[]>([]);
+  const [shipMethod, setShipMethod] = useState('');
+  const [storeToken, setStoreToken] = useState('');
+  const [store, setStore] = useState<{ id: string; name: string; address: string } | null>(null);
+  const [inv, setInv] = useState<{ type: InvoiceType; carrierNum: string; taxId: string; title: string; loveCode: string }>({ type: 'personal', carrierNum: '', taxId: '', title: '', loveCode: '' });
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [method, setMethod] = useState('');
   const [busy, setBusy] = useState(false);
@@ -42,10 +59,42 @@ export function CartClient() {
       setMethods(m);
       setMethod(m[0]?.id ?? '');
     });
+    fetch('/api/logistics/methods')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((m: ShipMethod[]) => {
+        setShipMethods(m);
+        setShipMethod((prev) => prev || m[0]?.id || '');
+      });
     fetch('/api/auth/me')
       .then((r) => r.json())
       .then((j) => setAuthed(!!j.authenticated))
       .catch(() => setAuthed(false));
+    // 綠界選門市導回：?cvs=<token>；收件資料暫存在 sessionStorage
+    const cvs = search.get('cvs');
+    try {
+      const saved = sessionStorage.getItem('sitekit.checkout');
+      if (saved) {
+        const s = JSON.parse(saved);
+        if (s.ship) setShip(s.ship);
+        if (s.shipMethod) setShipMethod(s.shipMethod);
+        if (s.inv) setInv(s.inv);
+        if (s.applied) setApplied(s.applied);
+      }
+    } catch {
+      /* ignore */
+    }
+    if (cvs && cvs !== 'error') {
+      setStoreToken(cvs);
+      fetch(`/api/logistics/cvs-store?token=${encodeURIComponent(cvs)}`)
+        .then((r) => r.json())
+        .then((s) => {
+          if (s?.id) {
+            setStore(s);
+            if (s.subType) setShipMethod(s.subType);
+          }
+        })
+        .catch(() => undefined);
+    }
     return onCartChange(load);
   }, []);
 
@@ -55,13 +104,21 @@ export function CartClient() {
       return;
     }
     const ctl = new AbortController();
-    fetch('/api/orders/quote', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ items: lines, couponCode: applied || undefined }), signal: ctl.signal })
+    const body = { items: lines, couponCode: applied || undefined, shipping: { method: shipMethod || undefined, name: ship.name || '暫', phone: ship.phone || '0000000000', address: ship.address, storeToken: storeToken || undefined }, invoice: { type: 'personal' } };
+    fetch('/api/orders/quote', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), signal: ctl.signal })
       .then(async (r) => {
         const j = await r.json();
         if (!r.ok) {
-          setQuoteError(typeof j.message === 'string' ? j.message : JSON.stringify(j.message));
-          if (applied) setApplied('');
-          setQuote(null);
+          const m = typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
+          // 超商未選門市／宅配未填地址屬於流程提示，不清空試算
+          if (/門市|地址/.test(m)) {
+            setQuoteError('');
+            setQuote((q) => q);
+          } else {
+            setQuoteError(m);
+            if (applied) setApplied('');
+            setQuote(null);
+          }
         } else {
           setQuoteError('');
           setQuote(j as Quote);
@@ -69,18 +126,56 @@ export function CartClient() {
       })
       .catch(() => undefined);
     return () => ctl.abort();
-  }, [lines, applied, authed]);
+  }, [lines, applied, authed, shipMethod, storeToken]);
+
+  const current = shipMethods.find((m) => m.id === shipMethod);
+  const needsShipping = quote?.needsShipping ?? lines.some((l) => products[l.productId]?.type === 'physical');
+
+  async function pickStore() {
+    try {
+      sessionStorage.setItem('sitekit.checkout', JSON.stringify({ ship, shipMethod, inv, applied }));
+    } catch {
+      /* ignore */
+    }
+    const r = await fetch('/api/logistics/ecpay/map', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ subType: shipMethod }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      setError(typeof j.message === 'string' ? j.message : '無法開啟門市地圖');
+      return;
+    }
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = j.gatewayUrl;
+    for (const [k, v] of Object.entries(j.fields as Record<string, string>)) {
+      const i = document.createElement('input');
+      i.type = 'hidden';
+      i.name = k;
+      i.value = v;
+      form.appendChild(i);
+    }
+    document.body.appendChild(form);
+    form.submit();
+  }
 
   async function submit() {
-    if (!quote) return;
     setBusy(true);
     setError('');
     try {
-      const body = { items: lines, couponCode: applied || undefined, shipping: quote.needsShipping ? ship : undefined };
+      const body = {
+        items: lines,
+        couponCode: applied || undefined,
+        shipping: needsShipping ? { method: shipMethod, name: ship.name, phone: ship.phone, address: ship.address, storeToken: storeToken || undefined } : undefined,
+        invoice: { type: inv.type, carrierNum: inv.carrierNum || null, taxId: inv.taxId || null, title: inv.title || null, loveCode: inv.loveCode || null },
+      };
       const o = await fetch('/api/orders', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
       const order = await o.json();
       if (!o.ok) throw new Error(typeof order.message === 'string' ? order.message : JSON.stringify(order.message ?? order));
       clearCart();
+      try {
+        sessionStorage.removeItem('sitekit.checkout');
+      } catch {
+        /* ignore */
+      }
       if (order.status === 'paid') {
         window.location.href = `/order-result?order=${order.merchantOrderNo}`;
         return;
@@ -104,7 +199,7 @@ export function CartClient() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
-      <div>
+      <div className="space-y-4">
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="text-xs" style={{ color: 'var(--muted)' }}>
@@ -134,25 +229,83 @@ export function CartClient() {
             })}
           </tbody>
         </table>
-        {quote?.needsShipping ? (
-          <div className="mt-4 rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
-            <p className="mb-2 text-sm font-semibold">收件資料</p>
+        {needsShipping ? (
+          <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
+            <p className="mb-2 text-sm font-semibold">配送方式</p>
+            <div className="space-y-1 text-sm">
+              {shipMethods.map((m) => (
+                <label key={m.id} className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    checked={shipMethod === m.id}
+                    onChange={() => {
+                      setShipMethod(m.id);
+                      setStore(null);
+                      setStoreToken('');
+                    }}
+                  />
+                  {m.label}
+                  <span className="text-xs" style={{ color: 'var(--muted)' }}>
+                    運費 {m.fee ? twd(m.fee) : '免費'}
+                  </span>
+                </label>
+              ))}
+            </div>
+            {current?.kind === 'cvs' ? (
+              <div className="mt-2 text-sm">
+                {store ? (
+                  <p>
+                    取貨門市：<strong>{store.name}</strong>（{store.id}）{store.address}
+                    <button onClick={pickStore} className="ml-2 text-xs underline">
+                      重新選擇
+                    </button>
+                  </p>
+                ) : (
+                  <button onClick={pickStore} disabled={authed !== true} className="rounded border px-3 py-1 text-xs disabled:opacity-50" style={{ borderColor: 'var(--line)' }}>
+                    選擇取貨門市（綠界電子地圖）
+                  </button>
+                )}
+                {search.get('cvs') === 'error' ? <p className="text-xs text-red-700">門市選擇失敗，請再試一次。</p> : null}
+              </div>
+            ) : null}
+            <p className="mb-1 mt-3 text-sm font-semibold">{current?.kind === 'cvs' ? '取貨人資料' : '收件資料'}</p>
             <div className="grid gap-2 sm:grid-cols-2">
               <label className="block text-xs">
-                收件人
+                姓名
                 <input className={input} style={{ borderColor: 'var(--line)' }} value={ship.name} onChange={(e) => setShip({ ...ship, name: e.target.value })} />
               </label>
               <label className="block text-xs">
-                電話
+                手機
                 <input className={input} style={{ borderColor: 'var(--line)' }} value={ship.phone} onChange={(e) => setShip({ ...ship, phone: e.target.value })} />
               </label>
-              <label className="block text-xs sm:col-span-2">
-                地址
-                <input className={input} style={{ borderColor: 'var(--line)' }} value={ship.address} onChange={(e) => setShip({ ...ship, address: e.target.value })} />
-              </label>
+              {current?.kind !== 'cvs' ? (
+                <label className="block text-xs sm:col-span-2">
+                  地址
+                  <input className={input} style={{ borderColor: 'var(--line)' }} value={ship.address} onChange={(e) => setShip({ ...ship, address: e.target.value })} />
+                </label>
+              ) : null}
             </div>
           </div>
         ) : null}
+        <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
+          <p className="mb-2 text-sm font-semibold">電子發票</p>
+          <select value={inv.type} onChange={(e) => setInv({ ...inv, type: e.target.value as InvoiceType })} className={input} style={{ borderColor: 'var(--line)' }}>
+            {(Object.keys(INVOICE_TYPE_LABELS) as InvoiceType[]).map((t) => (
+              <option key={t} value={t}>
+                {INVOICE_TYPE_LABELS[t]}
+              </option>
+            ))}
+          </select>
+          {inv.type === 'mobile' ? <input className={`${input} mt-2`} style={{ borderColor: 'var(--line)' }} placeholder="手機條碼（/ 開頭共 8 碼）" value={inv.carrierNum} onChange={(e) => setInv({ ...inv, carrierNum: e.target.value.toUpperCase() })} /> : null}
+          {inv.type === 'citizen' ? <input className={`${input} mt-2`} style={{ borderColor: 'var(--line)' }} placeholder="自然人憑證條碼（2 英文＋14 數字）" value={inv.carrierNum} onChange={(e) => setInv({ ...inv, carrierNum: e.target.value.toUpperCase() })} /> : null}
+          {inv.type === 'company' ? (
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              <input className={input} style={{ borderColor: 'var(--line)' }} placeholder="統一編號（8 碼）" value={inv.taxId} onChange={(e) => setInv({ ...inv, taxId: e.target.value.replace(/\D/g, '').slice(0, 8) })} />
+              <input className={input} style={{ borderColor: 'var(--line)' }} placeholder="公司抬頭" value={inv.title} onChange={(e) => setInv({ ...inv, title: e.target.value })} />
+            </div>
+          ) : null}
+          {inv.type === 'donate' ? <input className={`${input} mt-2`} style={{ borderColor: 'var(--line)' }} placeholder="愛心碼（3–7 碼數字）" value={inv.loveCode} onChange={(e) => setInv({ ...inv, loveCode: e.target.value.replace(/\D/g, '').slice(0, 7) })} /> : null}
+        </div>
       </div>
       <div className="space-y-3 rounded-lg border p-4 text-sm" style={{ borderColor: 'var(--line)' }}>
         {authed === false ? (
@@ -185,7 +338,7 @@ export function CartClient() {
             ) : null}
             {quote.needsShipping ? (
               <div className="flex justify-between">
-                <dt>運費</dt>
+                <dt>運費{current ? `（${current.label}）` : ''}</dt>
                 <dd>{quote.shippingFee ? twd(quote.shippingFee) : '免運'}</dd>
               </div>
             ) : null}
@@ -205,7 +358,7 @@ export function CartClient() {
             ))}
           </select>
         ) : null}
-        <button onClick={submit} disabled={busy || !quote || authed !== true} className="w-full rounded bg-black px-4 py-2 text-white disabled:opacity-50">
+        <button onClick={submit} disabled={busy || !quote || authed !== true || (needsShipping && current?.kind === 'cvs' && !store)} className="w-full rounded bg-black px-4 py-2 text-white disabled:opacity-50">
           {busy ? '前往付款…' : '結帳'}
         </button>
         {error ? <p className="text-xs text-red-700">{error}</p> : null}

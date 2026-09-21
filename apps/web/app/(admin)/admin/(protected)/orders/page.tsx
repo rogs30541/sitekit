@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Section } from '@/components/Section';
-import { ORDER_STATUS_LABELS, REFUND_STATUS_LABELS, SHIPPING_LABELS, paymentLabel } from '@sitekit/shared';
+import { INVOICE_TYPE_LABELS, LOGISTICS_METHOD_LABELS, ORDER_STATUS_LABELS, REFUND_STATUS_LABELS, SHIPPING_LABELS, paymentLabel } from '@sitekit/shared';
 import { twd, type Order, fmtDateTime } from '@/lib/api-public';
 import { apiServer } from '@/lib/api-server';
 import { OrderActions } from './OrderActions';
@@ -62,15 +62,18 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
               <td className="py-2">
                 {ORDER_STATUS_LABELS[o.status] ?? o.status}
                 {o.provider ? <div style={{ color: 'var(--muted)' }}>{paymentLabel(o.provider, o.paymentType)}</div> : null}
+                {o.invoiceType ? <div style={{ color: 'var(--muted)' }}>發票：{INVOICE_TYPE_LABELS[o.invoiceType] ?? o.invoiceType}{o.invoiceTaxId ? ` ${o.invoiceTaxId}` : ''}{o.invoices?.[0]?.number ? ` · ${o.invoices[0].number}` : ''}</div> : null}
                 {o.refundStatus ? <div style={{ color: 'var(--muted)' }}>退款：{REFUND_STATUS_LABELS[o.refundStatus] ?? o.refundStatus}</div> : null}
                 {o.shippingStatus ? (
                   <div style={{ color: 'var(--muted)' }}>
                     物流：{SHIPPING_LABELS[o.shippingStatus as keyof typeof SHIPPING_LABELS] ?? o.shippingStatus}
+                    {o.shippingMethod ? ` · ${LOGISTICS_METHOD_LABELS[o.shippingMethod as keyof typeof LOGISTICS_METHOD_LABELS] ?? o.shippingMethod}` : ''}
                     {o.trackingNo ? ` ${o.trackingNo}` : ''}
                     <br />
                     {o.shippingName} {o.shippingPhone}
                     <br />
-                    {o.shippingAddress}
+                    {o.cvsStoreName ? `${o.cvsStoreName}（${o.cvsStoreId}）` : o.shippingAddress}
+                    {o.logisticsId ? <><br />物流單 {o.logisticsId}{o.logisticsPaymentNo ? ` 寄件代碼 ${o.logisticsPaymentNo}` : ''}</> : null}
                   </div>
                 ) : null}
               </td>

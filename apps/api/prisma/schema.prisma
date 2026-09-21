@@ -329,6 +329,22 @@ model Order {
   carrier         String?
   trackingNo      String?
   shippedAt       DateTime?
+  /// 配送方式（logistics.methods 之一：UNIMARTC2C／FAMIC2C／HILIFEC2C／OKMARTC2C／TCAT／ECAN／manual）
+  shippingMethod  String?
+  cvsStoreId      String?
+  cvsStoreName    String?
+  cvsStoreAddress String?
+  /// 物流商單號（綠界 AllPayLogisticsID）與超商寄件代碼／驗證碼、物流商狀態碼
+  logisticsId     String?
+  logisticsPaymentNo String?
+  logisticsValidationNo String?
+  logisticsStatus String?
+  /// 發票資訊：type personal|mobile|citizen|company|donate；載具號碼／統編／抬頭／愛心碼
+  invoiceType     String?
+  invoiceCarrierNum String?
+  invoiceTaxId    String?
+  invoiceTitle    String?
+  invoiceLoveCode String?
   provider        String?
   providerTradeNo String?
   paymentType     String?
@@ -382,13 +398,16 @@ model PaymentEvent {
 }
 
 model Invoice {
-  id        String   @id @default(cuid())
-  orderId   String
-  provider  String
-  number    String?
-  status    String
-  amount    Int
-  payload   Json?
+  id          String    @id @default(cuid())
+  orderId     String
+  provider    String
+  number      String?
+  status      String
+  amount      Int
+  invoiceDate String?
+  randomCode  String?
+  invalidAt   DateTime?
+  payload     Json?
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 

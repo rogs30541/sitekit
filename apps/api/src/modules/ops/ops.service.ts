@@ -16,6 +16,8 @@ import { AdminAuthService } from '../admin-auth/admin-auth.service';
 import { sanitizeHtml } from '../migration/normalize';
 import { MenuService, parseLocation } from '../content/menu.controller';
 import { SiteService } from '../content/site.controller';
+import { LogisticsService } from '../logistics/logistics.service';
+import { InvoiceService } from '../invoice/invoice.service';
 
 const SECRET_KEY = /secret|key|token|password|hashiv|hash_iv|signing/i;
 const SECRET_PARAM = /^(password|apiKey)$/i;
@@ -40,6 +42,8 @@ export class OpsService {
     private readonly admins: AdminAuthService,
     private readonly menu: MenuService,
     private readonly site: SiteService,
+    private readonly logistics: LogisticsService,
+    private readonly invoice: InvoiceService,
   ) {}
 
   listActions() {
@@ -169,6 +173,23 @@ export class OpsService {
         return this.menu.tree(false, parseLocation(p.location));
       case 'set_menu':
         return this.menu.replace({ items: p.items ?? [] }, parseLocation(p.location));
+      case 'create_logistics_order':
+        return this.logistics.createOrder(String(p.orderNo ?? p.merchantOrderNo ?? ''), 'ops');
+      case 'issue_invoice': {
+        const order = await this.prisma.order.findFirst({ where: { OR: [{ id: String(p.orderNo ?? '') }, { merchantOrderNo: String(p.orderNo ?? '') }] }, include: { items: true, user: { select: { email: true, displayName: true } } } });
+        if (!order) throw new Error('order not found');
+        const inv = await this.invoice.issue(order, 'ops');
+        return { id: inv.id, number: inv.number, status: inv.status, provider: inv.provider };
+      }
+      case 'invalidate_invoice': {
+        const order = await this.prisma.order.findFirst({ where: { OR: [{ id: String(p.orderNo ?? '') }, { merchantOrderNo: String(p.orderNo ?? '') }] } });
+        if (!order) throw new Error('order not found');
+        const r = await this.invoice.invalidateForOrder(order.id, String(p.reason ?? 'ops 作廢'));
+        if (!r) throw new Error('作廢失敗或無已開立發票');
+        return { id: r.id, number: r.number, status: r.status };
+      }
+      case 'list_invoices':
+        return this.invoice.list(p.status ? String(p.status) : undefined);
       case 'get_site': {
         const [pub, adm] = await Promise.all([this.site.publicSite(), this.site.adminSite()]);
         return { ...pub, settings: Object.fromEntries(adm.fields.map((f) => [f.key, f.value])) };
