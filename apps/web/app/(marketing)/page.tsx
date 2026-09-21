@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { BRAND } from '@sitekit/shared';
 import { Section } from '@/components/Section';
 import { apiPublic, type PostList } from '@/lib/api-public';
+import { HomeSections } from '@/components/HomeSections';
+import { getSite } from '@/lib/site';
 
 interface PageDoc {
   slug: string;
@@ -12,18 +13,19 @@ interface PageDoc {
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const [posts, home] = await Promise.all([apiPublic<PostList>('/api/content/posts?limit=3'), apiPublic<PageDoc>('/api/content/pages/home')]);
+  const [posts, home, site] = await Promise.all([apiPublic<PostList>('/api/content/posts?limit=3'), apiPublic<PageDoc>('/api/content/pages/home'), getSite()]);
+  if (site.home.sections.length) return <HomeSections sections={site.home.sections} />;
   return (
     <div className="space-y-6">
       {home?.body ? (
-        <Section title={home.title || BRAND.siteName} group="(marketing)">
+        <Section title={home.title || site.brand.siteName} group="(marketing)">
           <article className="prose max-w-none" dangerouslySetInnerHTML={{ __html: home.body }} />
         </Section>
       ) : (
-        <Section title={BRAND.siteName} group="(marketing)">
-          <p>{BRAND.description}。預渲染加 ISR，SEO 主戰場。</p>
+        <Section title={site.brand.siteName} group="(marketing)">
+          <p>{site.brand.description}</p>
           <p className="mt-2 text-xs" style={{ color: 'var(--muted)' }}>
-            後台「內容編輯」建立 slug 為 home 的頁面並發布，即可取代這段預設首頁內容。
+            到後台「網站設定 → 首頁版面」加入區塊，或在「內容編輯」建立 slug 為 home 的頁面並發布，即可取代這段預設內容。
           </p>
         </Section>
       )}

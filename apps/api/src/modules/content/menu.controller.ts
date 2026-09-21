@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Injectable, Put, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Injectable, Put, Query, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 import { AdminSessionGuard } from '../../common/guards';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -57,8 +57,8 @@ export class MenuService {
     return i.href ?? '#';
   }
 
-  async tree(visibleOnly: boolean): Promise<MenuNode[]> {
-    const rows = await this.prisma.menuItem.findMany({ orderBy: [{ order: 'asc' }, { createdAt: 'asc' }], include: { content: { select: { title: true, slug: true, type: true, status: true } } } });
+  async tree(visibleOnly: boolean, location: 'header' | 'footer' = 'header'): Promise<MenuNode[]> {
+    const rows = await this.prisma.menuItem.findMany({ where: { location }, orderBy: [{ order: 'asc' }, { createdAt: 'asc' }], include: { content: { select: { title: true, slug: true, type: true, status: true } } } });
     const byParent = new Map<string | null, typeof rows>();
     for (const r of rows) {
       const k = r.parentId ?? null;
@@ -71,7 +71,7 @@ export class MenuService {
     return build(null);
   }
 
-  async replace(input: unknown) {
+  async replace(input: unknown, location: 'header' | 'footer' = 'header') {
     const { items } = treeInput.parse(input);
     const contentIds = new Set<string>();
     const walk = (list: MenuInput[], depth: number) => {
@@ -90,19 +90,20 @@ export class MenuService {
       if (found !== contentIds.size) throw new BadRequestException('some pages no longer exist');
     }
     await this.prisma.$transaction(async (tx) => {
-      await tx.menuItem.deleteMany({});
+      await tx.menuItem.deleteMany({ where: { location } });
       const create = async (list: MenuInput[], parentId: string | null) => {
         for (let i = 0; i < list.length; i++) {
           const it = list[i];
-          const row = await tx.menuItem.create({ data: { parentId, order: i, label: it.label, kind: it.kind, contentId: it.kind === 'page' ? it.contentId! : null, href: it.kind === 'page' ? null : it.href!, isVisible: it.isVisible ?? true, newTab: it.newTab ?? false } });
+          const row = await tx.menuItem.create({ data: { location, parentId, order: i, label: it.label, kind: it.kind, contentId: it.kind === 'page' ? it.contentId! : null, href: it.kind === 'page' ? null : it.href!, isVisible: it.isVisible ?? true, newTab: it.newTab ?? false } });
           if (it.children?.length) await create(it.children, row.id);
         }
       };
       await create(items, null);
     });
-    return this.tree(false);
+    return this.tree(false, location);
   }
 }
+export const parseLocation = (v: unknown): 'header' | 'footer' => (v === 'footer' ? 'footer' : 'header');
 
 @Controller('content')
 export class PublicMenuController {
@@ -110,8 +111,8 @@ export class PublicMenuController {
 
   /** 前台導覽：可見節點、href 已解析 */
   @Get('menu')
-  menuTree() {
-    return this.menu.tree(true);
+  menuTree(@Query('location') location?: string) {
+    return this.menu.tree(true, parseLocation(location));
   }
 }
 
@@ -121,13 +122,13 @@ export class AdminMenuController {
   constructor(private readonly menu: MenuService) {}
 
   @Get()
-  get() {
-    return this.menu.tree(false);
+  get(@Query('location') location?: string) {
+    return this.menu.tree(false, parseLocation(location));
   }
 
-  /** 整棵覆寫：{ items: [{ label, kind, contentId|href, isVisible, newTab, children }] } */
+  /** 整棵覆寫：?location=header|footer，{ items: [{ label, kind, contentId|href, isVisible, newTab, children }] } */
   @Put()
-  put(@Body() body: unknown) {
-    return this.menu.replace(body);
+  put(@Body() body: unknown, @Query('location') location?: string) {
+    return this.menu.replace(body, parseLocation(location));
   }
 }

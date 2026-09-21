@@ -22,7 +22,7 @@ export const DEFAULT_NAV: NavItem[] = [
 ];
 
 /** 前台導覽：讀後台維護的網站架構樹（兩層，子項以下拉顯示）；不含後台入口（後台走 /admin/login）。 */
-export function SiteNav({ items }: { items?: NavItem[] }) {
+export function SiteNav({ items, siteName, logoUrl }: { items?: NavItem[]; siteName?: string; logoUrl?: string }) {
   const pathname = usePathname();
   if (pathname?.startsWith('/admin')) return null;
   const nav = items && items.length ? items : DEFAULT_NAV;
@@ -39,8 +39,9 @@ export function SiteNav({ items }: { items?: NavItem[] }) {
   return (
     <header className="border-b" style={{ borderColor: 'var(--line)', background: 'var(--card)' }}>
       <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-4 py-3">
-        <Link href="/" className="font-bold">
-          {BRAND.siteName}
+        <Link href="/" className="flex items-center gap-2 font-bold">
+          {logoUrl ? <img src={logoUrl} alt="" className="h-7 w-auto" /> : null}
+          {siteName ?? BRAND.siteName}
         </Link>
         <nav className="flex flex-wrap gap-4 text-sm">
           {nav.map((n) =>

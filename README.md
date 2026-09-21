@@ -28,6 +28,13 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 **P3 產品化（完成）**：點數帳本（保留再結算、失敗釋放）、AI Provider 抽象層（mock／OpenAI、平台金鑰或 BYOK）、程序內任務佇列（可換 BullMQ）、`/studio` AI 創作工作站、`/admin/studio` 模板管理與點數調整、MCP／AI API 的 `adjust_credits`。
 
+## P7 品牌外觀與首頁版面（2026-09-21，v0.6.0）
+
+- **網站設定**（`/admin/site`）：品牌名稱／網站名稱／描述／標語／Logo／主色／聯絡 Email、電話、地址／社群連結／頁尾文字／OG 分享圖／GA 評估 ID 全部走 settings（`brand.*`、`seo.*`，MCP `update_settings` 可改）；前台 root layout 讀 `GET /api/content/site`（品牌＋主選單＋頁尾選單＋首頁區塊，ISR 60 秒），標題／描述／OG／favicon／GA／主色（`--accent`）自動套用；`BRAND` 常數只剩後備。
+- **首頁版面區塊**：hero／特色欄／精選課程／熱門商品／最新文章／自訂 HTML（消毒）／CTA，後台新增、排序、編輯，`PUT /api/admin/site/home` 伺服器驗證（連結只允許站內路徑或 http(s)）；MCP `get_site`／`set_home_sections`。優先序：區塊 → slug=home 頁面 → 預設。
+- **頁尾**：頁尾選單（網站架構 → 頁尾選單，`menu_items.location=footer`）＋聯絡／社群／自訂文字／版權。
+- **SEO**：sitemap 納入自訂頁面與課程；`metadataBase`、OG 預設圖。
+
 ## 網站架構樹／選單與全中文介面（2026-09-21，v0.5.1）
 
 - **網站架構樹＝前台導覽**：後台「網站架構」把頁面／文章、系統路徑、外部連結拖進兩層樹（拖曳排序、拖到項目右側成子選單），可設顯示／新分頁；整棵存 `menu_items`，公開 `GET /api/content/menu` 只回可見且已發布的節點並解析 href（slug=home 的頁面→`/`）；樹為空時前台用預設導覽。MCP `get_menu`／`set_menu`。

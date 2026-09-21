@@ -49,7 +49,7 @@ server.tool('sitekit_get_settings', '讀取系統設定（機密值遮蔽）', {
 
 server.tool(
   'sitekit_update_settings',
-  '更新系統設定鍵值。金流：payment.methods（逗號清單，第一個為預設：newebpay,payuni,ecpay,linepay,pchomepay）、各家 <provider>.merchantId/hashKey/hashIv（LINE Pay 用 linepay.channelId/channelSecret；支付連用 pchomepay.appId/appSecret）、<provider>.testMode=true|false；其他：site.url、brand.name、ai.provider、admin.registerAllowlist（後台自助註冊白名單，email 或 @網域逗號清單）、google.clientId/clientSecret、line.loginChannelId/loginChannelSecret',
+  '更新系統設定鍵值。金流：payment.methods（逗號清單，第一個為預設：newebpay,payuni,ecpay,linepay,pchomepay）、各家 <provider>.merchantId/hashKey/hashIv（LINE Pay 用 linepay.channelId/channelSecret；支付連用 pchomepay.appId/appSecret）、<provider>.testMode=true|false；其他：site.url、brand.name、ai.provider、admin.registerAllowlist（後台自助註冊白名單，email 或 @網域逗號清單）、brand.name/siteName/description/tagline/logoUrl/primaryColor/contactEmail/phone/address/facebook/instagram/line/youtube/footerText、seo.ogImage/gaId、google.clientId/clientSecret、line.loginChannelId/loginChannelSecret',
   { settings: z.record(z.string()) },
   async ({ settings }) => asText(await ops('update_settings', { settings })),
 );
@@ -112,11 +112,18 @@ server.tool(
   async (p) => asText(await ops('import_products', p)),
 );
 
-server.tool('sitekit_get_menu', '讀取網站架構樹（前台導覽選單）', {}, async () => asText(await ops('get_menu')));
+server.tool('sitekit_get_menu', '讀取網站架構樹（location=header 主選單｜footer 頁尾）', { location: z.enum(['header', 'footer']).default('header') }, async (p) => asText(await ops('get_menu', p)));
+server.tool('sitekit_get_site', '讀取站台外觀：品牌／聯絡／社群／SEO 設定值、首頁區塊、主選單與頁尾選單', {}, async () => asText(await ops('get_site')));
+server.tool(
+  'sitekit_set_home_sections',
+  '設定首頁版面區塊（整組覆寫）。kind：hero{title,subtitle,ctaText,ctaHref,imageUrl,align}｜features{title,items[{title,text,icon}]}｜courses/products/posts{title,limit}｜html{title,html}｜cta{title,text,buttonText,buttonHref}。品牌／聯絡／SEO 用 sitekit_update_settings（brand.*、seo.*）',
+  { sections: z.array(z.record(z.any())) },
+  async (p) => asText(await ops('set_home_sections', p)),
+);
 server.tool(
   'sitekit_set_menu',
   '整棵覆寫網站架構樹（兩層）。kind=page 綁 contentId（用 sitekit_list_content 取得）、route 填站內路徑 href、link 填外部網址',
-  { items: z.array(z.object({ label: z.string(), kind: z.enum(['page', 'route', 'link']).default('route'), contentId: z.string().optional(), href: z.string().optional(), isVisible: z.boolean().optional(), newTab: z.boolean().optional(), children: z.array(z.object({ label: z.string(), kind: z.enum(['page', 'route', 'link']).default('route'), contentId: z.string().optional(), href: z.string().optional(), isVisible: z.boolean().optional(), newTab: z.boolean().optional() })).optional() })) },
+  { location: z.enum(['header', 'footer']).default('header'), items: z.array(z.object({ label: z.string(), kind: z.enum(['page', 'route', 'link']).default('route'), contentId: z.string().optional(), href: z.string().optional(), isVisible: z.boolean().optional(), newTab: z.boolean().optional(), children: z.array(z.object({ label: z.string(), kind: z.enum(['page', 'route', 'link']).default('route'), contentId: z.string().optional(), href: z.string().optional(), isVisible: z.boolean().optional(), newTab: z.boolean().optional() })).optional() })) },
   async (p) => asText(await ops('set_menu', p)),
 );
 server.tool('sitekit_list_questions', '列出課程學員提問（可依課程 slug／狀態篩選）', { slug: z.string().optional(), courseId: z.string().optional(), status: z.enum(['open', 'answered', 'hidden']).optional() }, async (p) => asText(await ops('list_questions', p)));

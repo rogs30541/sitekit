@@ -527,6 +527,7 @@ model MenuItem {
   id        String     @id @default(cuid())
   parentId  String?
   order     Int        @default(0)
+  location  String     @default("header")
   label     String
   kind      String     @default("route")
   contentId String?
@@ -539,7 +540,7 @@ model MenuItem {
   children  MenuItem[] @relation("MenuTree")
   content   Content?   @relation(fields: [contentId], references: [id], onDelete: SetNull)
 
-  @@index([parentId, order])
+  @@index([location, parentId, order])
   @@map("menu_items")
 }
 

@@ -1,0 +1,135 @@
+import { Body, Controller, Get, Injectable, Put, UseGuards } from '@nestjs/common';
+import { BRAND, SETTING_KEYS } from '@sitekit/shared';
+import { z } from 'zod';
+import { AdminSessionGuard } from '../../common/guards';
+import { PrismaService } from '../../prisma/prisma.service';
+import { SettingsService } from '../settings/settings.service';
+import { sanitizeHtml } from '../migration/normalize';
+import { MenuService } from './menu.controller';
+
+const url = z.string().max(500).refine((s) => s === '' || s.startsWith('/') || /^https?:\/\//.test(s), '需為 / 開頭的站內路徑或 http(s) 網址');
+const sectionSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('hero'), title: z.string().max(120), subtitle: z.string().max(400).optional().default(''), ctaText: z.string().max(40).optional().default(''), ctaHref: url.optional().default(''), imageUrl: url.optional().default(''), align: z.enum(['left', 'center']).optional().default('center') }),
+  z.object({ kind: z.literal('features'), title: z.string().max(120).optional().default(''), items: z.array(z.object({ title: z.string().max(80), text: z.string().max(400).optional().default(''), icon: z.string().max(8).optional().default('') })).max(12) }),
+  z.object({ kind: z.literal('courses'), title: z.string().max(120).optional().default('精選課程'), limit: z.number().int().min(1).max(12).optional().default(3) }),
+  z.object({ kind: z.literal('products'), title: z.string().max(120).optional().default('熱門商品'), limit: z.number().int().min(1).max(12).optional().default(3) }),
+  z.object({ kind: z.literal('posts'), title: z.string().max(120).optional().default('最新文章'), limit: z.number().int().min(1).max(12).optional().default(3) }),
+  z.object({ kind: z.literal('html'), title: z.string().max(120).optional().default(''), html: z.string().max(100_000) }),
+  z.object({ kind: z.literal('cta'), title: z.string().max(120), text: z.string().max(400).optional().default(''), buttonText: z.string().max(40).optional().default(''), buttonHref: url.optional().default('') }),
+]);
+export type HomeSection = z.infer<typeof sectionSchema>;
+const sectionsInput = z.object({ sections: z.array(sectionSchema).max(20) });
+
+export const BRAND_FIELDS = [
+  { key: SETTING_KEYS.brandName, label: '品牌名稱', def: BRAND.name },
+  { key: SETTING_KEYS.brandSiteName, label: '網站名稱（標題列）', def: BRAND.siteName },
+  { key: SETTING_KEYS.brandDescription, label: '網站描述（SEO）', def: BRAND.description },
+  { key: SETTING_KEYS.brandTagline, label: '標語', def: '' },
+  { key: SETTING_KEYS.brandLogoUrl, label: 'Logo 圖片網址', def: '' },
+  { key: SETTING_KEYS.brandPrimaryColor, label: '主色（#hex）', def: '' },
+  { key: SETTING_KEYS.brandContactEmail, label: '聯絡 Email', def: '' },
+  { key: SETTING_KEYS.brandPhone, label: '電話', def: '' },
+  { key: SETTING_KEYS.brandAddress, label: '地址', def: '' },
+  { key: SETTING_KEYS.brandFacebook, label: 'Facebook 網址', def: '' },
+  { key: SETTING_KEYS.brandInstagram, label: 'Instagram 網址', def: '' },
+  { key: SETTING_KEYS.brandLine, label: 'LINE 官方帳號網址', def: '' },
+  { key: SETTING_KEYS.brandYoutube, label: 'YouTube 網址', def: '' },
+  { key: SETTING_KEYS.brandFooterText, label: '頁尾文字', def: '' },
+  { key: SETTING_KEYS.seoOgImage, label: '預設分享圖（OG image）網址', def: '' },
+  { key: SETTING_KEYS.seoGaId, label: 'Google Analytics 評估 ID（G-XXXX）', def: '' },
+] as const;
+
+/** 站台外觀設定：品牌／聯絡／社群／SEO 全走 settings（後台或 MCP update_settings 可改）；首頁版面區塊存 `home.sections`（JSON，經驗證）。 */
+@Injectable()
+export class SiteService {
+  constructor(
+    private readonly settings: SettingsService,
+    private readonly menu: MenuService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  async brand() {
+    const all = await this.settings.all();
+    const get = (key: string, def: string) => (all.get(key) ?? '').trim() || def;
+    const social = { facebook: get(SETTING_KEYS.brandFacebook, ''), instagram: get(SETTING_KEYS.brandInstagram, ''), line: get(SETTING_KEYS.brandLine, ''), youtube: get(SETTING_KEYS.brandYoutube, '') };
+    return {
+      name: get(SETTING_KEYS.brandName, BRAND.name),
+      siteName: get(SETTING_KEYS.brandSiteName, BRAND.siteName),
+      description: get(SETTING_KEYS.brandDescription, BRAND.description),
+      tagline: get(SETTING_KEYS.brandTagline, ''),
+      logoUrl: get(SETTING_KEYS.brandLogoUrl, ''),
+      primaryColor: /^#[0-9a-f]{3,8}$/i.test(get(SETTING_KEYS.brandPrimaryColor, '')) ? get(SETTING_KEYS.brandPrimaryColor, '') : '',
+      contactEmail: get(SETTING_KEYS.brandContactEmail, ''),
+      phone: get(SETTING_KEYS.brandPhone, ''),
+      address: get(SETTING_KEYS.brandAddress, ''),
+      social,
+      footerText: get(SETTING_KEYS.brandFooterText, ''),
+      locale: BRAND.locale,
+      seo: { ogImage: get(SETTING_KEYS.seoOgImage, ''), gaId: get(SETTING_KEYS.seoGaId, '') },
+    };
+  }
+
+  async homeSections(): Promise<HomeSection[]> {
+    const raw = await this.settings.get(SETTING_KEYS.homeSections, 'HOME_SECTIONS', '');
+    if (!raw) return [];
+    try {
+      const r = sectionsInput.safeParse({ sections: JSON.parse(raw) });
+      return r.success ? r.data.sections : [];
+    } catch {
+      return [];
+    }
+  }
+
+  async setHomeSections(input: unknown) {
+    const { sections: raw } = sectionsInput.parse(input);
+    const sections = raw.map((s) => (s.kind === 'html' ? { ...s, html: sanitizeHtml(s.html) } : s));
+    await this.prisma.setting.upsert({ where: { key: SETTING_KEYS.homeSections }, update: { value: JSON.stringify(sections) }, create: { key: SETTING_KEYS.homeSections, value: JSON.stringify(sections), isSecret: false } });
+    this.settings.invalidate();
+    return sections;
+  }
+
+  /** 前台一次拿齊：品牌、SEO、主選單、頁尾選單、首頁區塊 */
+  async publicSite() {
+    const [brand, header, footer, sections] = await Promise.all([this.brand(), this.menu.tree(true, 'header'), this.menu.tree(true, 'footer'), this.homeSections()]);
+    return { brand, menus: { header, footer }, home: { sections } };
+  }
+
+  /** 後台編輯用：目前值（settings 原值）＋欄位定義＋首頁區塊 */
+  async adminSite() {
+    const all = await this.settings.all();
+    return { fields: BRAND_FIELDS.map((f) => ({ key: f.key, label: f.label, value: all.get(f.key) ?? '', placeholder: f.def })), sections: await this.homeSections() };
+  }
+}
+
+@Controller('content')
+export class PublicSiteController {
+  constructor(private readonly site: SiteService) {}
+
+  @Get('site')
+  get() {
+    return this.site.publicSite();
+  }
+
+  /** 已發布頁面清單（sitemap／選單用） */
+  @Get('pages')
+  pages() {
+    return this.site['prisma'].content.findMany({ where: { type: 'page', status: 'published' }, orderBy: { updatedAt: 'desc' }, take: 500, select: { slug: true, title: true, updatedAt: true } });
+  }
+}
+
+@Controller('admin/site')
+@UseGuards(AdminSessionGuard)
+export class AdminSiteController {
+  constructor(private readonly site: SiteService) {}
+
+  @Get()
+  get() {
+    return this.site.adminSite();
+  }
+
+  /** 首頁版面區塊（驗證後存 home.sections） */
+  @Put('home')
+  home(@Body() body: unknown) {
+    return this.site.setHomeSections(body);
+  }
+}

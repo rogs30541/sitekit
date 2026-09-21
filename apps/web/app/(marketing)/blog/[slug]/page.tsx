@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { BRAND } from '@sitekit/shared';
+import { getSite } from '@/lib/site';
 import { apiPublic, SITE_URL, type PostDetail, fmtDate } from '@/lib/api-public';
 
 export const revalidate = 60;
@@ -36,7 +36,7 @@ export default async function PostPage({ params }: Params) {
     description: post.excerpt ?? undefined,
     image: post.coverUrl ?? undefined,
     author: post.author ? { '@type': 'Person', name: post.author } : undefined,
-    publisher: { '@type': 'Organization', name: BRAND.siteName },
+    publisher: { '@type': 'Organization', name: (await getSite()).brand.siteName },
     datePublished: post.publishedAt ?? undefined,
     dateModified: post.updatedAt,
     mainEntityOfPage: `${SITE_URL}/blog/${post.slug}`,

@@ -93,7 +93,7 @@ function insertAt(list: Node[], targetKey: string | null, where: 'before' | 'aft
 }
 
 /** 拖曳組樹：左側來源（頁面／系統路徑／外部連結）→ 右側樹；樹內拖曳排序與縮排；整棵 PUT /api/admin/menu。 */
-export function MenuBuilder({ initial, pages }: { initial: MenuNode[]; pages: PageRow[] }) {
+export function MenuBuilder({ initial, pages, location = 'header' }: { initial: MenuNode[]; pages: PageRow[]; location?: 'header' | 'footer' }) {
   const [tree, setTree] = useState<Node[]>(initial.map(fromApi));
   const [drag, setDrag] = useState<Drag | null>(null);
   const [over, setOver] = useState<{ key: string | null; where: 'before' | 'after' | 'child' | 'end' } | null>(null);
@@ -137,7 +137,7 @@ export function MenuBuilder({ initial, pages }: { initial: MenuNode[]; pages: Pa
   async function save() {
     setBusy(true);
     setMsg('');
-    const r = await fetch('/api/admin/menu', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ items: tree.map(toApi) }) });
+    const r = await fetch(`/api/admin/menu?location=${location}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ items: tree.map(toApi) }) });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
     if (!r.ok) {
@@ -145,7 +145,7 @@ export function MenuBuilder({ initial, pages }: { initial: MenuNode[]; pages: Pa
       return;
     }
     setTree((j as MenuNode[]).map(fromApi));
-    setMsg('已儲存，前台導覽已更新。');
+    setMsg(location === 'footer' ? '已儲存，前台頁尾已更新。' : '已儲存，前台導覽已更新。');
   }
 
   const isOver = (key: string | null, where: string) => over?.key === key && over.where === where;
