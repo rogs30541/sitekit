@@ -58,6 +58,8 @@ model User {
   status          UserStatus        @default(active)
   membershipTier  String?
   allowedFeatures String[]          @default([])
+  creditBalance   Int               @default(0)
+  creditReserved  Int               @default(0)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   identities      Identity[]
@@ -67,6 +69,7 @@ model User {
   ledger          CreditLedger[]
   jobs            AiJob[]
   progress        ChapterProgress[]
+  apiKeys         UserApiKey[]
 
   @@map("users")
 }
@@ -290,19 +293,71 @@ model CreditLedger {
   @@map("credit_ledger")
 }
 
+/// AI 生成任務：點數在建立時保留、完成結算、失敗釋放；BYOK 不扣點
 model AiJob {
-  id        String    @id @default(cuid())
-  userId    String
-  kind      String
-  status    JobStatus @default(queued)
-  provider  String?
-  costTwd   Decimal?  @db.Decimal(10, 4)
-  resultUrl String?
-  user      User      @relation(fields: [userId], references: [id])
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id          String      @id @default(cuid())
+  userId      String
+  kind        String      @default("image")
+  status      JobStatus   @default(queued)
+  templateId  String?
+  prompt      String
+  inputs      Json?
+  quality     String      @default("standard")
+  size        String      @default("1024x1024")
+  provider    String?
+  byok        Boolean     @default(false)
+  costPoints  Int         @default(0)
+  costTwd     Decimal?    @db.Decimal(10, 4)
+  resultUrl   String?
+  error       String?
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  user        User        @relation(fields: [userId], references: [id])
+  template    AiTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
+  @@index([userId, createdAt])
+  @@index([status])
   @@map("ai_jobs")
+}
+
+/// AI 模板：systemPrompt 只在後台回傳；公開端只回名稱、欄位與點數
+model AiTemplate {
+  id             String   @id @default(cuid())
+  key            String   @unique
+  name           String
+  category       String   @default("general")
+  description    String?
+  coverUrl       String?
+  systemPrompt   String
+  inputFields    Json     @default("[]")
+  defaultSize    String   @default("1024x1024")
+  costPoints     Int      @default(5)
+  highCostPoints Int      @default(15)
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(100)
+  jobs           AiJob[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("ai_templates")
+}
+
+/// BYOK：用戶自帶金鑰（AES-256-GCM 加密存放，只回 last4）
+model UserApiKey {
+  id        String   @id @default(cuid())
+  userId    String
+  provider  String
+  encrypted String
+  last4     String
+  enabled   Boolean  @default(true)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, provider])
+  @@map("user_api_keys")
 }
 
 /// 正規化內容模型（canonical content）：外站搬運與自建內容共用

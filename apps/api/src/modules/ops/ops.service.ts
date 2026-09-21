@@ -5,6 +5,7 @@ import { env } from '../../config/env';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MigrationService } from '../migration/migration.service';
 import { SettingsService } from '../settings/settings.service';
+import { CreditsService } from '../credits/credits.service';
 
 const SECRET_KEY = /secret|key|token|password|hashiv|hash_iv|signing/i;
 
@@ -18,6 +19,7 @@ export class OpsService {
     private readonly prisma: PrismaService,
     private readonly migration: MigrationService,
     private readonly settings: SettingsService,
+    private readonly credits: CreditsService,
   ) {}
 
   listActions() {
@@ -99,6 +101,13 @@ export class OpsService {
       }
       case 'import_content':
         return this.migration.run(p);
+      case 'adjust_credits': {
+        const amount = Number(p.amount);
+        if (!Number.isInteger(amount) || amount === 0) throw new Error('amount must be a non-zero integer');
+        const user = await this.credits.findUser(String(p.userId ?? p.email ?? ''));
+        const r = await this.credits.adjust(user.id, amount, String(p.reason ?? 'ops adjust'), 'ops');
+        return { userId: user.id, email: user.email, ...r };
+      }
       case 'audit': {
         const rows = await this.prisma.auditLog.findMany({ orderBy: { createdAt: 'desc' }, take: Math.min(Number(p.limit ?? 50), 200) });
         return rows;

@@ -35,6 +35,9 @@ export const SETTING_KEYS = {
   ezpayApiUrl: 'ezpay.apiUrl',
   bunnyLibraryId: 'bunny.libraryId',
   bunnySigningKey: 'bunny.signingKey',
+  aiProvider: 'ai.provider',
+  openaiApiKey: 'openai.apiKey',
+  aiImageModel: 'ai.imageModel',
 } as const;
 
 /**
@@ -48,6 +51,7 @@ export const OPS_ACTIONS = {
   get_settings: { desc: '讀取系統設定（不含機密明文）', mutating: false },
   update_settings: { desc: '更新系統設定（品牌、金流、發票、影片等鍵值）', mutating: true },
   import_content: { desc: '外站內容匯入（WordPress / CSV，冪等 upsert）', mutating: true },
+  adjust_credits: { desc: '調整用戶點數（客服補點、活動贈點、沖正；需 email 或 userId、amount、reason）', mutating: true },
   audit: { desc: '讀取稽核日誌', mutating: false },
 } as const;
 export type OpsAction = keyof typeof OPS_ACTIONS;

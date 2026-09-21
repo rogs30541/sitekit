@@ -12,3 +12,4 @@ apps/api/prisma/*.db
 .devdb/
 .wrangler/
 .dev.vars
+storage/

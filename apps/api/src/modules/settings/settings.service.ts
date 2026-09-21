@@ -60,6 +60,16 @@ export class SettingsService {
     return { enabled: enabled === 'true', merchantId, hashKey, hashIv, apiUrl, configured: !!(merchantId && hashKey && hashIv) };
   }
 
+  /** AI 供應商：mock（本機）／openai；平台金鑰 openai.apiKey（機密）或 env OPENAI_API_KEY */
+  async ai() {
+    const [provider, openaiKey, imageModel] = await Promise.all([
+      this.get(SETTING_KEYS.aiProvider, 'AI_PROVIDER', 'mock'),
+      this.get(SETTING_KEYS.openaiApiKey, 'OPENAI_API_KEY'),
+      this.get(SETTING_KEYS.aiImageModel, 'AI_IMAGE_MODEL', 'gpt-image-1'),
+    ]);
+    return { provider, openaiKey, imageModel, platformKeyConfigured: !!openaiKey };
+  }
+
   async bunny() {
     const [libraryId, signingKey] = await Promise.all([
       this.get(SETTING_KEYS.bunnyLibraryId, 'BUNNY_LIBRARY_ID'),

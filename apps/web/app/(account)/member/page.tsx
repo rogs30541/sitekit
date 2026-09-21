@@ -3,12 +3,26 @@ import { LogoutButton } from '@/components/LogoutButton';
 import { Section } from '@/components/Section';
 import { twd, type Order } from '@/lib/api-public';
 import { apiServer, getMe } from '@/lib/api-server';
+import { ApiKeyForm } from './ApiKeyForm';
 import { RefundRequestButton } from './RefundRequestButton';
 
 export const metadata = { title: '會員中心', robots: { index: false } };
 export const dynamic = 'force-dynamic';
 
 const LABEL: Record<Order['status'], string> = { pending: '等待付款', paid: '已付款', failed: '失敗', refunded: '已退款', canceled: '已取消' };
+interface Credits {
+  stored: number;
+  reserved: number;
+  available: number;
+}
+interface Ledger {
+  id: string;
+  type: string;
+  amount: number;
+  balanceAfter: number;
+  reason: string | null;
+  createdAt: string;
+}
 
 export default async function MemberPage() {
   const me = await getMe();
@@ -26,7 +40,12 @@ export default async function MemberPage() {
     );
   }
   const u = me.user;
-  const orders = (await apiServer<Order[]>('/api/orders/mine')) ?? [];
+  const [orders, credits, ledger, keys] = await Promise.all([
+    apiServer<Order[]>('/api/orders/mine'),
+    apiServer<Credits>('/api/credits/me'),
+    apiServer<Ledger[]>('/api/credits/ledger?limit=20'),
+    apiServer<{ provider: string; last4: string; enabled: boolean }[]>('/api/me/keys'),
+  ]);
   return (
     <div className="space-y-4">
       <Section title="會員中心" group="(account)">
@@ -42,6 +61,9 @@ export default async function MemberPage() {
         </dl>
         <div className="mt-4 flex gap-2">
           <LogoutButton />
+          <Link href="/studio" className="rounded border px-3 py-1 text-xs" style={{ borderColor: 'var(--line)' }}>
+            AI 工作站
+          </Link>
           {u.role !== 'user' ? (
             <Link href="/admin" className="rounded border px-3 py-1 text-xs" style={{ borderColor: 'var(--line)' }}>
               進入後台
@@ -49,8 +71,49 @@ export default async function MemberPage() {
           ) : null}
         </div>
       </Section>
+      <Section title="點數" group="(account)">
+        <div className="grid grid-cols-3 gap-3 text-center">
+          {[
+            ['可用', credits?.available ?? 0],
+            ['持有', credits?.stored ?? 0],
+            ['保留中', credits?.reserved ?? 0],
+          ].map(([k, v]) => (
+            <div key={k} className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                {k}
+              </p>
+              <p className="text-xl font-bold">{v}</p>
+            </div>
+          ))}
+        </div>
+        <table className="mt-3 w-full text-left text-xs">
+          <tbody>
+            {(ledger ?? []).map((l) => (
+              <tr key={l.id} className="border-t" style={{ borderColor: 'var(--line)' }}>
+                <td className="py-1">{new Date(l.createdAt).toLocaleString('zh-TW')}</td>
+                <td className="py-1">{l.type}</td>
+                <td className={`py-1 text-right ${l.amount < 0 ? 'text-red-700' : 'text-green-700'}`}>{l.amount > 0 ? `+${l.amount}` : l.amount}</td>
+                <td className="py-1 text-right">{l.balanceAfter}</td>
+                <td className="py-1" style={{ color: 'var(--muted)' }}>
+                  {l.reason}
+                </td>
+              </tr>
+            ))}
+            {!ledger?.length ? (
+              <tr>
+                <td className="py-2" style={{ color: 'var(--muted)' }}>
+                  尚無點數異動
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </Section>
+      <Section title="我的金鑰（BYOK）" group="(account)">
+        <ApiKeyForm keys={keys ?? []} />
+      </Section>
       <Section title="我的訂單" group="(account)">
-        {orders.length ? (
+        {orders?.length ? (
           <table className="w-full text-left text-xs">
             <thead>
               <tr style={{ color: 'var(--muted)' }}>

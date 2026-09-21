@@ -13,9 +13,11 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { LearnModule } from './modules/learn/learn.module';
 import { VideosModule } from './modules/videos/videos.module';
+import { CreditsModule } from './modules/credits/credits.module';
+import { StudioModule } from './modules/studio/studio.module';
 
 @Module({
-  imports: [PrismaModule, SettingsModule, AuthModule, MigrationModule, OpsModule, AdminAiModule, AdminModule, ContentModule, CatalogModule, OrdersModule, PaymentsModule, LearnModule, VideosModule],
+  imports: [PrismaModule, SettingsModule, AuthModule, MigrationModule, OpsModule, AdminAiModule, AdminModule, ContentModule, CatalogModule, OrdersModule, PaymentsModule, LearnModule, VideosModule, CreditsModule, StudioModule],
   controllers: [HealthController],
 })
 export class AppModule {}
