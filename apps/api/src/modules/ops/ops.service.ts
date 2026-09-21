@@ -10,8 +10,13 @@ import { CatalogService } from '../catalog/catalog.service';
 import { CouponsService } from '../orders/coupons.service';
 import { OrdersService } from '../orders/orders.service';
 import { ReportsService } from '../orders/reports.service';
+import { NotifyService } from '../notify/notify.service';
+import { StorageService } from '../storage/storage.service';
+import { AdminAuthService } from '../admin-auth/admin-auth.service';
+import { sanitizeHtml } from '../migration/normalize';
 
 const SECRET_KEY = /secret|key|token|password|hashiv|hash_iv|signing/i;
+const SECRET_PARAM = /^(password|apiKey)$/i;
 
 /**
  * 後台維運執行層：MCP 路徑與 AI API 路徑共用的唯一入口。
@@ -28,6 +33,9 @@ export class OpsService {
     private readonly coupons: CouponsService,
     private readonly reports: ReportsService,
     private readonly catalog: CatalogService,
+    private readonly notify: NotifyService,
+    private readonly storage: StorageService,
+    private readonly admins: AdminAuthService,
   ) {}
 
   listActions() {
@@ -55,6 +63,7 @@ export class OpsService {
     for (const [k, v] of Object.entries(params)) {
       if (k === 'csv') safeParams[k] = '<csv omitted>';
       else if (k === 'settings' && v && typeof v === 'object') safeParams[k] = Object.fromEntries(Object.keys(v as object).map((key) => [key, SECRET_KEY.test(key) ? '****' : (v as Record<string, unknown>)[key]]));
+      else if (SECRET_PARAM.test(k)) safeParams[k] = '****';
       else safeParams[k] = v;
     }
     await this.prisma.auditLog.create({
@@ -152,6 +161,44 @@ export class OpsService {
         return this.orders.expirePending(p.hours === undefined ? undefined : Number(p.hours));
       case 'import_products':
         return this.migration.runProducts(p);
+      case 'list_content':
+        return this.prisma.content.findMany({ where: { ...(p.type ? { type: String(p.type) } : {}), ...(p.status ? { status: p.status as 'draft' | 'published' | 'archived' } : {}) }, orderBy: { updatedAt: 'desc' }, take: 200, select: { id: true, type: true, title: true, slug: true, status: true, publishedAt: true, updatedAt: true } });
+      case 'upsert_content': {
+        const slug = String(p.slug ?? '').trim();
+        if (!slug) throw new Error('slug is required');
+        const existing = await this.prisma.content.findUnique({ where: { slug } });
+        const type = String(p.type ?? existing?.type ?? 'page');
+        const status = (p.status as 'draft' | 'published' | 'archived' | undefined) ?? existing?.status ?? 'draft';
+        const data = {
+          type,
+          title: p.title !== undefined ? String(p.title) : (existing?.title ?? slug),
+          ...(p.body !== undefined ? { body: p.body ? sanitizeHtml(String(p.body)) : null } : {}),
+          ...(p.excerpt !== undefined ? { excerpt: p.excerpt ? String(p.excerpt) : null } : {}),
+          ...(p.coverUrl !== undefined ? { coverUrl: p.coverUrl ? String(p.coverUrl) : null } : {}),
+          ...(Array.isArray(p.tags) ? { tags: (p.tags as unknown[]).map(String) } : {}),
+          status,
+          canonicalUrl: type === 'page' ? `/p/${slug}` : `/blog/${slug}`,
+          ...(status === 'published' && !existing?.publishedAt ? { publishedAt: new Date() } : {}),
+        };
+        const row = existing ? await this.prisma.content.update({ where: { id: existing.id }, data }) : await this.prisma.content.create({ data: { source: 'admin', externalId: `admin:${slug}`, slug, ...data, title: data.title } });
+        return { id: row.id, slug: row.slug, type: row.type, status: row.status, url: row.canonicalUrl, created: !existing };
+      }
+      case 'create_admin':
+        return this.admins.create(p);
+      case 'list_admins':
+        return this.admins.list();
+      case 'update_admin': {
+        const { idOrEmail, email, ...rest } = p;
+        return this.admins.update(String(idOrEmail ?? email ?? ''), rest);
+      }
+      case 'delete_admin':
+        return this.admins.remove(String(p.idOrEmail ?? p.email ?? ''));
+      case 'send_test_notification':
+        return this.notify.sendTest(p.to ? String(p.to) : undefined);
+      case 'storage_status': {
+        const [st, nc] = await Promise.all([this.storage.config(), this.notify.config()]);
+        return { storage: { driver: st.driver, s3Ready: st.s3Ready, endpoint: st.endpoint, bucket: st.bucket, publicUrl: st.publicUrl, localDir: this.storage.localDir }, notify: { emailProvider: nc.emailProvider, resendConfigured: nc.resendConfigured, from: nc.from, adminTo: nc.adminTo, lineConfigured: nc.lineConfigured }, recent: this.notify.recent.slice(0, 20) };
+      }
     }
   }
 }

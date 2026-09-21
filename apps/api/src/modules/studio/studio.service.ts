@@ -1,11 +1,11 @@
 import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
-import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreditsService } from '../credits/credits.service';
 import { SettingsService } from '../settings/settings.service';
+import { StorageService } from '../storage/storage.service';
 import { decryptSecret, encryptSecret } from './crypto';
 import { getProvider } from './providers';
 
@@ -47,16 +47,14 @@ function parse<S extends z.ZodTypeAny>(schema: S, input: unknown): z.infer<S> {
 @Injectable()
 export class StudioService implements OnModuleInit {
   private readonly log = new Logger(StudioService.name);
-  private readonly storageDir = resolve(process.env.STORAGE_DIR ?? resolve(process.cwd(), 'storage'), 'ai');
   private chain: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly credits: CreditsService,
     private readonly settings: SettingsService,
-  ) {
-    mkdirSync(this.storageDir, { recursive: true });
-  }
+    private readonly storage: StorageService,
+  ) {}
 
   async onModuleInit() {
     // 崩潰復原：running 退回 queued，全部補跑
@@ -178,10 +176,11 @@ export class StudioService implements OnModuleInit {
       const prompt = [job.template?.systemPrompt, ...fields, job.prompt].filter(Boolean).join('\n');
       const result = await getProvider(job.provider ?? 'mock').generate({ prompt, size: job.size, quality: job.quality as 'standard' | 'high', apiKey: apiKey ?? undefined, model: ai.imageModel });
       const file = `${job.id}.${result.ext}`;
-      writeFileSync(resolve(this.storageDir, file), result.bytes);
+      const put = await this.storage.put(`ai/${file}`, result.bytes, result.ext === 'png' ? 'image/png' : result.ext === 'svg' ? 'image/svg+xml' : result.ext === 'webp' ? 'image/webp' : 'image/jpeg');
+      const resultUrl = put.driver === 's3' ? put.url : `/api/assets/ai/${file}`;
       await this.prisma.$transaction(async (tx) => {
         if (!job.byok && job.costPoints > 0) await this.credits.settle(tx, job.userId, job.costPoints, job.id, `AI 圖片生成${job.template ? `：${job.template.name}` : ''}`);
-        await tx.aiJob.update({ where: { id }, data: { status: 'succeeded', resultUrl: `/api/assets/ai/${file}`, costTwd: result.costTwd ?? null, finishedAt: new Date() } });
+        await tx.aiJob.update({ where: { id }, data: { status: 'succeeded', resultUrl, costTwd: result.costTwd ?? null, finishedAt: new Date() } });
       });
     } catch (e) {
       const error = (e instanceof Error ? e.message : String(e)).slice(0, 500);

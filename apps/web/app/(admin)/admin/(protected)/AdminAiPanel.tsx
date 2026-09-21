@@ -14,6 +14,14 @@ const PRESETS: Record<string, string> = {
   manage_coupon: '{ "op": "create", "code": "WELCOME10", "type": "percent", "value": 10, "minAmount": 500, "maxUses": 100 }',
   adjust_stock: '{ "sku": "SKU-001", "delta": 10 }',
   expire_orders: '{ "hours": 72 }',
+  send_test_notification: '{ "to": "you@example.com" }',
+  upsert_content: '{ "slug": "about", "type": "page", "title": "關於我們", "body": "<p>內文</p>", "status": "published" }',
+  list_content: '{ "type": "page" }',
+  create_admin: '{ "email": "admin@your.domain", "password": "change-me-12345", "role": "admin" }',
+  list_admins: '{}',
+  update_admin: '{ "idOrEmail": "admin@your.domain", "password": "new-password-123" }',
+  delete_admin: '{ "idOrEmail": "old-admin@your.domain" }',
+  storage_status: '{}',
   import_products: '{ "dryRun": true, "csv": "sku,name,price,type,stock\\nSKU-001,示範商品,990,physical,20" }',
 };
 

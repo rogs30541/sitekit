@@ -15,7 +15,7 @@ async function main() {
       email,
       displayName: 'Site Admin',
       passwordHash: await bcrypt.hash(password, 10),
-      role: 'superadmin',
+      role: 'user',
       allowedFeatures: ['shop', 'courses', 'studio', 'credits', 'storage', 'byok'],
     },
   });
@@ -53,6 +53,11 @@ async function main() {
     },
   });
 
+  await prisma.adminUser.upsert({
+    where: { email: 'admin@example.com' },
+    update: {},
+    create: { email: 'admin@example.com', passwordHash: await bcrypt.hash('admin12345', 10), displayName: 'Site Admin', role: 'superadmin' },
+  });
   await prisma.product.upsert({
     where: { sku: 'DEMO-MUG' },
     update: {},

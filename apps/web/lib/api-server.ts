@@ -19,3 +19,10 @@ export interface Me {
 }
 
 export const getMe = () => apiServer<Me>('/api/auth/me');
+
+export interface AdminMe {
+  authenticated: boolean;
+  admin?: { id: string; email: string; displayName: string | null; role: 'admin' | 'superadmin' };
+}
+/** 後台管理員（cookie sk_admin，與前台會員 session 分離） */
+export const getAdminMe = () => apiServer<AdminMe>('/api/admin/auth/me');

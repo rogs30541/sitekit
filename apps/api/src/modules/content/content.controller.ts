@@ -10,7 +10,7 @@ export class ContentController {
   async posts(@Query('page') page = '1', @Query('limit') limit = '20', @Query('tag') tag?: string) {
     const take = Math.min(Math.max(Number(limit) || 20, 1), 50);
     const skip = (Math.max(Number(page) || 1, 1) - 1) * take;
-    const where = { status: 'published' as const, ...(tag ? { tags: { has: tag } } : {}) };
+    const where = { status: 'published' as const, type: 'post', ...(tag ? { tags: { has: tag } } : {}) };
     const [items, total] = await Promise.all([
       this.prisma.content.findMany({
         where,
@@ -31,6 +31,17 @@ export class ContentController {
       select: { slug: true, title: true, body: true, excerpt: true, coverUrl: true, author: true, tags: true, publishedAt: true, updatedAt: true, canonicalUrl: true },
     });
     if (!item) throw new NotFoundException('post not found');
+    return item;
+  }
+
+  /** 官網頁面（type=page；後台編輯器建立），例：home、about、faq */
+  @Get('pages/:slug')
+  async page(@Param('slug') slug: string) {
+    const item = await this.prisma.content.findFirst({
+      where: { slug, status: 'published', type: 'page' },
+      select: { slug: true, title: true, body: true, excerpt: true, coverUrl: true, publishedAt: true, updatedAt: true },
+    });
+    if (!item) throw new NotFoundException('page not found');
     return item;
   }
 

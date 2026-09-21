@@ -56,6 +56,10 @@ export default async function AdminPage() {
             金流設定
           </Link>
           {' · '}
+          <Link href="/admin/integrations" className="underline">
+            儲存與通知
+          </Link>
+          {' · '}
           <Link href="/admin/orders" className="underline">
             訂單管理
           </Link>

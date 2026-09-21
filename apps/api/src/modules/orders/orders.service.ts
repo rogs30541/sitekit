@@ -7,6 +7,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { InvoiceService } from '../invoice/invoice.service';
 import { SettingsService } from '../settings/settings.service';
 import { CouponsService } from './coupons.service';
+import { NotifyService } from '../notify/notify.service';
 
 const shippingInput = z.object({ name: z.string().trim().min(1).max(60), phone: z.string().trim().min(6).max(30), address: z.string().trim().min(5).max(200) });
 const createInput = z.object({
@@ -46,6 +47,7 @@ export class OrdersService implements OnModuleInit {
     private readonly invoice: InvoiceService,
     private readonly settings: SettingsService,
     private readonly coupons: CouponsService,
+    private readonly notify: NotifyService,
   ) {}
 
   /** 每小時掃一次逾期未付款訂單（可由 ops expire_orders 手動觸發）。 */
@@ -182,6 +184,9 @@ export class OrdersService implements OnModuleInit {
     if (order.status === 'paid' && order.provider !== 'free') {
       this.invoice.issueForOrder(order).catch((e) => this.log.error(`invoice issue failed: ${e instanceof Error ? e.message : e}`));
     }
+    if (order.status === 'paid' && info.provider !== undefined) {
+      this.notify.orderPaid(order).catch((e) => this.log.warn(`notify paid failed: ${e instanceof Error ? e.message : e}`));
+    }
     return order;
   }
 
@@ -195,7 +200,9 @@ export class OrdersService implements OnModuleInit {
   }
 
   async setVirtualAccount(orderId: string, virtualAccount: string, expireAt: Date | null, tradeNo?: string) {
-    return this.prisma.order.update({ where: { id: orderId }, data: { virtualAccount, expireAt, providerTradeNo: tradeNo, paymentType: 'VACC' } });
+    const o = await this.prisma.order.update({ where: { id: orderId }, data: { virtualAccount, expireAt, providerTradeNo: tradeNo, paymentType: 'VACC' }, include: ORDER_INCLUDE });
+    this.notify.virtualAccountIssued(o).catch(() => undefined);
+    return o;
   }
 
   async cancel(idOrNo: string, userId: string) {
@@ -243,6 +250,9 @@ export class OrdersService implements OnModuleInit {
       return tx.order.update({ where: { id: orderId }, data: { status: 'refunded', refundStatus: 'done', refundedAt: new Date(), note } });
     });
     this.invoice.invalidateForOrder(orderId).catch(() => undefined);
+    if (order.status === 'refunded') {
+      this.prisma.order.findUnique({ where: { id: orderId }, include: ORDER_INCLUDE }).then((full) => (full ? this.notify.orderRefunded(full) : undefined)).catch(() => undefined);
+    }
     return order;
   }
 
@@ -252,11 +262,13 @@ export class OrdersService implements OnModuleInit {
     const o = await this.findByIdOrNo(idOrNo);
     if (!o.shippingStatus) throw new BadRequestException('this order has no shipping');
     if (o.status !== 'paid' && d.status !== 'returned') throw new BadRequestException(`order is ${o.status}; ship only paid orders`);
-    return this.prisma.order.update({
+    const updated = await this.prisma.order.update({
       where: { id: o.id },
       data: { shippingStatus: d.status, ...(d.carrier !== undefined ? { carrier: d.carrier } : {}), ...(d.trackingNo !== undefined ? { trackingNo: d.trackingNo } : {}), ...(d.status === 'shipped' && !o.shippedAt ? { shippedAt: new Date() } : {}) },
       include: ORDER_INCLUDE,
     });
+    if ((d.status === 'shipped' || d.status === 'delivered') && o.shippingStatus !== d.status) this.notify.orderShipped(updated).catch(() => undefined);
+    return updated;
   }
 
   /** 管理員手動補授權（贈送／匯款核帳）。 */

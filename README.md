@@ -28,6 +28,15 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 **P3 產品化（完成）**：點數帳本（保留再結算、失敗釋放）、AI Provider 抽象層（mock／OpenAI、平台金鑰或 BYOK）、程序內任務佇列（可換 BullMQ）、`/studio` AI 創作工作站、`/admin/studio` 模板管理與點數調整、MCP／AI API 的 `adjust_credits`。
 
+## P5 營運化＋後台分離（2026-09-21，v0.4.0）
+
+- **後台帳號與前台會員分離**：管理員存 `admin_users`（獨立 cookie `sk_admin`、SameSite=Strict、12 小時），前台會員 `users` 一律 role=user；後台獨立登入頁 `/admin/login`（前台導覽不顯示、不索引），`admin_users` 為空時登入頁自動變成「建立第一位超級管理員」；之後由 `/admin/accounts` 或 MCP `create_admin`／`update_admin`／`delete_admin` 管理。遷移會把既有 admin/superadmin 會員複製成管理員並把會員角色降為 user。
+- **內容編輯器**：`/admin/content` 官網頁面（type=page → `/p/<slug>`；slug=home 取代首頁）與文章（type=post → `/blog/<slug>`）所見即所得編輯（標題／清單／引言／連結／圖片上傳／HTML 原始碼）、草稿／發布／下架、SEO 摘要與封面；API `/api/admin/content`、上傳 `/api/admin/content/upload`（走物件儲存）；MCP `upsert_content`／`list_content`。
+- **物件儲存**：`storage.driver=local|s3`（Cloudflare R2／S3 相容，SigV4 免 SDK）；AI 生成結果、編輯器上傳、搬運器媒體落地都走 StorageService。本機磁碟在 Zeabur 重新部署後不保留，正式環境請設 R2。
+- **通知中心**：Email（`notify.emailProvider=log|resend`）＋ LINE Messaging API 推播管理員；事件＝註冊歡迎、付款成功（買家＋管理員）、ATM 取號、出貨／送達、退款完成；MCP／後台 `send_test_notification`、`storage_status`；設定頁 `/admin/integrations`。
+- **搬運器媒體落地**：`import_content` 加 `landMedia=true` 會把內文 `<img>` 與封面下載到本站儲存並改寫網址（同網址只下載一次、失敗保留原網址）。
+- zod 驗證錯誤統一回 400（全域 filter）。
+
 ## P4 規模化（2026-09-21）
 
 - **實體電商**：`products.stock`（null＝不追蹤）下單即扣、取消／失敗／退款回補、交易鎖不超賣；折扣碼 `coupons`（percent／fixed、低消、次數、期限）；運費規則 `shipping.fee`／`shipping.freeOver`；訂單含 subtotal／discount／shippingFee／收件資料／物流狀態（pending→shipped→delivered、returned）；逾期未付自動取消（`order.expireHours`，每小時掃）。前台 `/store` 商城＋`/cart` 購物車（localStorage，金額一律由 `POST /api/orders/quote` 試算）。

@@ -87,6 +87,34 @@ model Session {
   @@map("sessions")
 }
 
+/// 後台管理員：與前台會員（users）完全分離；獨立登入頁 /admin/login、獨立 cookie sk_admin
+model AdminUser {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  passwordHash String
+  displayName  String?
+  role         Role           @default(admin)
+  status       UserStatus     @default(active)
+  lastLoginAt  DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  sessions     AdminSession[]
+
+  @@map("admin_users")
+}
+
+model AdminSession {
+  id        String    @id
+  adminId   String
+  expiresAt DateTime
+  userAgent String?
+  createdAt DateTime  @default(now())
+  admin     AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@map("admin_sessions")
+}
+
 model Identity {
   id          String @id @default(cuid())
   userId      String

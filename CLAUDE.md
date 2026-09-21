@@ -2,7 +2,7 @@
 
 ## 底層規則
 1. **瀏覽器操作一律使用 Claude in Chrome**（使用者真實 Chrome，含登入狀態）：Zeabur／Cloudflare／藍新／WordPress 等後台皆走此路徑；內建瀏覽器面板只用於本機 dev server 預覽。
-2. **後台雙路徑**：MCP 路徑 `/api/ops/*` 只認 Bearer `OPS_TOKEN`（給訂閱制 AI 工具做部署／更新）；AI API 路徑 `/api/admin/ai/*` 只認後台 cookie session（管理員）；兩者收斂到 `OpsService`，新增維運功能先登記 `packages/shared` 的 `OPS_ACTIONS`。AI 只操作既有功能，不為 AI 另寫邏輯。
+2. **後台雙路徑**：MCP 路徑 `/api/ops/*` 只認 Bearer `OPS_TOKEN`（給訂閱制 AI 工具做部署／更新）；AI API 路徑（後台管理員 cookie `sk_admin`，帳號存 admin_users、與前台會員 users 分離） `/api/admin/ai/*` 只認後台 cookie session（管理員）；兩者收斂到 `OpsService`，新增維運功能先登記 `packages/shared` 的 `OPS_ACTIONS`。AI 只操作既有功能，不為 AI 另寫邏輯。
 3. **金流鐵律**：授權只在 `OrdersService.markPaid` 寫入；付款以伺服器回呼驗章為準；回呼冪等；媒體網址即時簽發帶時效。
 4. **公開 API 不回成本／毛利／systemPrompt／影片 ID**。
 5. **每次功能更新後 commit＋push**（repo `rogs30541/sitekit`，程式代號維持 sitekit）。

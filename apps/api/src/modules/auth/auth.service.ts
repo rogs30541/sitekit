@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { User } from '@prisma/client';
 import { FEATURES } from '@sitekit/shared';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotifyService } from '../notify/notify.service';
 
 const credentials = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -20,24 +21,27 @@ export function toPublic(u: User): PublicUser {
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notify: NotifyService,
+  ) {}
 
-  /** 第一位註冊者自動成為 superadmin（部署後的初始管理員 bootstrap）。 */
+  /** 前台會員註冊：一律 role=user（後台管理員走 admin_users，見 AdminAuthService）。 */
   async register(input: unknown): Promise<PublicUser> {
     const parsed = credentials.safeParse(input);
     if (!parsed.success) throw new BadRequestException(parsed.error.flatten().fieldErrors);
     const { email, password, displayName } = parsed.data;
     if (await this.prisma.user.findUnique({ where: { email } })) throw new ConflictException('email already registered');
-    const isFirst = (await this.prisma.user.count()) === 0;
     const user = await this.prisma.user.create({
       data: {
         email,
         displayName: displayName ?? email.split('@')[0],
         passwordHash: await bcrypt.hash(password, 10),
-        role: isFirst ? 'superadmin' : 'user',
-        allowedFeatures: isFirst ? [...FEATURES] : [],
+        role: 'user',
+        allowedFeatures: [],
       },
     });
+    this.notify.welcome(user.email, user.displayName).catch(() => undefined);
     return toPublic(user);
   }
 
@@ -57,7 +61,7 @@ export class AuthService {
     const user = await this.prisma.user.upsert({
       where: { email: 'dev-admin@local' },
       update: {},
-      create: { email: 'dev-admin@local', displayName: 'Dev Admin', role: 'admin', allowedFeatures: [...FEATURES] },
+      create: { email: 'dev-admin@local', displayName: 'Dev Member', role: 'user', allowedFeatures: [...FEATURES] },
     });
     return toPublic(user);
   }

@@ -8,6 +8,7 @@ import { resolve } from 'node:path';
 import { AppModule } from './app.module';
 import { env } from './config/env';
 import { DEFAULT_RULES, rateLimit } from './common/rate-limit';
+import { ZodExceptionFilter } from './common/zod-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
@@ -19,6 +20,7 @@ async function bootstrap() {
   app.use(express.json({ limit: '5mb' }));
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
   app.use(rateLimit(DEFAULT_RULES));
+  app.useGlobalFilters(new ZodExceptionFilter());
   app.setGlobalPrefix('api');
   // AI 生成結果等本機檔案：storage/ 由 STORAGE_DIR 指定，正式環境改物件儲存（R2）
   const storageDir = resolve(process.env.STORAGE_DIR ?? resolve(process.cwd(), 'storage'));

@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { PrismaService } from '../../prisma/prisma.service';
+import { StorageService } from '../storage/storage.service';
 import { fromCsv } from './connectors/csv';
 import { fromProductsCsv } from './connectors/products-csv';
 import { fetchWordPress } from './connectors/wordpress';
@@ -16,6 +17,8 @@ const paramsSchema = z.object({
   dryRun: z.boolean().default(true),
   limit: z.number().int().min(1).max(2000).default(200),
   publish: z.boolean().default(true),
+  /** 媒體落地：把內文 <img> 與封面圖下載到本站儲存（local／R2）並改寫網址；同來源網址只下載一次 */
+  landMedia: z.boolean().default(false),
 });
 
 const productParams = z.object({
@@ -33,15 +36,51 @@ const productParams = z.object({
  */
 @Injectable()
 export class MigrationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
+
+  /** 媒體落地：回傳改寫後的 body／coverUrl 與統計。失敗的圖保留原網址。 */
+  async landMedia(items: CanonicalContent[], cache = new Map<string, string | null>()) {
+    let downloaded = 0;
+    let failed = 0;
+    const land = async (src: string): Promise<string> => {
+      if (!/^https?:\/\//i.test(src)) return src;
+      if (cache.has(src)) return cache.get(src) ?? src;
+      const got = await this.storage.fetchRemote(src);
+      if (!got) {
+        cache.set(src, null);
+        failed++;
+        return src;
+      }
+      const put = await this.storage.put(StorageService.keyFor('media', src, got.mime), got.bytes, got.mime);
+      cache.set(src, put.url);
+      downloaded++;
+      return put.url;
+    };
+    for (const it of items) {
+      if (it.coverUrl) it.coverUrl = await land(it.coverUrl);
+      if (it.body) {
+        const srcs = [...it.body.matchAll(/<img\b[^>]*?\ssrc=["']([^"']+)["']/gi)].map((m) => m[1]);
+        for (const src of new Set(srcs)) {
+          const to = await land(src);
+          if (to !== src) it.body = it.body.split(src).join(to);
+        }
+      }
+    }
+    return { downloaded, failed };
+  }
 
   async run(raw: Record<string, unknown>) {
     const p = paramsSchema.parse(raw);
     const items = await this.collect(p);
     const plan = await this.plan(items);
     if (p.dryRun) {
-      return { dryRun: true, source: p.source, total: items.length, toCreate: plan.create.length, toUpdate: plan.update.length, sample: items.slice(0, 5).map((i) => ({ title: i.title, slug: i.slug, originalUrl: i.originalUrl })) };
+      const imgs = items.reduce((n, i) => n + (i.body?.match(/<img\b/gi)?.length ?? 0) + (i.coverUrl ? 1 : 0), 0);
+      return { dryRun: true, source: p.source, total: items.length, toCreate: plan.create.length, toUpdate: plan.update.length, mediaCount: imgs, landMedia: p.landMedia, sample: items.slice(0, 5).map((i) => ({ title: i.title, slug: i.slug, originalUrl: i.originalUrl })) };
     }
+    const media = p.landMedia ? await this.landMedia(items) : null;
     let redirects = 0;
     for (const item of items) {
       await this.prisma.content.upsert({
@@ -56,7 +95,7 @@ export class MigrationService {
         redirects++;
       }
     }
-    return { dryRun: false, source: p.source, imported: items.length, created: plan.create.length, updated: plan.update.length, redirects };
+    return { dryRun: false, source: p.source, imported: items.length, created: plan.create.length, updated: plan.update.length, redirects, media };
   }
 
   /** 商品 CSV 匯入（簡式或 Shopify 匯出）：以 sku 冪等 upsert；dryRun 只回計畫。 */

@@ -57,8 +57,8 @@ server.tool(
 server.tool(
   'sitekit_import_content',
   '外站內容匯入（wordpress / csv），預設乾跑',
-  { source: z.enum(['wordpress', 'csv']), sourceUrl: z.string().optional(), dryRun: z.boolean().default(true) },
-  async ({ source, sourceUrl, dryRun }) => asText(await ops('import_content', { source, sourceUrl, dryRun })),
+  { source: z.enum(['wordpress', 'csv']), sourceUrl: z.string().optional(), dryRun: z.boolean().default(true), landMedia: z.boolean().default(false).describe('把內文圖片與封面下載到本站儲存並改寫網址') },
+  async ({ source, sourceUrl, dryRun, landMedia }) => asText(await ops('import_content', { source, sourceUrl, dryRun, landMedia })),
 );
 
 server.tool('sitekit_audit', '讀取最近的維運稽核日誌', { limit: z.number().int().min(1).max(200).default(50) }, async ({ limit }) =>
@@ -111,6 +111,20 @@ server.tool(
   { csv: z.string().optional(), filePath: z.string().optional(), dryRun: z.boolean().default(true), updateStock: z.boolean().default(false).describe('既有商品是否覆寫庫存') },
   async (p) => asText(await ops('import_products', p)),
 );
+
+server.tool(
+  'sitekit_upsert_content',
+  '建立或更新官網頁面（type=page，網址 /p/<slug>；slug=home 會顯示在首頁）或文章（type=post，/blog/<slug>）；body 為 HTML；以 slug 冪等',
+  { slug: z.string(), type: z.enum(['page', 'post']).optional(), title: z.string().optional(), body: z.string().optional(), excerpt: z.string().optional(), coverUrl: z.string().optional(), tags: z.array(z.string()).optional(), status: z.enum(['draft', 'published', 'archived']).optional() },
+  async (p) => asText(await ops('upsert_content', p)),
+);
+server.tool('sitekit_list_content', '列出官網頁面與文章', { type: z.enum(['page', 'post']).optional(), status: z.enum(['draft', 'published', 'archived']).optional() }, async (p) => asText(await ops('list_content', p)));
+server.tool('sitekit_create_admin', '建立後台管理員（後台帳號與前台會員分離；上線後用此建立第一位管理員）', { email: z.string().email(), password: z.string().min(8), displayName: z.string().optional(), role: z.enum(['admin', 'superadmin']).default('admin') }, async (p) => asText(await ops('create_admin', p)));
+server.tool('sitekit_list_admins', '列出後台管理員', {}, async () => asText(await ops('list_admins')));
+server.tool('sitekit_update_admin', '修改管理員密碼／名稱／角色／狀態', { idOrEmail: z.string(), password: z.string().min(8).optional(), displayName: z.string().optional(), role: z.enum(['admin', 'superadmin']).optional(), status: z.enum(['active', 'suspended']).optional() }, async (p) => asText(await ops('update_admin', p)));
+server.tool('sitekit_delete_admin', '刪除管理員（不可刪最後一位 superadmin）', { idOrEmail: z.string() }, async (p) => asText(await ops('delete_admin', p)));
+server.tool('sitekit_send_test_notification', '寄測試信（to 可選）並推 LINE 給管理員，驗證通知設定', { to: z.string().email().optional() }, async (p) => asText(await ops('send_test_notification', p)));
+server.tool('sitekit_storage_status', '物件儲存（local／R2）與通知中心設定狀態、最近通知紀錄', {}, async () => asText(await ops('storage_status')));
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
