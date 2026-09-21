@@ -1,0 +1,4 @@
+SESSION_SECRET=dev-only-secret-change-me
+OPS_TOKEN=dev-ops-token
+# 留空＝寄信走 dry-run（只記錄不送出）
+RESEND_API_KEY=

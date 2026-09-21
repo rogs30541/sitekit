@@ -10,3 +10,5 @@ out/
 Thumbs.db
 apps/api/prisma/*.db
 .devdb/
+.wrangler/
+.dev.vars

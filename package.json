@@ -22,7 +22,11 @@
     "db:seed": "npm run db:seed -w @sitekit/api",
     "db:setup": "npm run db:generate && npm run db:migrate && npm run db:seed",
     "ci": "npm run build && npm run db:validate -w @sitekit/api",
-    "dev:db:stop": "node scripts/dev-db.mjs stop"
+    "dev:db:stop": "node scripts/dev-db.mjs stop",
+    "dev:edge": "npm run dev -w @sitekit/edge",
+    "edge:migrate:local": "npm run migrate:local -w @sitekit/edge",
+    "edge:deploy": "npm run deploy -w @sitekit/edge",
+    "build:edge": "npm run build -w @sitekit/edge"
   },
   "engines": {
     "node": ">=20"

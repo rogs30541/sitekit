@@ -1,0 +1,21 @@
+# SiteKit edge：Cloudflare Workers + D1 + Resend 的對照實作
+name = "sitekit-edge"
+main = "src/index.ts"
+compatibility_date = "2025-06-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+APP_ENV = "development"
+FRONTEND_URL = "http://localhost:3000"
+RESEND_FROM = "SiteKit <onboarding@resend.dev>"
+
+# 機密（SESSION_SECRET、OPS_TOKEN、RESEND_API_KEY）：本機放 .dev.vars，正式用 `wrangler secret put`
+
+[[d1_databases]]
+binding = "DB"
+database_name = "sitekit-edge"
+database_id = "00000000-0000-0000-0000-000000000000" # 建立遠端 D1 後以 `wrangler d1 create sitekit-edge` 回傳的 id 取代
+migrations_dir = "migrations"
+
+[observability]
+enabled = true
