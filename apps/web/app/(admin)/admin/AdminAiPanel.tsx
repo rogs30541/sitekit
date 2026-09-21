@@ -9,6 +9,12 @@ const PRESETS: Record<string, string> = {
   update_settings: '{ "settings": { "brand.name": "SiteKit" } }',
   import_content: '{ "source": "csv", "dryRun": true, "csv": "external_id,title,slug,body,published_at,original_url\\n1,示範文章,demo,<p>內文</p>,2026-09-01,https://old.example.com/2026/09/demo" }',
   audit: '{ "limit": 20 }',
+  sales_report: '{ "from": "2026-09-01", "to": "2026-09-30", "groupBy": "day" }',
+  update_shipping: '{ "orderNo": "SK...", "status": "shipped", "carrier": "黑貓", "trackingNo": "1234567890" }',
+  manage_coupon: '{ "op": "create", "code": "WELCOME10", "type": "percent", "value": 10, "minAmount": 500, "maxUses": 100 }',
+  adjust_stock: '{ "sku": "SKU-001", "delta": 10 }',
+  expire_orders: '{ "hours": 72 }',
+  import_products: '{ "dryRun": true, "csv": "sku,name,price,type,stock\\nSKU-001,示範商品,990,physical,20" }',
 };
 
 /** AI API 路徑：後台 UI 以 cookie session 呼叫 /api/admin/ai/act。之後在此接模型把自然語言規劃成 action+params。 */

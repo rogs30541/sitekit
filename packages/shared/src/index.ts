@@ -64,6 +64,9 @@ export const SETTING_KEYS = {
   ezpayApiUrl: 'ezpay.apiUrl',
   bunnyLibraryId: 'bunny.libraryId',
   bunnySigningKey: 'bunny.signingKey',
+  shippingFee: 'shipping.fee',
+  shippingFreeOver: 'shipping.freeOver',
+  orderExpireHours: 'order.expireHours',
   aiProvider: 'ai.provider',
   openaiApiKey: 'openai.apiKey',
   aiImageModel: 'ai.imageModel',
@@ -82,7 +85,18 @@ export const OPS_ACTIONS = {
   import_content: { desc: '外站內容匯入（WordPress / CSV，冪等 upsert）', mutating: true },
   adjust_credits: { desc: '調整用戶點數（客服補點、活動贈點、沖正；需 email 或 userId、amount、reason）', mutating: true },
   audit: { desc: '讀取稽核日誌', mutating: false },
+  sales_report: { desc: '銷售報表（期間營收、訂單數、客單價、各商品銷量、退款、金流分布；from/to ISO 日期、groupBy day|month）', mutating: false },
+  update_shipping: { desc: '更新訂單物流（orderNo、status pending|shipped|delivered|returned、carrier、trackingNo）', mutating: true },
+  manage_coupon: { desc: '折扣碼建立／修改／停用（op create|update|disable、code、type percent|fixed、value、minAmount、maxUses、expiresAt）', mutating: true },
+  adjust_stock: { desc: '調整商品庫存（sku 或 productId；set 絕對值或 delta 增減；null＝不追蹤）', mutating: true },
+  expire_orders: { desc: '取消逾期未付款訂單並回補庫存（hours 預設讀 order.expireHours）', mutating: true },
+  import_products: { desc: '商品 CSV 匯入（sku,name,price,type,description,cover_url,stock,active；相容 Shopify 商品 CSV；dryRun 預設 true）', mutating: true },
 } as const;
+
+export const SHIPPING_STATUSES = ['pending', 'shipped', 'delivered', 'returned'] as const;
+export type ShippingStatus = (typeof SHIPPING_STATUSES)[number];
+export const SHIPPING_LABELS: Record<ShippingStatus, string> = { pending: '待出貨', shipped: '已出貨', delivered: '已送達', returned: '已退回' };
+export const COUPON_TYPES = ['percent', 'fixed'] as const;
 export type OpsAction = keyof typeof OPS_ACTIONS;
 export const OPS_ACTION_KEYS = Object.keys(OPS_ACTIONS) as OpsAction[];
 

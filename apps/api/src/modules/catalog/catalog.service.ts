@@ -10,6 +10,8 @@ const productInput = z.object({
   coverUrl: z.string().url().nullable().optional().or(z.literal('').transform(() => null)),
   price: z.number().int().min(0),
   isActive: z.boolean().optional(),
+  stock: z.number().int().min(0).nullable().optional(),
+  sortOrder: z.number().int().optional(),
 });
 const videoRef = z.object({ provider: z.enum(['youtube', 'bunny']), id: z.string().trim().max(120) }).nullable().optional();
 const courseInput = z.object({
@@ -53,9 +55,25 @@ export class CatalogService {
   listProducts(type?: string) {
     return this.prisma.product.findMany({
       where: { isActive: true, ...(type ? { type: type as 'physical' | 'course' | 'credit_pack' } : {}) },
-      orderBy: { createdAt: 'desc' },
-      select: { id: true, type: true, sku: true, name: true, description: true, coverUrl: true, price: true, course: { select: { slug: true } } },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+      select: { id: true, type: true, sku: true, name: true, description: true, coverUrl: true, price: true, stock: true, course: { select: { slug: true } } },
     });
+  }
+
+  /** 後台商品清單（含下架、庫存、銷量） */
+  listProductsAdmin() {
+    return this.prisma.product.findMany({ orderBy: [{ type: 'asc' }, { sortOrder: 'asc' }, { createdAt: 'desc' }], include: { course: { select: { slug: true } }, _count: { select: { items: true } } } });
+  }
+
+  /** 庫存調整：set 絕對值（null＝不追蹤）或 delta 增減（不可低於 0）。 */
+  async adjustStock(skuOrId: string, set?: number | null, delta?: number) {
+    const p = await this.prisma.product.findFirst({ where: { OR: [{ id: skuOrId }, { sku: skuOrId }] } });
+    if (!p) throw new NotFoundException('product not found');
+    let stock: number | null = p.stock;
+    if (set !== undefined) stock = set === null ? null : Math.max(0, Math.round(set));
+    if (delta !== undefined) stock = Math.max(0, (stock ?? 0) + Math.round(delta));
+    const u = await this.prisma.product.update({ where: { id: p.id }, data: { stock } });
+    return { id: u.id, sku: u.sku, name: u.name, stock: u.stock, before: p.stock };
   }
 
   listCourses() {

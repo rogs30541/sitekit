@@ -6,9 +6,10 @@ import { OrderActions } from './OrderActions';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminOrdersPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
-  const { status } = await searchParams;
-  const orders = (await apiServer<Order[]>(`/api/admin/orders${status ? `?status=${encodeURIComponent(status)}` : ''}`)) ?? [];
+export default async function AdminOrdersPage({ searchParams }: { searchParams: Promise<{ status?: string; shipping?: string }> }) {
+  const { status, shipping } = await searchParams;
+  const q = new URLSearchParams({ ...(status ? { status } : {}), ...(shipping ? { shipping } : {}) }).toString();
+  const orders = (await apiServer<Order[]>(`/api/admin/orders${q ? `?${q}` : ''}`)) ?? [];
   const filters = ['', 'pending', 'paid', 'refunded', 'failed', 'canceled'];
   return (
     <Section title="訂單管理" group="(admin)">
@@ -18,6 +19,14 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
             {f || '全部'}
           </Link>
         ))}
+        {' · '}
+        <Link href="/admin/orders?shipping=pending" className="underline">
+          待出貨
+        </Link>
+        {' · '}
+        <Link href="/admin/reports" className="underline">
+          報表／對帳檔
+        </Link>
         {' · '}
         <Link href="/admin" className="underline">
           回總覽
@@ -44,11 +53,25 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
               </td>
               <td className="py-2">{o.user?.email}</td>
               <td className="py-2">{o.items.map((i) => `${i.name} × ${i.qty}`).join('、')}</td>
-              <td className="py-2">{twd(o.amount)}</td>
+              <td className="py-2">
+                {twd(o.amount)}
+                {o.discount ? <div style={{ color: 'var(--muted)' }}>折 {twd(o.discount)}{o.couponCode ? ` ${o.couponCode}` : ''}</div> : null}
+                {o.shippingFee ? <div style={{ color: 'var(--muted)' }}>運費 {twd(o.shippingFee)}</div> : null}
+              </td>
               <td className="py-2">
                 {o.status}
                 {o.provider ? <div style={{ color: 'var(--muted)' }}>{o.provider} {o.paymentType ?? ''}</div> : null}
                 {o.refundStatus ? <div style={{ color: 'var(--muted)' }}>退款：{o.refundStatus}</div> : null}
+                {o.shippingStatus ? (
+                  <div style={{ color: 'var(--muted)' }}>
+                    物流：{o.shippingStatus}
+                    {o.trackingNo ? ` ${o.trackingNo}` : ''}
+                    <br />
+                    {o.shippingName} {o.shippingPhone}
+                    <br />
+                    {o.shippingAddress}
+                  </div>
+                ) : null}
               </td>
               <td className="py-2">
                 <OrderActions order={o} />

@@ -65,5 +65,52 @@ server.tool('sitekit_audit', '讀取最近的維運稽核日誌', { limit: z.num
   asText(await ops('audit', { limit })),
 );
 
+server.tool(
+  'sitekit_sales_report',
+  '銷售報表：期間營收、已付款訂單數、客單價、退款、折扣、運費、各商品銷量、金流分布（以付款時間計）',
+  { from: z.string().optional().describe('YYYY-MM-DD，預設 30 天前'), to: z.string().optional().describe('YYYY-MM-DD，預設今天'), groupBy: z.enum(['day', 'month']).default('day') },
+  async (p) => asText(await ops('sales_report', p)),
+);
+
+server.tool(
+  'sitekit_update_shipping',
+  '更新訂單物流狀態（只限已付款且需出貨的訂單）',
+  { orderNo: z.string().describe('商店訂單編號 SK…'), status: z.enum(['pending', 'shipped', 'delivered', 'returned']), carrier: z.string().optional(), trackingNo: z.string().optional() },
+  async (p) => asText(await ops('update_shipping', p)),
+);
+
+server.tool(
+  'sitekit_manage_coupon',
+  '折扣碼：建立（op=create）、修改（op=update）、停用（op=disable）',
+  {
+    op: z.enum(['create', 'update', 'disable']).default('create'),
+    code: z.string().describe('代碼，會轉大寫'),
+    type: z.enum(['percent', 'fixed']).optional(),
+    value: z.number().int().optional().describe('percent＝百分比 1-100；fixed＝折抵元'),
+    minAmount: z.number().int().optional(),
+    maxUses: z.number().int().nullable().optional(),
+    expiresAt: z.string().datetime().nullable().optional(),
+    isActive: z.boolean().optional(),
+    note: z.string().optional(),
+  },
+  async (p) => asText(await ops('manage_coupon', p)),
+);
+
+server.tool(
+  'sitekit_adjust_stock',
+  '調整商品庫存：set 絕對值（null＝不追蹤）或 delta 增減',
+  { sku: z.string().optional(), productId: z.string().optional(), set: z.number().int().nullable().optional(), delta: z.number().int().optional() },
+  async (p) => asText(await ops('adjust_stock', p)),
+);
+
+server.tool('sitekit_expire_orders', '取消逾期未付款訂單並回補庫存', { hours: z.number().int().min(1).optional() }, async (p) => asText(await ops('expire_orders', p)));
+
+server.tool(
+  'sitekit_import_products',
+  '商品 CSV 匯入（簡式 sku,name,price,type,description,cover_url,stock,active 或 Shopify 商品匯出檔）；以 sku 冪等 upsert，預設乾跑',
+  { csv: z.string().optional(), filePath: z.string().optional(), dryRun: z.boolean().default(true), updateStock: z.boolean().default(false).describe('既有商品是否覆寫庫存') },
+  async (p) => asText(await ops('import_products', p)),
+);
+
 const transport = new StdioServerTransport();
 await server.connect(transport);

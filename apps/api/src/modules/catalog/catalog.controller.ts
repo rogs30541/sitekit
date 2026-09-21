@@ -39,6 +39,11 @@ export class AdminCatalogController {
     return this.catalog.getCourseAdmin(id);
   }
 
+  @Get('products')
+  products() {
+    return this.catalog.listProductsAdmin();
+  }
+
   @Post('products')
   createProduct(@Body() body: unknown) {
     return this.catalog.createProduct(body);

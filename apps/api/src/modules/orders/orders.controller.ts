@@ -1,6 +1,8 @@
-import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Header, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AdminSessionGuard, UserSessionGuard, type AuthedRequest } from '../../common/guards';
+import { CouponsService } from './coupons.service';
 import { OrdersService } from './orders.service';
+import { ReportsService } from './reports.service';
 
 @Controller('orders')
 @UseGuards(UserSessionGuard)
@@ -10,6 +12,12 @@ export class OrdersController {
   @Post()
   create(@Body() body: unknown, @Req() req: AuthedRequest) {
     return this.orders.create(req.session!.user.id, body);
+  }
+
+  /** 購物車試算（折扣碼、運費、應付）；不建單。 */
+  @Post('quote')
+  quote(@Body() body: unknown) {
+    return this.orders.quote(body);
   }
 
   @Get('mine')
@@ -36,11 +44,22 @@ export class OrdersController {
 @Controller('admin/orders')
 @UseGuards(AdminSessionGuard)
 export class AdminOrdersController {
-  constructor(private readonly orders: OrdersService) {}
+  constructor(
+    private readonly orders: OrdersService,
+    private readonly reports: ReportsService,
+  ) {}
 
   @Get()
-  list(@Query('status') status?: string) {
-    return this.orders.listAll(status);
+  list(@Query('status') status?: string, @Query('shipping') shipping?: string) {
+    return this.orders.listAll(status, shipping);
+  }
+
+  /** 對帳檔：?from=YYYY-MM-DD&to=YYYY-MM-DD&status=paid */
+  @Get('export.csv')
+  @Header('content-type', 'text/csv; charset=utf-8')
+  @Header('content-disposition', 'attachment; filename="orders.csv"')
+  exportCsv(@Query() q: Record<string, string>) {
+    return this.reports.ordersCsv(q);
   }
 
   @Get(':idOrNo')
@@ -55,8 +74,52 @@ export class AdminOrdersController {
     return this.orders.markPaid(o.id, { provider: 'manual', note: `by ${req.session!.user.email}${body?.note ? `: ${body.note}` : ''}` });
   }
 
+  /** 物流狀態／物流商／追蹤碼 */
+  @Patch(':idOrNo/shipping')
+  shipping(@Param('idOrNo') idOrNo: string, @Body() body: unknown) {
+    return this.orders.updateShipping(idOrNo, body);
+  }
+
+  @Post('expire')
+  expire(@Body() body: { hours?: number }) {
+    return this.orders.expirePending(body?.hours);
+  }
+
   @Post('grant')
   grant(@Body() body: { userId: string; productId: string }) {
     return this.orders.grantManual(body.userId, body.productId);
+  }
+}
+
+@Controller('admin/reports')
+@UseGuards(AdminSessionGuard)
+export class AdminReportsController {
+  constructor(private readonly reports: ReportsService) {}
+
+  /** ?from&to&groupBy=day|month */
+  @Get('sales')
+  sales(@Query() q: Record<string, string>) {
+    return this.reports.sales(q);
+  }
+}
+
+@Controller('admin/coupons')
+@UseGuards(AdminSessionGuard)
+export class AdminCouponsController {
+  constructor(private readonly coupons: CouponsService) {}
+
+  @Get()
+  list() {
+    return this.coupons.list();
+  }
+
+  @Post()
+  create(@Body() body: unknown) {
+    return this.coupons.create(body);
+  }
+
+  @Patch(':idOrCode')
+  update(@Param('idOrCode') idOrCode: string, @Body() body: unknown) {
+    return this.coupons.update(idOrCode, body);
   }
 }

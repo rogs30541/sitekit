@@ -95,6 +95,17 @@ export function flattenPlayable<T extends Chapter>(chapters: T[]): T[] {
   return out;
 }
 
+export interface Product {
+  id: string;
+  type: 'physical' | 'course' | 'credit_pack';
+  sku: string;
+  name: string;
+  description: string | null;
+  coverUrl: string | null;
+  price: number;
+  stock?: number | null;
+  course?: { slug: string } | null;
+}
 export interface OrderItem {
   id: string;
   name: string;
@@ -106,6 +117,17 @@ export interface Order {
   merchantOrderNo: string;
   status: 'pending' | 'paid' | 'failed' | 'refunded' | 'canceled';
   amount: number;
+  subtotal?: number;
+  discount?: number;
+  couponCode?: string | null;
+  shippingFee?: number;
+  shippingName?: string | null;
+  shippingPhone?: string | null;
+  shippingAddress?: string | null;
+  shippingStatus?: string | null;
+  carrier?: string | null;
+  trackingNo?: string | null;
+  shippedAt?: string | null;
   provider: string | null;
   paymentType: string | null;
   paidAt: string | null;

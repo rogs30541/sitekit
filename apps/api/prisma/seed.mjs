@@ -53,6 +53,14 @@ async function main() {
     },
   });
 
+  await prisma.product.upsert({
+    where: { sku: 'DEMO-MUG' },
+    update: {},
+    create: { sku: 'DEMO-MUG', type: 'physical', name: '示範馬克杯', description: '用來驗證購物車、庫存、運費與物流流程的示範實體商品。', price: 350, stock: 20 },
+  });
+  await prisma.coupon.upsert({ where: { code: 'WELCOME10' }, update: {}, create: { code: 'WELCOME10', type: 'percent', value: 10, minAmount: 300, note: '示範折扣碼' } });
+  await prisma.setting.upsert({ where: { key: 'shipping.fee' }, update: {}, create: { key: 'shipping.fee', value: '80', isSecret: false } });
+  await prisma.setting.upsert({ where: { key: 'shipping.freeOver' }, update: {}, create: { key: 'shipping.freeOver', value: '1000', isSecret: false } });
   const product = await prisma.product.upsert({
     where: { sku: 'COURSE-DEMO' },
     update: {},

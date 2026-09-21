@@ -28,6 +28,14 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 **P3 產品化（完成）**：點數帳本（保留再結算、失敗釋放）、AI Provider 抽象層（mock／OpenAI、平台金鑰或 BYOK）、程序內任務佇列（可換 BullMQ）、`/studio` AI 創作工作站、`/admin/studio` 模板管理與點數調整、MCP／AI API 的 `adjust_credits`。
 
+## P4 規模化（2026-09-21）
+
+- **實體電商**：`products.stock`（null＝不追蹤）下單即扣、取消／失敗／退款回補、交易鎖不超賣；折扣碼 `coupons`（percent／fixed、低消、次數、期限）；運費規則 `shipping.fee`／`shipping.freeOver`；訂單含 subtotal／discount／shippingFee／收件資料／物流狀態（pending→shipped→delivered、returned）；逾期未付自動取消（`order.expireHours`，每小時掃）。前台 `/store` 商城＋`/cart` 購物車（localStorage，金額一律由 `POST /api/orders/quote` 試算）。
+- **進階報表**：`GET /api/admin/reports/sales`（營收、淨營收、客單價、退款、折扣、運費、依日／月、商品銷量、金流分布，以付款時間計）＋`GET /api/admin/orders/export.csv` 對帳檔（UTF-8 BOM）；後台 `/admin/reports`。
+- **搬運器擴充**：`import_products` 商品 CSV（簡式欄位或 Shopify 商品匯出檔、多規格拆件、以 sku 冪等）。
+- **效能與資安**：程序內限流（登入 20 次／10 分、MCP 120 次／分、其餘 600 次／分；金流回呼與健康檢查不限；`RATE_LIMIT=off` 供本機 E2E）、`trust proxy`、JSON 上限 5MB、`/api/health` 含 DB ping 與 uptime、orders 新增索引。
+- **雙軌接口**：新增 OPS 動作 `sales_report`／`update_shipping`／`manage_coupon`／`adjust_stock`／`expire_orders`／`import_products`（MCP 工具同名 `sitekit_*`，後台 AI 面板同 action）；後台頁 `/admin/products`、`/admin/coupons`、`/admin/reports`、訂單頁物流操作。
+
 ## 目錄
 
 ```

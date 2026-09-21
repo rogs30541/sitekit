@@ -108,13 +108,36 @@ model Product {
   coverUrl     String?
   price        Int
   isActive     Boolean       @default(true)
+  /// 庫存：null＝不追蹤（課程／點數包）；實體商品下單即扣、取消／失敗／退款回補（交易鎖不超賣）
+  stock        Int?
+  sortOrder    Int           @default(0)
   course       Course?
   items        OrderItem[]
   entitlements Entitlement[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
+  @@index([type, isActive, sortOrder])
   @@map("products")
+}
+
+/// 折扣碼：percent（value＝折扣百分比）或 fixed（value＝折抵元）；usedCount 於付款成功時累加
+model Coupon {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  type      String    @default("percent")
+  value     Int
+  minAmount Int       @default(0)
+  maxUses   Int?
+  usedCount Int       @default(0)
+  startsAt  DateTime?
+  expiresAt DateTime?
+  isActive  Boolean   @default(true)
+  note      String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("coupons")
 }
 
 /// 課程：封面影片／試看影片為銷售頁公開素材；觀看期限決定購買後授權到期
@@ -195,7 +218,20 @@ model Order {
   merchantOrderNo String         @unique
   userId          String
   status          OrderStatus    @default(pending)
+  /// amount＝應付總額＝subtotal − discount ＋ shippingFee
   amount          Int
+  subtotal        Int            @default(0)
+  discount        Int            @default(0)
+  couponCode      String?
+  shippingFee     Int            @default(0)
+  shippingName    String?
+  shippingPhone   String?
+  shippingAddress String?
+  /// 物流狀態：null＝無需出貨；pending → shipped → delivered；returned
+  shippingStatus  String?
+  carrier         String?
+  trackingNo      String?
+  shippedAt       DateTime?
   provider        String?
   providerTradeNo String?
   paymentType     String?
@@ -215,6 +251,8 @@ model Order {
   updatedAt       DateTime       @updatedAt
 
   @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([shippingStatus])
   @@map("orders")
 }
 

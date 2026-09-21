@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { LogoutButton } from '@/components/LogoutButton';
 import { Section } from '@/components/Section';
+import { SHIPPING_LABELS } from '@sitekit/shared';
 import { twd, type Order, fmtDateTime } from '@/lib/api-public';
 import { apiServer, getMe } from '@/lib/api-server';
 import { ApiKeyForm } from './ApiKeyForm';
@@ -139,7 +140,16 @@ export default async function MemberPage() {
                     {o.refundStatus ? <span style={{ color: 'var(--muted)' }}>（退款 {o.refundStatus}）</span> : null}
                     {o.status === 'pending' && o.virtualAccount ? <div style={{ color: 'var(--muted)' }}>ATM {o.virtualAccount}</div> : null}
                   </td>
-                  <td className="py-2">{o.status === 'paid' && !o.refundStatus ? <RefundRequestButton orderNo={o.merchantOrderNo} /> : null}</td>
+                  <td className="py-2">
+                    {o.shippingStatus ? (
+                      <div className="text-xs" style={{ color: 'var(--muted)' }}>
+                        物流：{SHIPPING_LABELS[o.shippingStatus as keyof typeof SHIPPING_LABELS] ?? o.shippingStatus}
+                        {o.carrier ? ` · ${o.carrier}` : ''}
+                        {o.trackingNo ? ` · ${o.trackingNo}` : ''}
+                      </div>
+                    ) : null}
+                    {o.status === 'paid' && !o.refundStatus ? <RefundRequestButton orderNo={o.merchantOrderNo} /> : null}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -40,6 +40,18 @@ export default async function AdminPage() {
     <div className="space-y-4">
       <Section title="後台總覽" group="(admin)">
         <p className="mb-3 text-xs">
+          <Link href="/admin/products" className="underline">
+            商品管理
+          </Link>
+          {' · '}
+          <Link href="/admin/coupons" className="underline">
+            折扣碼
+          </Link>
+          {' · '}
+          <Link href="/admin/reports" className="underline">
+            銷售報表
+          </Link>
+          {' · '}
           <Link href="/admin/payments" className="underline">
             金流設定
           </Link>

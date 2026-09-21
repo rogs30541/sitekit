@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { PrismaService } from '../../prisma/prisma.service';
 import { fromCsv } from './connectors/csv';
+import { fromProductsCsv } from './connectors/products-csv';
 import { fetchWordPress } from './connectors/wordpress';
 import { type CanonicalContent, pathOf } from './normalize';
 
@@ -15,6 +16,15 @@ const paramsSchema = z.object({
   dryRun: z.boolean().default(true),
   limit: z.number().int().min(1).max(2000).default(200),
   publish: z.boolean().default(true),
+});
+
+const productParams = z.object({
+  csv: z.string().optional(),
+  filePath: z.string().optional(),
+  dryRun: z.boolean().default(true),
+  limit: z.number().int().min(1).max(5000).default(1000),
+  /** 既有商品是否覆寫庫存（預設 false：只在新建時帶入，避免蓋掉即時庫存） */
+  updateStock: z.boolean().default(false),
 });
 
 /**
@@ -47,6 +57,24 @@ export class MigrationService {
       }
     }
     return { dryRun: false, source: p.source, imported: items.length, created: plan.create.length, updated: plan.update.length, redirects };
+  }
+
+  /** 商品 CSV 匯入（簡式或 Shopify 匯出）：以 sku 冪等 upsert；dryRun 只回計畫。 */
+  async runProducts(raw: Record<string, unknown>) {
+    const p = productParams.parse(raw);
+    const text = p.csv ?? (p.filePath ? await readFile(p.filePath, 'utf8') : null);
+    if (!text) throw new Error('csv text or filePath is required');
+    const items = fromProductsCsv(text).slice(0, p.limit);
+    const existing = await this.prisma.product.findMany({ where: { sku: { in: items.map((i) => i.sku) } }, select: { sku: true } });
+    const seen = new Set(existing.map((e) => e.sku));
+    const toCreate = items.filter((i) => !seen.has(i.sku));
+    const toUpdate = items.filter((i) => seen.has(i.sku));
+    if (p.dryRun) return { dryRun: true, total: items.length, toCreate: toCreate.length, toUpdate: toUpdate.length, sample: items.slice(0, 5).map(({ sku, name, price, stock, type }) => ({ sku, name, price, stock, type })) };
+    for (const i of items) {
+      const data = { name: i.name, price: i.price, description: i.description, coverUrl: i.coverUrl, isActive: i.isActive, ...(p.updateStock ? { stock: i.stock } : {}) };
+      await this.prisma.product.upsert({ where: { sku: i.sku }, update: data, create: { sku: i.sku, type: i.type, stock: i.stock, ...data } });
+    }
+    return { dryRun: false, imported: items.length, created: toCreate.length, updated: toUpdate.length };
   }
 
   private async collect(p: z.infer<typeof paramsSchema>): Promise<CanonicalContent[]> {

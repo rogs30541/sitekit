@@ -1,29 +1,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { fetchPaymentMethods, startCheckout, type PaymentMethod } from '@/lib/checkout';
 
-type Checkout = { provider: string; kind: 'redirect'; redirectUrl: string } | { provider: string; kind: 'form'; gatewayUrl: string; fields: Record<string, string> };
-interface Method {
-  id: string;
-  label: string;
-  testMode: boolean;
-}
-
-/** 建單 → 取金流 payload → form 類（藍新／綠界／統一）自動送出表單、redirect 類（LINE Pay／支付連／mock／free）直接導向。 */
+/** 課程單品購買：建單 → 結帳（多家金流時顯示付款方式選單）。 */
 export function BuyButton({ productId }: { productId: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [methods, setMethods] = useState<Method[]>([]);
+  const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [method, setMethod] = useState('');
 
   useEffect(() => {
-    fetch('/api/payments/methods')
-      .then((r) => (r.ok ? r.json() : []))
-      .then((m: Method[]) => {
-        setMethods(m);
-        setMethod(m[0]?.id ?? '');
-      })
-      .catch(() => setMethods([]));
+    fetchPaymentMethods().then((m) => {
+      setMethods(m);
+      setMethod(m[0]?.id ?? '');
+    });
   }, []);
 
   async function buy() {
@@ -32,26 +23,12 @@ export function BuyButton({ productId }: { productId: string }) {
     try {
       const o = await fetch('/api/orders', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ items: [{ productId, qty: 1 }] }) });
       const order = await o.json();
-      if (!o.ok) throw new Error(order.message ?? 'create order failed');
-      const c = await fetch(`/api/payments/checkout/${order.id}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(method ? { provider: method } : {}) });
-      const payload = (await c.json()) as Checkout & { message?: string };
-      if (!c.ok) throw new Error(payload.message ?? 'checkout failed');
-      if (payload.kind === 'form') {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = payload.gatewayUrl;
-        for (const [k, v] of Object.entries(payload.fields)) {
-          const input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = k;
-          input.value = v;
-          form.appendChild(input);
-        }
-        document.body.appendChild(form);
-        form.submit();
+      if (!o.ok) throw new Error(typeof order.message === 'string' ? order.message : 'create order failed');
+      if (order.status === 'paid') {
+        window.location.href = `/order-result?order=${order.merchantOrderNo}`;
         return;
       }
-      window.location.href = payload.redirectUrl;
+      await startCheckout(order.id, method || undefined);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setBusy(false);

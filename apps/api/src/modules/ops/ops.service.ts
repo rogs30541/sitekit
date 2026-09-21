@@ -6,6 +6,10 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { MigrationService } from '../migration/migration.service';
 import { SettingsService } from '../settings/settings.service';
 import { CreditsService } from '../credits/credits.service';
+import { CatalogService } from '../catalog/catalog.service';
+import { CouponsService } from '../orders/coupons.service';
+import { OrdersService } from '../orders/orders.service';
+import { ReportsService } from '../orders/reports.service';
 
 const SECRET_KEY = /secret|key|token|password|hashiv|hash_iv|signing/i;
 
@@ -20,6 +24,10 @@ export class OpsService {
     private readonly migration: MigrationService,
     private readonly settings: SettingsService,
     private readonly credits: CreditsService,
+    private readonly orders: OrdersService,
+    private readonly coupons: CouponsService,
+    private readonly reports: ReportsService,
+    private readonly catalog: CatalogService,
   ) {}
 
   listActions() {
@@ -114,6 +122,36 @@ export class OpsService {
         const rows = await this.prisma.auditLog.findMany({ orderBy: { createdAt: 'desc' }, take: Math.min(Number(p.limit ?? 50), 200) });
         return rows;
       }
+      case 'sales_report':
+        return this.reports.sales(p);
+      case 'update_shipping': {
+        const orderNo = String(p.orderNo ?? p.merchantOrderNo ?? p.orderId ?? '');
+        if (!orderNo) throw new Error('orderNo is required');
+        const o = await this.orders.updateShipping(orderNo, { status: p.status, carrier: p.carrier ?? undefined, trackingNo: p.trackingNo ?? undefined });
+        return { merchantOrderNo: o.merchantOrderNo, shippingStatus: o.shippingStatus, carrier: o.carrier, trackingNo: o.trackingNo, shippedAt: o.shippedAt };
+      }
+      case 'manage_coupon': {
+        const op = String(p.op ?? 'create');
+        if (op === 'create') return this.coupons.create(p);
+        const code = String(p.code ?? p.id ?? '');
+        if (!code) throw new Error('code is required');
+        if (op === 'disable') return this.coupons.update(code, { isActive: false });
+        if (op === 'update') {
+          const { op: _op, code: _code, ...rest } = p;
+          return this.coupons.update(code, rest);
+        }
+        throw new Error('op must be create | update | disable');
+      }
+      case 'adjust_stock': {
+        const ref = String(p.sku ?? p.productId ?? '');
+        if (!ref) throw new Error('sku or productId is required');
+        if (p.set === undefined && p.delta === undefined) throw new Error('set or delta is required');
+        return this.catalog.adjustStock(ref, p.set === undefined ? undefined : p.set === null ? null : Number(p.set), p.delta === undefined ? undefined : Number(p.delta));
+      }
+      case 'expire_orders':
+        return this.orders.expirePending(p.hours === undefined ? undefined : Number(p.hours));
+      case 'import_products':
+        return this.migration.runProducts(p);
     }
   }
 }
