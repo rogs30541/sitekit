@@ -126,6 +126,25 @@ export const SHIPPING_STATUSES = ['pending', 'shipped', 'delivered', 'returned']
 export type ShippingStatus = (typeof SHIPPING_STATUSES)[number];
 export const SHIPPING_LABELS: Record<ShippingStatus, string> = { pending: '待出貨', shipped: '已出貨', delivered: '已送達', returned: '已退回' };
 export const COUPON_TYPES = ['percent', 'fixed'] as const;
+
+/** 介面顯示用中文標籤（前後台共用；未知值回原字串） */
+export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = { pending: '待付款', paid: '已付款', failed: '付款失敗', refunded: '已退款', canceled: '已取消' };
+export const REFUND_STATUS_LABELS: Record<string, string> = { requested: '申請中', rejected: '已駁回', done: '已退款' };
+export const ROLE_LABELS: Record<Role, string> = { user: '會員', admin: '管理員', superadmin: '超級管理員' };
+export const PAYMENT_TYPE_LABELS: Record<string, string> = { CREDIT: '信用卡', VACC: 'ATM 轉帳', CVS: '超商代碼', BARCODE: '超商條碼', WEBATM: 'WebATM', LINEPAY: 'LINE Pay', Credit_CreditCard: '信用卡', ATM: 'ATM 轉帳', CARD: '信用卡', ACCT: '支付連帳戶', AFTEE: '先享後付' };
+export const PROVIDER_LABELS: Record<string, string> = { ...PAYMENT_METHOD_LABELS, free: '免費', manual: '人工核帳', unknown: '未知' };
+export const QUESTION_STATUS_LABELS: Record<string, string> = { open: '待回覆', answered: '已回覆', hidden: '已隱藏' };
+export const CONTENT_STATUS_LABELS: Record<string, string> = { draft: '草稿', published: '已發布', archived: '封存' };
+export const CONTENT_SOURCE_LABELS: Record<string, string> = { admin: '後台編輯', wordpress: 'WordPress 搬運', csv: 'CSV 匯入', seed: '示範資料' };
+export const LEDGER_TYPE_LABELS: Record<string, string> = { grant: '贈點', consume: '扣點', adjust: '調整', purchase: '購買', refund: '退還' };
+export const STORAGE_DRIVER_LABELS: Record<string, string> = { local: '本機磁碟', s3: 'Cloudflare R2／S3' };
+export const EMAIL_PROVIDER_LABELS: Record<string, string> = { log: '只記 log（不寄信）', resend: 'Resend' };
+/** 付款方式顯示：供應商＋付款型態，例「藍新金流・信用卡」 */
+export const paymentLabel = (provider?: string | null, paymentType?: string | null) => {
+  const p = provider ? (PROVIDER_LABELS[provider] ?? provider) : '';
+  const t = paymentType ? (PAYMENT_TYPE_LABELS[paymentType] ?? PAYMENT_TYPE_LABELS[paymentType.split(':')[0]] ?? paymentType) : '';
+  return [p, t].filter(Boolean).join('・');
+};
 export type OpsAction = keyof typeof OPS_ACTIONS;
 export const OPS_ACTION_KEYS = Object.keys(OPS_ACTIONS) as OpsAction[];
 

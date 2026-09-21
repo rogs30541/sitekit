@@ -63,7 +63,7 @@ export function AdminAiPanel() {
         <select value={action} onChange={(e) => pick(e.target.value)} className="rounded border px-2 py-1" style={{ borderColor: 'var(--line)' }}>
           {OPS_ACTION_KEYS.map((k) => (
             <option key={k} value={k}>
-              {k}
+              {OPS_ACTIONS[k].desc.split('（')[0]}（{k}）
             </option>
           ))}
         </select>

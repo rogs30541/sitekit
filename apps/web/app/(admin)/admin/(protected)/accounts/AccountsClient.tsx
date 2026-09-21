@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { ROLE_LABELS } from '@sitekit/shared';
 import { fmtDateTime } from '@/lib/api-public';
 
 export interface AdminRow {
@@ -55,8 +56,8 @@ export function AccountsClient({ rows, selfId, allowlist }: { rows: AdminRow[]; 
         <input className={`${input} w-44`} style={{ borderColor: 'var(--line)' }} type="password" placeholder="密碼（≥8）" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
         <input className={`${input} w-36`} style={{ borderColor: 'var(--line)' }} placeholder="顯示名稱" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} />
         <select className={input} style={{ borderColor: 'var(--line)' }} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-          <option value="admin">admin</option>
-          <option value="superadmin">superadmin</option>
+          <option value="admin">管理員</option>
+          <option value="superadmin">超級管理員</option>
         </select>
         <button
           onClick={async () => {
@@ -84,7 +85,7 @@ export function AccountsClient({ rows, selfId, allowlist }: { rows: AdminRow[]; 
             <tr key={a.id} className="border-t" style={{ borderColor: 'var(--line)' }}>
               <td className="py-1">{a.email}</td>
               <td className="py-1">{a.displayName}</td>
-              <td className="py-1">{a.role}</td>
+              <td className="py-1">{ROLE_LABELS[a.role] ?? a.role}</td>
               <td className="py-1">{a.lastLoginAt ? fmtDateTime(a.lastLoginAt) : '—'}</td>
               <td className="py-1">
                 <span className="flex gap-2">

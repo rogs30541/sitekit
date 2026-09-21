@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Section } from '@/components/Section';
+import { PROVIDER_LABELS } from '@sitekit/shared';
 import { twd } from '@/lib/api-public';
 import { apiServer } from '@/lib/api-server';
 
@@ -108,7 +109,7 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
                 <tbody>
                   {data!.byProvider.map((r) => (
                     <tr key={r.provider} className="border-t" style={{ borderColor: 'var(--line)' }}>
-                      <td className="py-1">{r.provider}</td>
+                      <td className="py-1">{PROVIDER_LABELS[r.provider] ?? r.provider}</td>
                       <td className="py-1 text-right">{r.orders} 筆</td>
                       <td className="py-1 text-right">{twd(r.revenue)}</td>
                     </tr>

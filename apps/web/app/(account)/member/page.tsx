@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { LogoutButton } from '@/components/LogoutButton';
 import { Section } from '@/components/Section';
-import { SHIPPING_LABELS } from '@sitekit/shared';
+import { LEDGER_TYPE_LABELS, REFUND_STATUS_LABELS, ROLE_LABELS, SHIPPING_LABELS } from '@sitekit/shared';
 import { twd, type Order, fmtDateTime } from '@/lib/api-public';
 import { apiServer, getMe } from '@/lib/api-server';
 import { ApiKeyForm } from './ApiKeyForm';
@@ -57,7 +57,7 @@ export default async function MemberPage() {
           <dt style={{ color: 'var(--muted)' }}>名稱</dt>
           <dd>{u.displayName ?? '—'}</dd>
           <dt style={{ color: 'var(--muted)' }}>角色</dt>
-          <dd>{u.role}</dd>
+          <dd>{ROLE_LABELS[u.role] ?? u.role}</dd>
           <dt style={{ color: 'var(--muted)' }}>會員等級</dt>
           <dd>{u.membershipTier ?? '免費'}</dd>
         </dl>
@@ -89,7 +89,7 @@ export default async function MemberPage() {
             {(ledger ?? []).map((l) => (
               <tr key={l.id} className="border-t" style={{ borderColor: 'var(--line)' }}>
                 <td className="py-1">{fmtDateTime(l.createdAt)}</td>
-                <td className="py-1">{l.type}</td>
+                <td className="py-1">{LEDGER_TYPE_LABELS[l.type] ?? l.type}</td>
                 <td className={`py-1 text-right ${l.amount < 0 ? 'text-red-700' : 'text-green-700'}`}>{l.amount > 0 ? `+${l.amount}` : l.amount}</td>
                 <td className="py-1 text-right">{l.balanceAfter}</td>
                 <td className="py-1" style={{ color: 'var(--muted)' }}>
@@ -134,7 +134,7 @@ export default async function MemberPage() {
                   <td className="py-2">{twd(o.amount)}</td>
                   <td className="py-2">
                     {LABEL[o.status]}
-                    {o.refundStatus ? <span style={{ color: 'var(--muted)' }}>（退款 {o.refundStatus}）</span> : null}
+                    {o.refundStatus ? <span style={{ color: 'var(--muted)' }}>（退款{REFUND_STATUS_LABELS[o.refundStatus] ?? o.refundStatus}）</span> : null}
                     {o.status === 'pending' && o.virtualAccount ? <div style={{ color: 'var(--muted)' }}>ATM {o.virtualAccount}</div> : null}
                   </td>
                   <td className="py-2">

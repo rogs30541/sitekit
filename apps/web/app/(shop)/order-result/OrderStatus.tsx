@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { paymentLabel } from '@sitekit/shared';
 import { twd, type Order } from '@/lib/api-public';
 
 const LABEL: Record<Order['status'], string> = { pending: '等待付款', paid: '付款成功', failed: '付款失敗', refunded: '已退款', canceled: '已取消' };
@@ -52,6 +53,7 @@ export function OrderStatus() {
         ))}
       </ul>
       <p>金額 {twd(order.amount)}</p>
+      {order.provider && order.provider !== 'free' ? <p style={{ color: 'var(--muted)' }}>付款方式：{paymentLabel(order.provider, order.paymentType)}</p> : null}
       {order.status === 'pending' && order.virtualAccount ? <p>ATM 虛擬帳號 {order.virtualAccount}，請於期限前完成轉帳。</p> : null}
       {order.status === 'pending' && !order.virtualAccount ? <p style={{ color: 'var(--muted)' }}>等待金流回呼中…</p> : null}
       <p className="pt-2">

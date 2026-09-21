@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { STORAGE_DRIVER_LABELS } from '@sitekit/shared';
 import { fmtDateTime } from '@/lib/api-public';
 
 export interface IntegrationsStatus {
@@ -82,7 +83,7 @@ export function IntegrationsForm({ status }: { status: IntegrationsStatus }) {
           </select>
           {badge(status.storage.s3Ready, 'R2 已設定', 'R2 未設定')}
           <span className="text-xs" style={{ color: 'var(--muted)' }}>
-            目前使用：{status.storage.driver}
+            目前使用：{STORAGE_DRIVER_LABELS[status.storage.driver] ?? status.storage.driver}
             {status.storage.bucket ? ` · ${status.storage.bucket}` : ''}
           </span>
         </div>
@@ -127,7 +128,7 @@ export function IntegrationsForm({ status }: { status: IntegrationsStatus }) {
                   <td className="py-1">{r.kind}</td>
                   <td className="py-1">{r.to}</td>
                   <td className="py-1">
-                    {r.result.channel}/{r.result.provider} {r.result.ok ? 'OK' : r.result.skipped ? `略過：${r.result.skipped}` : `失敗：${r.result.error}`}
+                    {r.result.channel === 'email' ? 'Email' : 'LINE'}（{r.result.provider === 'log' ? '只記 log' : r.result.provider}） {r.result.ok ? '成功' : r.result.skipped ? `略過：${r.result.skipped === 'line not configured' ? 'LINE 未設定' : r.result.skipped}` : `失敗：${r.result.error}`}
                   </td>
                 </tr>
               ))}

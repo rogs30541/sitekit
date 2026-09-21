@@ -99,7 +99,7 @@ export default async function AdminPage() {
               <tr key={a.id} className="border-t" style={{ borderColor: 'var(--line)' }}>
                 <td className="py-1">{fmtDateTime(a.createdAt)}</td>
                 <td className="py-1 font-mono">{a.actor}</td>
-                <td className="py-1 font-mono">{a.action}</td>
+                <td className="py-1 font-mono">{OPS_ACTIONS[a.action as keyof typeof OPS_ACTIONS]?.desc.split('（')[0] ?? a.action}</td>
                 <td className="py-1">{a.ok ? '成功' : `失敗：${a.error ?? ''}`}</td>
               </tr>
             ))}

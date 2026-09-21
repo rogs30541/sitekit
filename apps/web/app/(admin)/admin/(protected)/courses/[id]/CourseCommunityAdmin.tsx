@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { QUESTION_STATUS_LABELS } from '@sitekit/shared';
 import { fmtDateTime } from '@/lib/api-public';
 
 interface Q {
@@ -67,7 +68,7 @@ export function CourseCommunityAdmin({ courseId }: { courseId: string }) {
               <li key={q.id} className="rounded border p-2" style={{ borderColor: 'var(--line)' }}>
                 <p style={{ color: 'var(--muted)' }}>
                   {q.user.displayName ?? q.user.email} · {fmtDateTime(q.createdAt)}
-                  {q.chapter ? ` · ${q.chapter.title}` : ''} · {q.status}
+                  {q.chapter ? ` · ${q.chapter.title}` : ''} · {QUESTION_STATUS_LABELS[q.status] ?? q.status}
                   {!q.isPublic ? ' · 不公開' : ''}
                 </p>
                 <p className="mt-1 whitespace-pre-wrap text-sm">{q.body}</p>

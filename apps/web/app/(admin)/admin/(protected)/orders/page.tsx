@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Section } from '@/components/Section';
+import { ORDER_STATUS_LABELS, REFUND_STATUS_LABELS, SHIPPING_LABELS, paymentLabel } from '@sitekit/shared';
 import { twd, type Order, fmtDateTime } from '@/lib/api-public';
 import { apiServer } from '@/lib/api-server';
 import { OrderActions } from './OrderActions';
@@ -16,7 +17,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
       <p className="mb-3 text-xs" style={{ color: 'var(--muted)' }}>
         {filters.map((f) => (
           <Link key={f || 'all'} href={f ? `/admin/orders?status=${f}` : '/admin/orders'} className={`mr-3 underline ${f === (status ?? '') ? 'font-bold' : ''}`}>
-            {f || '全部'}
+            {f ? ORDER_STATUS_LABELS[f as keyof typeof ORDER_STATUS_LABELS] : '全部'}
           </Link>
         ))}
         {' · '}
@@ -59,12 +60,12 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                 {o.shippingFee ? <div style={{ color: 'var(--muted)' }}>運費 {twd(o.shippingFee)}</div> : null}
               </td>
               <td className="py-2">
-                {o.status}
-                {o.provider ? <div style={{ color: 'var(--muted)' }}>{o.provider} {o.paymentType ?? ''}</div> : null}
-                {o.refundStatus ? <div style={{ color: 'var(--muted)' }}>退款：{o.refundStatus}</div> : null}
+                {ORDER_STATUS_LABELS[o.status] ?? o.status}
+                {o.provider ? <div style={{ color: 'var(--muted)' }}>{paymentLabel(o.provider, o.paymentType)}</div> : null}
+                {o.refundStatus ? <div style={{ color: 'var(--muted)' }}>退款：{REFUND_STATUS_LABELS[o.refundStatus] ?? o.refundStatus}</div> : null}
                 {o.shippingStatus ? (
                   <div style={{ color: 'var(--muted)' }}>
-                    物流：{o.shippingStatus}
+                    物流：{SHIPPING_LABELS[o.shippingStatus as keyof typeof SHIPPING_LABELS] ?? o.shippingStatus}
                     {o.trackingNo ? ` ${o.trackingNo}` : ''}
                     <br />
                     {o.shippingName} {o.shippingPhone}

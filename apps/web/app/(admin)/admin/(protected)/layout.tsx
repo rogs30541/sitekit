@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { BRAND } from '@sitekit/shared';
+import { BRAND, ROLE_LABELS } from '@sitekit/shared';
 import { AdminLogoutButton } from '@/components/AdminLogoutButton';
 import { getAdminMe } from '@/lib/api-server';
 
@@ -37,7 +37,7 @@ export default async function AdminProtectedLayout({ children }: { children: Rea
           ))}
         </div>
         <span className="flex items-center gap-2" style={{ color: 'var(--muted)' }}>
-          {me.admin.displayName ?? me.admin.email}（{me.admin.role}）
+          {me.admin.displayName ?? me.admin.email}（{ROLE_LABELS[me.admin.role] ?? me.admin.role}）
           <Link href="/" className="underline" target="_blank">
             前台
           </Link>

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Section } from '@/components/Section';
+import { CONTENT_SOURCE_LABELS } from '@sitekit/shared';
 import { fmtDateTime } from '@/lib/api-public';
 import { apiServer } from '@/lib/api-server';
 import { NewContentButton } from './NewContentButton';
@@ -55,7 +56,7 @@ export default async function AdminContentPage({ searchParams }: { searchParams:
               </td>
               <td className="py-1 font-mono">{r.slug}</td>
               <td className="py-1">{STATUS[r.status] ?? r.status}</td>
-              <td className="py-1">{r.source}</td>
+              <td className="py-1">{CONTENT_SOURCE_LABELS[r.source] ?? r.source}</td>
               <td className="py-1">{fmtDateTime(r.updatedAt)}</td>
               <td className="py-1">
                 {r.status === 'published' ? (
