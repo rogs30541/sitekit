@@ -189,6 +189,8 @@ export const OPS_ACTIONS = {
   storage_status: { desc: '物件儲存狀態（driver local|s3、R2 是否設定完成）與最近通知紀錄', mutating: false },
   list_products: { desc: '列出商品（後台視角，含下架／庫存／分類；q 關鍵字、type physical|course|credit_pack、category、isActive、limit）', mutating: false },
   upsert_product: { desc: '以 sku 建立或更新商品（name、price 整數、type、description、coverUrl、stock、isActive 上架/下架、category 分類、sortOrder）', mutating: true },
+  set_product_variants: { desc: '設定商品多規格（sku 或 id；specs[{name,values[]}]、variants[{name,sku,price|null 沿用主商品,stock|null 不追蹤,isActive,options{規格:值}}]；整組覆寫，已有訂單的規格改下架）', mutating: true },
+  delete_product: { desc: '刪除商品（sku 或 id；已有訂單紀錄只能下架、課程商品到課程管理處理）', mutating: true },
   list_orders: { desc: '列出訂單（scope shop|course 電商或課程、status pending|paid|failed|refunded|canceled、shipping、from/to 日期、q 訂單編號或 Email、limit）', mutating: false },
   get_order: { desc: '讀取單一訂單完整資料（orderNo 或 id）', mutating: false },
   list_courses: { desc: '列出課程（含未發布；slug、商品、章節數）', mutating: false },

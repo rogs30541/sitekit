@@ -20,6 +20,7 @@ export interface SalesProduct {
   sold: number;
   type?: string;
   courseSlug?: string | null;
+  variants?: { id: string; name: string; price: number | null; stock: number | null }[];
 }
 export interface SalesRender {
   id: string;
@@ -42,6 +43,7 @@ export function SalesPageView({ page, preview = false, siteTracking }: { page: S
   const { doc, items } = page;
   const [noticeOpen, setNoticeOpen] = useState(true);
   const [qty, setQty] = useState<Record<string, number>>({});
+  const [variantOf, setVariantOf] = useState<Record<string, string>>({});
   const [cartCount, setCartCount] = useState(0);
   const [contactOpen, setContactOpen] = useState(doc.contact.display === 'expanded');
   const [toast, setToast] = useState('');
@@ -68,6 +70,12 @@ export function SalesPageView({ page, preview = false, siteTracking }: { page: S
 
   function add(p: SalesProduct, kind: SalesItemKind) {
     const n = qty[p.id] ?? 1;
+    const vid = p.variants?.length ? (variantOf[p.id] ?? p.variants[0].id) : undefined;
+    const variant = vid ? p.variants?.find((x) => x.id === vid) : undefined;
+    if (variant && variant.stock === 0) {
+      setToast('此規格已售完');
+      return;
+    }
     const limit = doc.cartLimits[kind === 'bundle' ? 'offer' : kind === 'addon' ? 'addon' : kind === 'offer' ? 'offer' : 'product'];
     const cur = readCart().find((l) => l.productId === p.id)?.qty ?? 0;
     if (limit && cur + n > limit) {
@@ -78,8 +86,8 @@ export function SalesPageView({ page, preview = false, siteTracking }: { page: S
       setToast('庫存不足');
       return;
     }
-    addToCart(p.id, n);
-    setToast(`已加入購物車：${p.name} ×${n}`);
+    addToCart(p.id, n, vid);
+    setToast(`已加入購物車：${p.name}${variant ? `（${variant.name}）` : ''} ×${n}`);
     setTimeout(() => setToast(''), 2500);
     if (!preview) skTrack('AddToCart', { product: { id: p.id, name: p.name, price: p.price }, qty: n, page: { id: page.id, title: page.title, type: 'sales' } });
   }
@@ -133,6 +141,17 @@ export function SalesPageView({ page, preview = false, siteTracking }: { page: S
                   {doc.display.showStock !== 'never' && p.stock !== null && (doc.display.showStock === 'always' || p.stock < 10) ? `剩餘 ${p.stock} ` : ''}
                   {doc.display.showSold !== 'never' ? `已售 ${p.sold}` : ''}
                 </p>
+                {p.variants?.length ? (
+                  <select className="rounded border px-1 py-1 text-sm" style={{ borderColor: 'var(--line)' }} value={variantOf[p.id] ?? p.variants[0].id} onChange={(e) => setVariantOf({ ...variantOf, [p.id]: e.target.value })} aria-label="規格">
+                    {p.variants.map((v) => (
+                      <option key={v.id} value={v.id} disabled={v.stock === 0}>
+                        {v.name}
+                        {v.price !== null && v.price !== p.price ? ` ${twd(v.price)}` : ''}
+                        {v.stock === 0 ? '（售完）' : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : null}
                 <div className="mt-auto flex items-center gap-2">
                   {p.type === 'course' ? null : doc.display.quantityMode === 'select' ? (
                     <select className="rounded border px-1 py-1 text-sm" style={{ borderColor: 'var(--line)' }} value={qty[p.id] ?? 1} onChange={(e) => setQty({ ...qty, [p.id]: Number(e.target.value) })}>

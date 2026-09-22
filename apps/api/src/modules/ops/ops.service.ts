@@ -172,6 +172,16 @@ export class OpsService {
         const c = await this.catalog.createProduct({ type: 'physical', ...fields, sku });
         return { id: c.id, sku: c.sku, name: c.name, price: c.price, isActive: c.isActive, category: c.category, coverUrl: c.coverUrl, stock: c.stock, created: true };
       }
+      case 'set_product_variants': {
+        const p0 = await this.prisma.product.findFirst({ where: { OR: [{ id: String(p.productId ?? p.sku ?? '') }, { sku: String(p.productId ?? p.sku ?? '') }] } });
+        if (!p0) throw new Error('product not found');
+        return this.catalog.setVariants(p0.id, { specs: p.specs ?? [], variants: p.variants ?? [] });
+      }
+      case 'delete_product': {
+        const p0 = await this.prisma.product.findFirst({ where: { OR: [{ id: String(p.productId ?? p.sku ?? '') }, { sku: String(p.productId ?? p.sku ?? '') }] } });
+        if (!p0) throw new Error('product not found');
+        return this.catalog.deleteProduct(p0.id);
+      }
       case 'list_orders': {
         const rows = await this.orders.listAll(p.status ? String(p.status) : undefined, p.shipping ? String(p.shipping) : undefined, p.scope ? String(p.scope) : undefined);
         const from = p.from ? new Date(String(p.from)) : null;

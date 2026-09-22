@@ -30,7 +30,7 @@ export default async function StorePage() {
               ) : null}
               <div className="mt-auto flex items-center justify-between pt-3">
                 <span className="font-bold">{twd(p.price)}</span>
-                {p.stock === 0 ? <span className="text-xs text-red-700">售完</span> : <AddToCartButton productId={p.id} />}
+                {p.stock === 0 && !p.variants?.length ? <span className="text-xs text-red-700">售完</span> : <AddToCartButton productId={p.id} variants={p.variants ?? []} basePrice={p.price} />}
               </div>
               {p.stock !== null && p.stock !== undefined && p.stock > 0 && p.stock <= 5 ? <p className="mt-1 text-xs text-red-700">僅剩 {p.stock} 件</p> : null}
             </li>

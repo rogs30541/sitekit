@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -37,6 +38,14 @@ const chapterInput = z.object({
   isPreview: z.boolean().optional(),
   isPublished: z.boolean().optional(),
 });
+const variantsInput = z.object({
+  specs: z.array(z.object({ name: z.string().trim().min(1).max(30), values: z.array(z.string().trim().min(1).max(40)).min(1).max(30) })).max(3).default([]),
+  variants: z
+    .array(z.object({ id: z.string().optional(), name: z.string().trim().min(1).max(120), sku: z.string().trim().min(1).max(60), price: z.number().int().min(0).nullable().optional(), stock: z.number().int().min(0).nullable().optional(), isActive: z.boolean().default(true), sortOrder: z.number().int().default(0), options: z.record(z.string()).default({}) }))
+    .max(200)
+    .default([]),
+});
+const PUBLIC_VARIANT = { id: true, name: true, sku: true, price: true, stock: true, options: true, sortOrder: true } as const;
 const reorderInput = z.object({ items: z.array(z.object({ id: z.string(), parentId: z.string().nullable(), order: z.number().int().min(0) })).max(500) });
 
 function parse<T>(schema: z.ZodType<T>, input: unknown): T {
@@ -57,13 +66,54 @@ export class CatalogService {
     return this.prisma.product.findMany({
       where: { isActive: true, ...(type ? { type: type as 'physical' | 'course' | 'credit_pack' } : {}), ...(category ? { category } : {}) },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-      select: { id: true, type: true, sku: true, name: true, description: true, coverUrl: true, price: true, stock: true, category: true, course: { select: { slug: true } } },
+      select: { id: true, type: true, sku: true, name: true, description: true, coverUrl: true, price: true, stock: true, category: true, specs: true, course: { select: { slug: true } }, variants: { where: { isActive: true }, orderBy: { sortOrder: 'asc' }, select: PUBLIC_VARIANT } },
     });
   }
 
   /** 後台商品清單（含下架、庫存、銷量） */
   listProductsAdmin() {
-    return this.prisma.product.findMany({ orderBy: [{ type: 'asc' }, { sortOrder: 'asc' }, { createdAt: 'desc' }], include: { course: { select: { slug: true } }, _count: { select: { items: true } } } });
+    return this.prisma.product.findMany({ orderBy: [{ type: 'asc' }, { sortOrder: 'asc' }, { createdAt: 'desc' }], include: { course: { select: { slug: true } }, _count: { select: { items: true, variants: true } } } });
+  }
+
+  async getProductAdmin(id: string) {
+    const p = await this.prisma.product.findFirst({ where: { OR: [{ id }, { sku: id }] }, include: { course: { select: { slug: true } }, variants: { orderBy: { sortOrder: 'asc' } }, _count: { select: { items: true } } } });
+    if (!p) throw new NotFoundException('product not found');
+    return p;
+  }
+
+  /** 刪除商品：有訂單紀錄只能下架；課程商品請由課程管理處理 */
+  async deleteProduct(id: string) {
+    const p = await this.prisma.product.findUnique({ where: { id }, include: { _count: { select: { items: true } }, course: { select: { id: true } } } });
+    if (!p) throw new NotFoundException('product not found');
+    if (p.course) throw new BadRequestException('課程商品請到「課程管理」處理');
+    if (p._count.items > 0) throw new BadRequestException('此商品已有訂單紀錄，不能刪除；請改為下架');
+    await this.prisma.product.delete({ where: { id } });
+    return { deleted: p.sku };
+  }
+
+  /** 多規格整組覆寫：有 id 的更新、沒有的新增、未列出的刪除（已有訂單的改為下架） */
+  async setVariants(productId: string, input: unknown) {
+    const d0 = parse(variantsInput, input);
+    const d = { specs: d0.specs ?? [], variants: d0.variants ?? [] };
+    const p = await this.prisma.product.findUnique({ where: { id: productId }, include: { variants: { include: { _count: { select: { items: true } } } } } });
+    if (!p) throw new NotFoundException('product not found');
+    const skus = d.variants.map((v) => v.sku);
+    if (new Set(skus).size !== skus.length) throw new BadRequestException('規格 SKU 重複');
+    const keep = new Set(d.variants.map((v) => v.id).filter(Boolean));
+    await this.prisma.$transaction(async (tx) => {
+      for (const old of p.variants) {
+        if (keep.has(old.id)) continue;
+        if (old._count.items > 0) await tx.productVariant.update({ where: { id: old.id }, data: { isActive: false } });
+        else await tx.productVariant.delete({ where: { id: old.id } });
+      }
+      for (const v of d.variants) {
+        const data = { name: v.name, sku: v.sku, price: v.price ?? null, stock: v.stock ?? null, isActive: v.isActive, sortOrder: v.sortOrder, options: v.options as Prisma.InputJsonValue };
+        if (v.id && p.variants.some((x) => x.id === v.id)) await tx.productVariant.update({ where: { id: v.id }, data });
+        else await tx.productVariant.create({ data: { ...data, productId } });
+      }
+      await tx.product.update({ where: { id: productId }, data: { specs: d.specs as unknown as Prisma.InputJsonValue } });
+    });
+    return this.getProductAdmin(productId).then((x) => ({ specs: x.specs, variants: x.variants }));
   }
 
   /** 庫存調整：set 絕對值（null＝不追蹤）或 delta 增減（不可低於 0）。 */

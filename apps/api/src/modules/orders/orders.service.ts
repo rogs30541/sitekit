@@ -20,7 +20,7 @@ const shippingInput = z.object({
 });
 const invoiceInput = z.object({ type: z.enum(['personal', 'mobile', 'citizen', 'company', 'donate']).default('personal'), carrierNum: z.string().trim().max(30).nullable().optional(), taxId: z.string().trim().max(8).nullable().optional(), title: z.string().trim().max(60).nullable().optional(), loveCode: z.string().trim().max(7).nullable().optional() });
 const createInput = z.object({
-  items: z.array(z.object({ productId: z.string().min(1), qty: z.number().int().min(1).max(99).default(1) })).min(1).max(20),
+  items: z.array(z.object({ productId: z.string().min(1), variantId: z.string().nullable().optional(), qty: z.number().int().min(1).max(99).default(1) })).min(1).max(20),
   couponCode: z.string().trim().max(40).optional(),
   shipping: shippingInput.optional(),
   invoice: invoiceInput.optional(),
@@ -71,13 +71,18 @@ export class OrdersService implements OnModuleInit {
   async quote(input: unknown) {
     const r = createInput.safeParse(input);
     if (!r.success) throw new BadRequestException(r.error.flatten().fieldErrors);
-    const products = await this.prisma.product.findMany({ where: { id: { in: r.data.items.map((i) => i.productId) }, isActive: true } });
+    const products = await this.prisma.product.findMany({ where: { id: { in: r.data.items.map((i) => i.productId) }, isActive: true }, include: { variants: { where: { isActive: true } } } });
     if (products.length !== new Set(r.data.items.map((i) => i.productId)).size) throw new BadRequestException('some products are unavailable');
     const byId = new Map(products.map((p) => [p.id, p]));
     const items = r.data.items.map((i) => {
       const p = byId.get(i.productId)!;
-      if (p.stock !== null && p.stock < i.qty) throw new BadRequestException(`「${p.name}」庫存不足（剩 ${p.stock}）`);
-      return { productId: p.id, name: p.name, qty: i.qty, unitPrice: p.price, type: p.type };
+      // 多規格：必須指定規格；價格／庫存以規格為準（規格價格 null＝沿用主商品）
+      const v = i.variantId ? p.variants.find((x) => x.id === i.variantId) : null;
+      if (p.variants.length && !v) throw new BadRequestException(`「${p.name}」請選擇規格`);
+      if (i.variantId && !v) throw new BadRequestException(`「${p.name}」規格不存在或已下架`);
+      const stock = v ? v.stock : p.stock;
+      if (stock !== null && stock < i.qty) throw new BadRequestException(`「${p.name}${v ? `（${v.name}）` : ''}」庫存不足（剩 ${stock}）`);
+      return { productId: p.id, variantId: v?.id ?? null, name: v ? `${p.name}（${v.name}）` : p.name, qty: i.qty, unitPrice: v?.price ?? p.price, type: p.type };
     });
     const subtotal = items.reduce((s, i) => s + i.unitPrice * i.qty, 0);
     const needsShipping = items.some((i) => i.type === 'physical');
@@ -131,7 +136,7 @@ export class OrdersService implements OnModuleInit {
           invoiceTaxId: q.invoice.taxId,
           invoiceTitle: q.invoice.title,
           invoiceLoveCode: q.invoice.loveCode,
-          items: { create: q.items.map(({ productId, name, qty, unitPrice }) => ({ productId, name, qty, unitPrice })) },
+          items: { create: q.items.map(({ productId, variantId, name, qty, unitPrice }) => ({ productId, variantId, name, qty, unitPrice })) },
         },
         include: ORDER_INCLUDE,
       });
@@ -141,8 +146,15 @@ export class OrdersService implements OnModuleInit {
   }
 
   /** 交易鎖扣庫存：updateMany 條件 stock ≥ qty，影響列數 0＝被搶光。stock=null 不追蹤。 */
-  private async reserveStock(tx: Tx, items: { productId: string; qty: number; name: string }[]) {
+  private async reserveStock(tx: Tx, items: { productId: string; variantId?: string | null; qty: number; name: string }[]) {
     for (const i of items) {
+      if (i.variantId) {
+        const v = await tx.productVariant.findUnique({ where: { id: i.variantId }, select: { stock: true } });
+        if (v?.stock === null || v?.stock === undefined) continue;
+        const r = await tx.productVariant.updateMany({ where: { id: i.variantId, stock: { gte: i.qty } }, data: { stock: { decrement: i.qty } } });
+        if (r.count === 0) throw new BadRequestException(`「${i.name}」庫存不足`);
+        continue;
+      }
       const p = await tx.product.findUnique({ where: { id: i.productId }, select: { stock: true } });
       if (p?.stock === null || p?.stock === undefined) continue;
       const r = await tx.product.updateMany({ where: { id: i.productId, stock: { gte: i.qty } }, data: { stock: { decrement: i.qty } } });
@@ -151,8 +163,12 @@ export class OrdersService implements OnModuleInit {
   }
 
   private async releaseStock(tx: Tx, orderId: string) {
-    const items = await tx.orderItem.findMany({ where: { orderId }, include: { product: { select: { stock: true } } } });
+    const items = await tx.orderItem.findMany({ where: { orderId }, include: { product: { select: { stock: true } }, variant: { select: { stock: true } } } });
     for (const i of items) {
+      if (i.variantId) {
+        if (i.variant && i.variant.stock !== null) await tx.productVariant.update({ where: { id: i.variantId }, data: { stock: { increment: i.qty } } });
+        continue;
+      }
       if (i.product.stock === null) continue;
       await tx.product.update({ where: { id: i.productId }, data: { stock: { increment: i.qty } } });
     }

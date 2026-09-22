@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { twd } from '@/lib/api-public';
@@ -14,7 +15,7 @@ export interface AdminProduct {
   stock: number | null;
   sortOrder: number;
   course: { slug: string } | null;
-  _count: { items: number };
+  _count: { items: number; variants?: number };
 }
 const input = 'rounded border px-2 py-1 text-sm';
 const TYPE: Record<AdminProduct['type'], string> = { physical: '實體', course: '課程', credit_pack: '點數包' };
@@ -37,6 +38,13 @@ export function ProductsClient({ products }: { products: AdminProduct[] }) {
     }
   }
 
+  async function remove(p: AdminProduct) {
+    if (!window.confirm(`刪除商品「${p.name}」？已有訂單紀錄的商品無法刪除，只能下架。`)) return;
+    const r = await fetch(`/api/admin/catalog/products/${p.id}`, { method: 'DELETE' });
+    const j = await r.json().catch(() => ({}));
+    setMsg(r.ok ? `已刪除 ${p.name}` : typeof j.message === 'string' ? j.message : '刪除失敗');
+    router.refresh();
+  }
   async function patch(id: string, data: Record<string, unknown>) {
     const r = await fetch(`/api/admin/catalog/products/${id}`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) });
     const j = await r.json().catch(() => ({}));
@@ -71,6 +79,7 @@ export function ProductsClient({ products }: { products: AdminProduct[] }) {
             <th className="py-1">庫存</th>
             <th className="py-1">已售</th>
             <th className="py-1">上架</th>
+            <th className="py-1" />
           </tr>
         </thead>
         <tbody>
@@ -78,7 +87,16 @@ export function ProductsClient({ products }: { products: AdminProduct[] }) {
             <tr key={p.id} className="border-t" style={{ borderColor: 'var(--line)' }}>
               <td className="py-1">{TYPE[p.type]}</td>
               <td className="py-1 font-mono">{p.sku}</td>
-              <td className="py-1">{p.name}</td>
+              <td className="py-1">
+                {p.type === 'course' && p.course ? (
+                  <span>{p.name}</span>
+                ) : (
+                  <Link href={`/admin/products/${p.id}`} className="font-semibold hover:underline">
+                    {p.name}
+                  </Link>
+                )}
+                {p._count.variants ? <span className="ml-1 rounded bg-neutral-100 px-1 text-[10px]">{p._count.variants} 規格</span> : null}
+              </td>
               <td className="py-1">{twd(p.price)}</td>
               <td className="py-1">
                 {p.type === 'physical' ? (
@@ -97,6 +115,18 @@ export function ProductsClient({ products }: { products: AdminProduct[] }) {
                 <button className="underline" onClick={() => patch(p.id, { isActive: !p.isActive })}>
                   {p.isActive ? '上架中（下架）' : '已下架（上架）'}
                 </button>
+              </td>
+              <td className="py-1 text-right">
+                {p.type === 'course' ? null : (
+                  <>
+                    <Link href={`/admin/products/${p.id}`} className="mr-2 underline">
+                      編輯／規格
+                    </Link>
+                    <button className="text-red-700 underline" onClick={() => remove(p)}>
+                      刪除
+                    </button>
+                  </>
+                )}
               </td>
             </tr>
           ))}

@@ -17,7 +17,7 @@ export default async function AdminProductsPage() {
         <Link href="/admin/courses" className="underline">
           課程管理
         </Link>
-        {' · 批量匯入用總覽 AI 面板 import_products（或 MCP）'}
+        {' · 點商品名稱進入「編輯／規格」填簡易資訊與多規格；批量匯入用系統設定 AI 面板 import_products（或 MCP）'}
       </p>
       <ProductsClient products={products} />
     </Section>

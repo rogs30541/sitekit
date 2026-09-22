@@ -130,6 +130,22 @@ export function MenuBuilder({ initial, pages, location = 'header' }: { initial: 
       setDrag(null);
     },
   });
+  /** 點「子選單」：縮排到上一個主選單之下；「升為主選單」：從父層拉出放到父層之後 */
+  const indent = (key: string) =>
+    setTree((t) => {
+      const i = t.findIndex((n) => n.key === key);
+      if (i <= 0 || t[i].children.length) return t;
+      const node = { ...t[i], children: [] };
+      return t.map((n, k) => (k === i - 1 ? { ...n, children: [...n.children, node] } : n)).filter((_, k) => k !== i);
+    });
+  const outdent = (key: string) =>
+    setTree((t) => {
+      const pi = t.findIndex((n) => n.children.some((c) => c.key === key));
+      if (pi < 0) return t;
+      const child = t[pi].children.find((c) => c.key === key)!;
+      const parent = { ...t[pi], children: t[pi].children.filter((c) => c.key !== key) };
+      return [...t.slice(0, pi), parent, { ...child, children: [] }, ...t.slice(pi + 1)];
+    });
   const update = (key: string, patch: Partial<Node>) => setTree((t) => t.map((n) => (n.key === key ? { ...n, ...patch } : { ...n, children: n.children.map((c) => (c.key === key ? { ...c, ...patch } : c)) })));
   const remove = (key: string) => setTree((t) => removeKey(t, key).list);
 
@@ -167,7 +183,15 @@ export function MenuBuilder({ initial, pages, location = 'header' }: { initial: 
         <button onClick={() => remove(n.key)} className="text-red-700 underline">
           移除
         </button>
-        {depth === 0 ? <span className={`ml-1 rounded border px-1 ${isOver(n.key, 'child') ? 'bg-black text-white' : ''}`} style={{ borderColor: 'var(--line)' }} {...dropHandlers(n.key, 'child')} title="拖到這裡成為子選單">↳ 子選單</span> : null}
+        {depth === 0 ? (
+          <button type="button" onClick={() => indent(n.key)} disabled={!!n.children.length} className={`ml-1 rounded border px-1 disabled:opacity-40 ${isOver(n.key, 'child') ? 'bg-black text-white' : ''}`} style={{ borderColor: 'var(--line)' }} {...dropHandlers(n.key, 'child')} title="點一下：縮排到上一個主選單之下；或把其他項目拖到這裡成為子選單">
+            ↳ 子選單
+          </button>
+        ) : (
+          <button type="button" onClick={() => outdent(n.key)} className="ml-1 rounded border px-1" style={{ borderColor: 'var(--line)' }} title="升為主選單">
+            ↰ 升為主選單
+          </button>
+        )}
       </div>
       {n.children.length ? (
         <ul className="mt-1 space-y-1">

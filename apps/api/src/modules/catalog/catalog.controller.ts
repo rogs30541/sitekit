@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { AdminSessionGuard } from '../../common/guards';
 import { CatalogService } from './catalog.service';
 
@@ -49,9 +49,25 @@ export class AdminCatalogController {
     return this.catalog.createProduct(body);
   }
 
+  @Get('products/:id')
+  product(@Param('id') id: string) {
+    return this.catalog.getProductAdmin(id);
+  }
+
   @Patch('products/:id')
   updateProduct(@Param('id') id: string, @Body() body: unknown) {
     return this.catalog.updateProduct(id, body);
+  }
+
+  @Delete('products/:id')
+  deleteProduct(@Param('id') id: string) {
+    return this.catalog.deleteProduct(id);
+  }
+
+  /** 多規格整組覆寫（specs＋variants） */
+  @Put('products/:id/variants')
+  setVariants(@Param('id') id: string, @Body() body: unknown) {
+    return this.catalog.setVariants(id, body);
   }
 
   @Post('courses')

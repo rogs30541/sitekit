@@ -104,6 +104,9 @@ export interface Product {
   coverUrl: string | null;
   price: number;
   stock?: number | null;
+  category?: string | null;
+  specs?: { name: string; values: string[] }[] | null;
+  variants?: { id: string; name: string; sku: string; price: number | null; stock: number | null; options: Record<string, string> }[];
   course?: { slug: string } | null;
 }
 export interface OrderItem {

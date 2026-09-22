@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Section } from '@/components/Section';
 import { twd } from '@/lib/api-public';
 import { apiServer } from '@/lib/api-server';
+import { NewCourseButton } from './NewCourseButton';
 
 interface AdminCourse {
   id: string;
@@ -17,11 +18,13 @@ export default async function AdminCoursesPage() {
   const courses = (await apiServer<AdminCourse[]>('/api/admin/catalog/courses')) ?? [];
   return (
     <Section title="課程管理" group="(admin)">
-      <p className="mb-3 text-xs">
+      <div className="mb-3 flex flex-wrap items-center gap-3 text-xs">
+        <NewCourseButton />
         <Link href="/admin" className="underline">
           回後台首頁
         </Link>
-      </p>
+        <span style={{ color: 'var(--muted) ' }}>建立後進入課程頁補章節、影片與封面，勾「發布」才會出現在前台 /courses；課程訂單／折扣碼／報表在「課程」選單。</span>
+      </div>
       <table className="w-full text-left text-xs">
         <thead>
           <tr style={{ color: 'var(--muted)' }}>

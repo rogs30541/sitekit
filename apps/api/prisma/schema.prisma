@@ -207,6 +207,9 @@ model Product {
   sortOrder    Int           @default(0)
   /// 商品分類（自由字串；前台可依分類篩選）
   category     String?
+  /// 規格定義 [{name:'顏色', values:['黑','白']}]；組合在 variants
+  specs        Json?
+  variants     ProductVariant[]
   course       Course?
   items        OrderItem[]
   entitlements Entitlement[]
@@ -379,13 +382,36 @@ model OrderItem {
   id        String  @id @default(cuid())
   orderId   String
   productId String
+  variantId String?
   name      String
   qty       Int     @default(1)
   unitPrice Int
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product @relation(fields: [productId], references: [id])
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   @@map("order_items")
+}
+
+/// 多規格：每個組合可有自己的 SKU／價格（null＝沿用主商品）／庫存（null＝不追蹤）
+model ProductVariant {
+  id        String      @id @default(cuid())
+  productId String
+  product   Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String
+  sku       String
+  price     Int?
+  stock     Int?
+  isActive  Boolean     @default(true)
+  sortOrder Int         @default(0)
+  options   Json        @default("{}")
+  items     OrderItem[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([productId, sku])
+  @@index([productId, sortOrder])
+  @@map("product_variants")
 }
 
 /// 金流回呼原始紀錄：驗章通過才寫；同 tradeNo+type 冪等

@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { INVOICE_TYPE_LABELS } from '@sitekit/shared';
 import { twd, type Product } from '@/lib/api-public';
-import { clearCart, onCartChange, readCart, setQty, type CartLine } from '@/lib/cart';
+import { clearCart, lineKey, onCartChange, readCart, setQty, type CartLine } from '@/lib/cart';
 import { fetchPaymentMethods, startCheckout, type PaymentMethod } from '@/lib/checkout';
 import { skTrack } from '@/lib/track';
 
@@ -220,15 +220,19 @@ export function CartClient() {
           <tbody>
             {lines.map((l) => {
               const p = products[l.productId];
+              const v = l.variantId ? p?.variants?.find((x) => x.id === l.variantId) : undefined;
               return (
-                <tr key={l.productId} className="border-t" style={{ borderColor: 'var(--line)' }}>
-                  <td className="py-2">{p?.name ?? l.productId}</td>
-                  <td className="py-2">{p ? twd(p.price) : '—'}</td>
+                <tr key={lineKey(l)} className="border-t" style={{ borderColor: 'var(--line)' }}>
                   <td className="py-2">
-                    <input type="number" min={1} max={99} value={l.qty} onChange={(e) => setQty(l.productId, Math.max(1, Math.min(99, Number(e.target.value) || 1)))} className="w-16 rounded border px-2 py-1" style={{ borderColor: 'var(--line)' }} />
+                    {p?.name ?? l.productId}
+                    {v ? <span className="ml-1 rounded bg-neutral-100 px-1 text-xs">{v.name}</span> : null}
+                  </td>
+                  <td className="py-2">{p ? twd(v?.price ?? p.price) : '—'}</td>
+                  <td className="py-2">
+                    <input type="number" min={1} max={99} value={l.qty} onChange={(e) => setQty(lineKey(l), Math.max(1, Math.min(99, Number(e.target.value) || 1)))} className="w-16 rounded border px-2 py-1" style={{ borderColor: 'var(--line)' }} />
                   </td>
                   <td className="py-2 text-right">
-                    <button onClick={() => setQty(l.productId, 0)} className="text-xs underline">
+                    <button onClick={() => setQty(lineKey(l), 0)} className="text-xs underline">
                       移除
                     </button>
                   </td>
