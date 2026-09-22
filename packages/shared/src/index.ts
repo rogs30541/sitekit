@@ -182,7 +182,9 @@ export const OPS_ACTIONS = {
   list_courses: { desc: '列出課程（含未發布；slug、商品、章節數）', mutating: false },
   upsert_course: { desc: '以 slug 建立或更新線上課程（product{sku,name,price,description,coverUrl}、summary、isPublished、accessMode）', mutating: true },
   add_chapter: { desc: '為課程新增章節（courseSlug、title、body、videoProvider youtube|bunny、videoProviderId、isPreview、parentId）', mutating: true },
-  generate_image: { desc: 'AI 產圖（prompt、size 1024x1024|1536x1024|1024x1536、quality standard|high、purpose product|banner|illustration）→ 存到儲存空間回公開 url；會產生費用', mutating: true },
+  generate_image: { desc: 'AI 產圖（prompt；或 templateKey＋inputs{欄位key:值} 套用產圖模板；referenceImages[] 參考圖網址≤4；size 1024x1024|1536x1024|1024x1536、quality standard|high、purpose product|banner|illustration）→ 存到儲存空間回公開 url；會產生費用', mutating: true },
+  list_image_templates: { desc: '列出 AI 產圖模板（key、名稱、分類、說明、欄位定義、預設尺寸；商品製圖／Banner 先用此挑模板）', mutating: false },
+  upsert_image_template: { desc: '以 key 建立或更新 AI 產圖模板（name、category、description、systemPrompt、inputFields[]、defaultSize、costPoints、highCostPoints、isActive、sortOrder；coverBase64＋coverMime 上傳封面）', mutating: true },
   import_products: { desc: '商品 CSV 匯入（sku,name,price,type,description,cover_url,stock,active；相容 Shopify 商品 CSV；dryRun 預設 true）', mutating: true },
 } as const;
 

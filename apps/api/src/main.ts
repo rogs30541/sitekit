@@ -17,7 +17,7 @@ async function bootstrap() {
   app.use(helmet());
   app.use(cookieParser());
   // 金流回呼是 form-urlencoded；CSV 匯入走 JSON 放寬到 5MB
-  app.use(express.json({ limit: '5mb' }));
+  app.use(express.json({ limit: '45mb' })); // 參考圖 data URL 最多 4×10MB
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
   app.use(rateLimit(DEFAULT_RULES));
   app.useGlobalFilters(new ZodExceptionFilter());

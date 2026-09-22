@@ -32,7 +32,7 @@ export interface AdminJob {
 }
 
 const input = 'w-full rounded border px-2 py-1 text-xs';
-const EMPTY = { key: '', name: '', category: 'general', description: '', systemPrompt: '', inputFields: '[]', defaultSize: '1024x1024', costPoints: 5, highCostPoints: 15, isActive: true, sortOrder: 100 };
+const EMPTY = { key: '', name: '', category: 'general', description: '', systemPrompt: '', inputFields: '[{ "key": "product_name", "label": "商品名稱", "type": "text", "required": true }, { "key": "reference_images", "label": "商品圖／服務圖", "type": "image" }]', defaultSize: '1024x1024', costPoints: 5, highCostPoints: 15, isActive: true, sortOrder: 100 };
 
 /** 模板 CRUD（systemPrompt 只在這裡看得到）、點數調整、任務與成本列表。 */
 export function AdminStudioClient({ templates, jobs }: { templates: AdminTemplate[]; jobs: AdminJob[] }) {

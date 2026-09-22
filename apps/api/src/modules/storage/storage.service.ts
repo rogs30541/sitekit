@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { Injectable, Logger } from '@nestjs/common';
 import { createHash, createHmac } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -103,7 +104,30 @@ export class StorageService {
     }
   }
 
+  /** 讀取本站資產或遠端圖片：local 驅動的 /api/assets/<key> 直接讀磁碟（不經 HTTP、不依賴 web 是否在線），其餘走 fetchRemote。 */
+  async fetchAsset(src: string, maxBytes = 10 * 1024 * 1024): Promise<{ bytes: Buffer; mime: string } | null> {
+    const m = String(src).match(/\/api\/assets\/(.+)$/);
+    if (m) {
+      try {
+        const key = decodeURIComponent(m[1]).replace(/\.\./g, '');
+        const file = resolve(this.localDir, key);
+        if (file.startsWith(this.localDir)) {
+          const bytes = await readFile(file);
+          if (bytes.length <= maxBytes) return { bytes, mime: mimeFromExt(key) };
+        }
+      } catch {
+        /* fall through */
+      }
+    }
+    return this.fetchRemote(src, maxBytes);
+  }
+
   static keyFor(prefix: string, src: string, mime: string) {
     return `${prefix}/${createHash('sha1').update(src).digest('hex')}.${extFromMime(mime)}`;
   }
+}
+
+export function mimeFromExt(name: string): string {
+  const ext = name.split('.').pop()?.toLowerCase() ?? '';
+  return ({ png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', svg: 'image/svg+xml' } as Record<string, string>)[ext] ?? 'application/octet-stream';
 }

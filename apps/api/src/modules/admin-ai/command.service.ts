@@ -51,7 +51,8 @@ const TOOL_HINTS: Partial<Record<OpsAction, string>> = {
   import_products: '參數：csv（字串）、dryRun。',
   list_content: '參數：type、status。',
   list_questions: '參數：status open|answered。',
-  generate_image: '參數：prompt（英文描述效果較好，可自行把中文需求翻成英文提示詞）、size、quality、purpose。回 url 後可 upsert_product 設 coverUrl，或放進 upsert_content 的 design image 區塊。',
+  generate_image: '參數：prompt（英文描述效果較好）或 templateKey＋inputs（先用 list_image_templates 挑模板，inputs 的 key 依模板 inputFields；商品製圖／Banner 優先套模板）、referenceImages（商品現有 coverUrl 等公開圖網址，≤4）、size、quality、purpose。回 url 後可 upsert_product 設 coverUrl，或放進 upsert_content 的 design image 區塊。',
+  list_image_templates: '無參數。回每個模板的 key／分類／說明／欄位定義（inputFields[].key、label、required、options）。',
 };
 
 const SYSTEM_PROMPT = `你是「AIGC創客架站套件」的後台全站工作總控（AI 指令台）。使用者是網站管理員，用中文下指令；你透過工具操作網站：前端頁面、電商訂單／物流／發票／折扣碼／庫存、報表分析、商品製圖、商品上架與分類、線上課程上架、Banner 設計。

@@ -11,7 +11,7 @@ export interface AiTemplate {
   category: string;
   description: string | null;
   coverUrl: string | null;
-  inputFields: { key: string; label: string; type: 'text' | 'textarea' | 'select'; required?: boolean; placeholder?: string; options?: string[] }[];
+  inputFields: { key: string; label: string; type: 'text' | 'textarea' | 'select' | 'image'; required?: boolean; placeholder?: string; options?: string[] }[];
   defaultSize: string;
   costPoints: number;
   highCostPoints: number;
@@ -49,6 +49,26 @@ export function StudioClient({ templates, credits: initialCredits, byok }: { tem
   const [jobs, setJobs] = useState<AiJob[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [images, setImages] = useState<string[]>([]);
+  const categories = Array.from(new Set(templates.map((t) => t.category)));
+  async function addImages(files: FileList | null) {
+    if (!files) return;
+    const next = [...images];
+    for (const f of Array.from(files)) {
+      if (next.length >= 4) break;
+      if (f.size > 10 * 1024 * 1024) {
+        setError('參考圖每張上限 10MB');
+        continue;
+      }
+      next.push(await new Promise<string>((res, rej) => {
+        const fr = new FileReader();
+        fr.onload = () => res(String(fr.result));
+        fr.onerror = () => rej(fr.error);
+        fr.readAsDataURL(f);
+      }));
+    }
+    setImages(next);
+  }
 
   const cost = byok ? 0 : tpl ? (quality === 'high' ? tpl.highCostPoints : tpl.costPoints) : quality === 'high' ? 15 : 5;
 
@@ -70,11 +90,12 @@ export function StudioClient({ templates, credits: initialCredits, byok }: { tem
     e.preventDefault();
     setBusy(true);
     setError('');
-    const r = await fetch('/api/studio/jobs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ templateId: tpl?.id ?? null, prompt, inputs, quality }) });
+    const r = await fetch('/api/studio/jobs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ templateId: tpl?.id ?? null, prompt, inputs, quality, images }) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) setError(typeof j.message === 'string' ? j.message : JSON.stringify(j.message ?? j));
     else {
       setPrompt('');
+      setImages([]);
       await refresh();
     }
     setBusy(false);
@@ -102,14 +123,28 @@ export function StudioClient({ templates, credits: initialCredits, byok }: { tem
                 自由提示詞
               </button>
             </li>
-            {templates.map((t) => (
-              <li key={t.id}>
-                <button onClick={() => (setTpl(t), setInputs({}))} className={`w-full rounded px-2 py-1 text-left text-sm ${tpl?.id === t.id ? 'bg-neutral-900 text-white' : 'hover:bg-neutral-100'}`}>
-                  {t.name}
-                  <span className={`ml-2 text-xs ${tpl?.id === t.id ? 'text-neutral-300' : ''}`} style={{ color: tpl?.id === t.id ? undefined : 'var(--muted)' }}>
-                    標準 {t.costPoints}・印刷 {t.highCostPoints}
-                  </span>
-                </button>
+            {categories.map((cat) => (
+              <li key={cat}>
+                <p className="mt-2 px-2 text-[11px] font-semibold" style={{ color: 'var(--muted)' }}>
+                  {cat}
+                </p>
+                <ul className="space-y-1">
+                  {templates
+                    .filter((t) => t.category === cat)
+                    .map((t) => (
+                      <li key={t.id}>
+                        <button onClick={() => (setTpl(t), setInputs({}), setImages([]))} className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm ${tpl?.id === t.id ? 'bg-neutral-900 text-white' : 'hover:bg-neutral-100'}`}>
+                          {t.coverUrl ? <img src={t.coverUrl} alt="" className="h-8 w-8 shrink-0 rounded object-cover" /> : null}
+                          <span className="min-w-0 flex-1 truncate">
+                            {t.name}
+                            <span className="ml-2 text-xs" style={{ color: tpl?.id === t.id ? '#d4d4d4' : 'var(--muted)' }}>
+                              {t.defaultSize === '1024x1024' ? '1:1' : '2:3'}・{t.costPoints}/{t.highCostPoints} 點
+                            </span>
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                </ul>
               </li>
             ))}
           </ul>
@@ -123,15 +158,33 @@ export function StudioClient({ templates, credits: initialCredits, byok }: { tem
               {tpl.description}
             </p>
           ) : null}
+          {tpl?.coverUrl ? <img src={tpl.coverUrl} alt="" className="max-h-56 rounded border object-contain" style={{ borderColor: 'var(--line)' }} /> : null}
           {(tpl?.inputFields ?? []).map((f) => (
             <label key={f.key} className="block text-xs">
               {f.label}
               {f.required ? <span className="text-red-700"> *</span> : null}
-              {f.type === 'textarea' ? (
+              {f.type === 'image' ? (
+                <div className="mt-1 space-y-1">
+                  <input type="file" accept="image/*" multiple className="block text-xs" onChange={(e) => void addImages(e.target.files)} disabled={images.length >= 4} />
+                  <p style={{ color: 'var(--muted)' }}>{f.placeholder ?? '最多 4 張、每張 10MB'}（{images.length}/4）</p>
+                  {images.length ? (
+                    <div className="flex flex-wrap gap-1">
+                      {images.map((src, i) => (
+                        <span key={i} className="relative">
+                          <img src={src} alt="" className="h-16 w-16 rounded border object-cover" style={{ borderColor: 'var(--line)' }} />
+                          <button type="button" onClick={() => setImages(images.filter((_, j) => j !== i))} className="absolute -right-1 -top-1 rounded-full bg-black px-1 text-[10px] text-white">
+                            ✕
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : f.type === 'textarea' ? (
                 <textarea className={input} style={{ borderColor: 'var(--line)' }} rows={2} placeholder={f.placeholder} value={inputs[f.key] ?? ''} onChange={(e) => setInputs({ ...inputs, [f.key]: e.target.value })} />
               ) : f.type === 'select' ? (
                 <select className={input} style={{ borderColor: 'var(--line)' }} value={inputs[f.key] ?? ''} onChange={(e) => setInputs({ ...inputs, [f.key]: e.target.value })}>
-                  <option value="">請選擇</option>
+                  <option value="">{f.placeholder ?? '請選擇'}</option>
                   {(f.options ?? []).map((o) => (
                     <option key={o} value={o}>
                       {o}

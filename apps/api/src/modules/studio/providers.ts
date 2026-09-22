@@ -9,6 +9,8 @@ export interface ImageRequest {
   quality: 'standard' | 'high';
   apiKey?: string;
   model?: string;
+  /** 參考圖（商品／服務照片）：OpenAI 走 images/edits 多圖輸入；mock 忽略 */
+  referenceImages?: { bytes: Buffer; mime: string }[];
 }
 export interface ImageResult {
   bytes: Buffer;
@@ -43,11 +45,25 @@ export class OpenAiImageProvider implements ImageProvider {
   readonly name = 'openai';
   async generate(req: ImageRequest): Promise<ImageResult> {
     if (!req.apiKey) throw new Error('OpenAI API key is not configured');
-    const res = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST',
-      headers: { authorization: `Bearer ${req.apiKey}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ model: req.model ?? 'gpt-image-1', prompt: req.prompt, size: req.size, quality: req.quality === 'high' ? 'high' : 'medium', n: 1 }),
-    });
+    const refs = (req.referenceImages ?? []).slice(0, 4);
+    let res: Response;
+    if (refs.length) {
+      // 參考圖：images/edits（multipart，image[] 多張），模型依參考圖重現商品外觀
+      const form = new FormData();
+      form.append('model', req.model ?? 'gpt-image-1');
+      form.append('prompt', req.prompt);
+      form.append('size', req.size);
+      form.append('quality', req.quality === 'high' ? 'high' : 'medium');
+      form.append('n', '1');
+      refs.forEach((r, i) => form.append('image[]', new Blob([new Uint8Array(r.bytes)], { type: r.mime }), `ref${i}.${r.mime.includes('png') ? 'png' : r.mime.includes('webp') ? 'webp' : 'jpg'}`));
+      res = await fetch('https://api.openai.com/v1/images/edits', { method: 'POST', headers: { authorization: `Bearer ${req.apiKey}` }, body: form });
+    } else {
+      res = await fetch('https://api.openai.com/v1/images/generations', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${req.apiKey}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ model: req.model ?? 'gpt-image-1', prompt: req.prompt, size: req.size, quality: req.quality === 'high' ? 'high' : 'medium', n: 1 }),
+      });
+    }
     const data = (await res.json()) as { data?: { b64_json?: string }[]; error?: { message?: string } };
     if (!res.ok) throw new Error(`openai ${res.status}: ${data.error?.message ?? 'request failed'}`);
     const b64 = data.data?.[0]?.b64_json;

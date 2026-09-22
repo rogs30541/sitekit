@@ -28,6 +28,14 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 **P3 產品化（完成）**：點數帳本（保留再結算、失敗釋放）、AI Provider 抽象層（mock／OpenAI、平台金鑰或 BYOK）、程序內任務佇列（可換 BullMQ）、`/studio` AI 創作工作站、`/admin/studio` 模板管理與點數調整、MCP／AI API 的 `adjust_credits`。
 
+## v0.9.1（2026-09-22）產圖模板庫：20 組電商模板＋參考圖
+
+- **匯入 20 組產圖模板**（`scripts/import-image-templates.mjs <資料夾> --token <OPS_TOKEN> [--api]`，走 OPS `upsert_image_template`，本機／線上皆可）：來源為「產圖模板風格」資料夾（成品圖 JPG＝模板封面、表單欄位 md＝欄位定義、Prompt 提示詞 md＝英文通用 Prompt＋負面提示詞＋套用注意事項）。分類 A 商品展示（4）／B 促銷優惠（5）／C 品牌社群（4）／D 活動招生（4）／E 門市售後（3）；1:1 → 1024x1024、2:3 → 1024x1536；欄位 key 取 Prompt 變數名（`{product_name}` 等，產圖時直接代入），下拉選項與預設值一併帶入，「商品圖／服務圖」為 `image` 型別。
+- **參考圖**：`AiTemplate.inputFields[].type` 新增 `image`；會員工作站可上傳最多 4 張（10MB／張，data URL → 先落地儲存空間，任務只記網址）；OpenAI 供應商有參考圖時改走 `images/edits`（多圖輸入，依參考圖重現商品外觀），mock 忽略。`composeTemplatePrompt` 把 `{變數}` 代入模板 Prompt、其餘欄位以「標籤：值」附上。
+- **指令台／MCP**：`list_image_templates`、`upsert_image_template`；`generate_image` 支援 `templateKey`＋`inputs`＋`referenceImages`（商品製圖／Banner 先挑模板）。
+- 會員工作站模板庫依分類分組、顯示封面縮圖與比例；後台「AI 產圖模板與任務管理」可編輯匯入後的模板（systemPrompt 只在後台可見）。
+- 本機 E2E：`local-p15-e2e.mjs` 21 項全過（含 mock 任務帶參考圖、OPS 套模板產圖）。
+
 ## P10 AI 工作站指令台（2026-09-22，v0.9.0）
 
 - **定位**：AI 工作站＝後台全站工作總控，只在後台（`/admin/studio`），前台不顯示。用自然語言操作七大工作項目：前端頁面編輯、後端電商處理、電商報表分析、商品製圖、商品上架／分類、線上課程上架、BANNER 設計；**系統功能（部署／遷移／設定／管理員／稽核／儲存）不開放**（`COMMAND_EXCLUDED_ACTIONS`）。

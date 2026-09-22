@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { StudioModule } from '../studio/studio.module';
 import { MigrationModule } from '../migration/migration.module';
 import { CreditsModule } from '../credits/credits.module';
 import { OrdersModule } from '../orders/orders.module';
@@ -8,5 +9,5 @@ import { InvoiceModule } from '../invoice/invoice.module';
 import { OpsController } from './ops.controller';
 import { OpsService } from './ops.service';
 
-@Module({ imports: [MigrationModule, CreditsModule, OrdersModule, CatalogModule, ContentModule, InvoiceModule], controllers: [OpsController], providers: [OpsService], exports: [OpsService] })
+@Module({ imports: [StudioModule, MigrationModule, CreditsModule, OrdersModule, CatalogModule, ContentModule, InvoiceModule], controllers: [OpsController], providers: [OpsService], exports: [OpsService] })
 export class OpsModule {}

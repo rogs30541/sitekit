@@ -20,6 +20,7 @@ import { LogisticsService } from '../logistics/logistics.service';
 import { InvoiceService } from '../invoice/invoice.service';
 import { DesignService } from '../content/design.service';
 import { getProvider } from '../studio/providers';
+import { composeTemplatePrompt, StudioService } from '../studio/studio.service';
 
 const SECRET_KEY = /secret|key|token|password|hashiv|hash_iv|signing/i;
 const SECRET_PARAM = /^(password|apiKey)$/i;
@@ -47,6 +48,7 @@ export class OpsService {
     private readonly logistics: LogisticsService,
     private readonly invoice: InvoiceService,
     private readonly design: DesignService,
+    private readonly studio: StudioService,
   ) {}
 
   listActions() {
@@ -210,17 +212,43 @@ export class OpsService {
         const ch = await this.catalog.addChapter(course.id, { title: String(p.title ?? '未命名章節'), ...(p.body !== undefined ? { body: String(p.body) } : {}), ...(p.videoProvider ? { videoProvider: p.videoProvider } : {}), ...(p.videoProviderId !== undefined ? { videoProviderId: p.videoProviderId ? String(p.videoProviderId) : null } : {}), ...(p.isPreview !== undefined ? { isPreview: !!p.isPreview } : {}), ...(p.isPublished !== undefined ? { isPublished: !!p.isPublished } : {}), ...(p.parentId ? { parentId: String(p.parentId) } : {}), ...(p.order !== undefined ? { order: Number(p.order) } : {}) });
         return { id: ch.id, courseSlug: course.slug, title: ch.title, order: ch.order, parentId: ch.parentId };
       }
+      case 'list_image_templates': {
+        const rows = await this.prisma.aiTemplate.findMany({ where: { isActive: true }, orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }] });
+        return rows.map((t) => ({ key: t.key, name: t.name, category: t.category, description: t.description, coverUrl: t.coverUrl, defaultSize: t.defaultSize, inputFields: t.inputFields }));
+      }
+      case 'upsert_image_template': {
+        const key = String(p.key ?? '').trim();
+        if (!key) throw new Error('key is required');
+        const existing = await this.prisma.aiTemplate.findUnique({ where: { key } });
+        let coverUrl: string | undefined;
+        if (typeof p.coverBase64 === 'string' && p.coverBase64) {
+          const mime = String(p.coverMime ?? 'image/jpeg');
+          const bytes = Buffer.from(p.coverBase64.replace(/^data:[^;]+;base64,/, ''), 'base64');
+          if (bytes.length > 5 * 1024 * 1024) throw new Error('cover must be ≤5MB');
+          coverUrl = (await this.storage.put(`ai/templates/${key}.${mime.includes('png') ? 'png' : mime.includes('webp') ? 'webp' : 'jpg'}`, bytes, mime)).url;
+        } else if (typeof p.coverUrl === 'string') coverUrl = p.coverUrl;
+        const { coverBase64: _b, coverMime: _m, coverUrl: _u, ...rest } = p;
+        const data = { ...rest, key, ...(coverUrl !== undefined ? { coverUrl } : {}) };
+        const row = existing ? await this.studio.updateTemplate(existing.id, data) : await this.studio.createTemplate({ name: key, systemPrompt: 'template', ...data });
+        return { id: row.id, key: row.key, name: row.name, category: row.category, coverUrl: row.coverUrl, fields: (row.inputFields as unknown[]).length, created: !existing };
+      }
       case 'generate_image': {
-        const prompt = String(p.prompt ?? '').trim();
-        if (!prompt) throw new Error('prompt is required');
+        let prompt = String(p.prompt ?? '').trim();
+        const templateKey = String(p.templateKey ?? '').trim();
+        const template = templateKey ? await this.prisma.aiTemplate.findFirst({ where: { OR: [{ key: templateKey }, { id: templateKey }], isActive: true } }) : null;
+        if (templateKey && !template) throw new Error(`找不到產圖模板 ${templateKey}（用 list_image_templates 查 key）`);
+        if (template) prompt = composeTemplatePrompt(template.systemPrompt, (template.inputFields as { key: string; label: string; type?: string }[]) ?? [], (p.inputs && typeof p.inputs === 'object' ? (p.inputs as Record<string, unknown>) : {}), prompt);
+        if (!prompt) throw new Error('prompt or templateKey is required');
         const ai = await this.settings.ai();
-        const size = ['1024x1024', '1536x1024', '1024x1536'].includes(String(p.size)) ? String(p.size) : '1024x1024';
+        const size = ['1024x1024', '1536x1024', '1024x1536'].includes(String(p.size)) ? String(p.size) : (template?.defaultSize ?? '1024x1024');
         const quality = p.quality === 'high' ? 'high' : 'standard';
         const provider = getProvider(ai.provider);
-        const img = await provider.generate({ prompt, size, quality, apiKey: ai.openaiKey || undefined, model: ai.imageModel });
+        const refUrls = Array.isArray(p.referenceImages) ? (p.referenceImages as unknown[]).map(String).filter((u) => /^https?:\/\//.test(u)).slice(0, 4) : [];
+        const referenceImages = (await Promise.all(refUrls.map((u) => this.storage.fetchAsset(u)))).filter((x): x is { bytes: Buffer; mime: string } => !!x);
+        const img = await provider.generate({ prompt, size, quality, apiKey: ai.openaiKey || undefined, model: ai.imageModel, referenceImages });
         const purpose = ['product', 'banner', 'illustration'].includes(String(p.purpose)) ? String(p.purpose) : 'illustration';
         const put = await this.storage.put(`ai/${purpose}/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}.${img.ext}`, img.bytes, img.mime);
-        return { url: put.url, provider: provider.name, size, quality, purpose, bytes: img.bytes.length, costTwd: img.costTwd ?? null, note: provider.name === 'mock' ? 'mock 供應商（佔位圖）；到系統設定把 ai.provider 改為 openai 並填 openai.apiKey 才是真產圖' : undefined };
+        return { url: put.url, provider: provider.name, size, quality, purpose, template: template?.key ?? null, referenceImages: referenceImages.length, bytes: img.bytes.length, costTwd: img.costTwd ?? null, note: provider.name === 'mock' ? 'mock 供應商（佔位圖）；到系統設定把 ai.provider 改為 openai 並填 openai.apiKey 才是真產圖' : undefined };
       }
       case 'update_shipping': {
         const orderNo = String(p.orderNo ?? p.merchantOrderNo ?? p.orderId ?? '');

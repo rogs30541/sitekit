@@ -16,6 +16,8 @@ const createJobInput = z.object({
   inputs: z.record(z.string().max(2000)).optional(),
   quality: z.enum(['standard', 'high']).default('standard'),
   size: z.enum(SIZES).optional(),
+  /** 參考圖（商品／服務照片）：data URL（≤4 張、每張 ≤10MB）或已上傳的公開網址 */
+  images: z.array(z.string().max(15 * 1024 * 1024)).max(4).optional(),
 });
 const templateInput = z.object({
   key: z.string().trim().min(1).max(60).regex(/^[a-z0-9_-]+$/),
@@ -24,7 +26,7 @@ const templateInput = z.object({
   description: z.string().max(500).nullable().optional(),
   coverUrl: z.string().url().nullable().optional().or(z.literal('').transform(() => null)),
   systemPrompt: z.string().trim().min(5).max(8000),
-  inputFields: z.array(z.object({ key: z.string().min(1).max(40), label: z.string().min(1).max(60), type: z.enum(['text', 'textarea', 'select']).default('text'), required: z.boolean().default(false), placeholder: z.string().max(200).optional(), options: z.array(z.string()).optional() })).default([]),
+  inputFields: z.array(z.object({ key: z.string().min(1).max(40), label: z.string().min(1).max(60), type: z.enum(['text', 'textarea', 'select', 'image']).default('text'), required: z.boolean().default(false), placeholder: z.string().max(200).optional(), options: z.array(z.string()).optional() })).default([]),
   defaultSize: z.enum(SIZES).default('1024x1024'),
   costPoints: z.number().int().min(0).default(5),
   highCostPoints: z.number().int().min(0).default(15),
@@ -33,6 +35,21 @@ const templateInput = z.object({
 });
 const DEFAULT_COST = { standard: 5, high: 15 };
 const PUBLIC_TEMPLATE = { id: true, key: true, name: true, category: true, description: true, coverUrl: true, inputFields: true, defaultSize: true, costPoints: true, highCostPoints: true } as const;
+
+/** 模板提示詞組合：{key} 變數直接代入（模型看得懂），其餘欄位以「標籤：值」附在後面，最後接自由補充。 */
+export function composeTemplatePrompt(systemPrompt: string, fields: { key: string; label: string; type?: string }[], inputs: Record<string, unknown>, extra = ''): string {
+  let base = systemPrompt;
+  const lines: string[] = [];
+  for (const f of fields) {
+    if (f.type === 'image') continue;
+    const v = inputs[f.key];
+    if (typeof v !== 'string' || !v.trim()) continue;
+    const re = new RegExp(`\\{${f.key}\\}`, 'g');
+    if (re.test(base)) base = base.replace(re, v.trim());
+    lines.push(`${f.label}：${v.trim()}`);
+  }
+  return [base, lines.length ? `User fields:\n${lines.join('\n')}` : '', extra].filter(Boolean).join('\n\n');
+}
 
 function parse<S extends z.ZodTypeAny>(schema: S, input: unknown): z.infer<S> {
   const r = schema.safeParse(input);
@@ -118,9 +135,24 @@ export class StudioService implements OnModuleInit {
     if (d.templateId && !template) throw new NotFoundException('template not found');
     if (!template && !d.prompt) throw new BadRequestException('prompt is required');
     if (template) {
-      for (const f of (template.inputFields as { key: string; label: string; required?: boolean }[]) ?? []) {
+      for (const f of (template.inputFields as { key: string; label: string; type?: string; required?: boolean }[]) ?? []) {
+        if (f.type === 'image') continue;
         if (f.required && !d.inputs?.[f.key]?.trim()) throw new BadRequestException(`請填寫「${f.label}」`);
       }
+    }
+    // 參考圖先落地儲存空間（不把 base64 塞進資料庫），任務只記網址
+    const refUrls: string[] = [];
+    for (const [i, img] of (d.images ?? []).entries()) {
+      if (/^https?:\/\//.test(img)) {
+        refUrls.push(img);
+        continue;
+      }
+      const m = img.match(/^data:(image\/[a-z+]+);base64,(.+)$/i);
+      if (!m) throw new BadRequestException('參考圖格式錯誤（需 data URL 或 https 網址）');
+      const bytes = Buffer.from(m[2], 'base64');
+      if (bytes.length > 10 * 1024 * 1024) throw new BadRequestException('參考圖每張上限 10MB');
+      const put = await this.storage.put(`ai/ref/${Date.now().toString(36)}-${i}-${Math.random().toString(36).slice(2, 7)}.${m[1].includes('png') ? 'png' : m[1].includes('webp') ? 'webp' : 'jpg'}`, bytes, m[1]);
+      refUrls.push(put.url);
     }
     const cost = template ? (d.quality === 'high' ? template.highCostPoints : template.costPoints) : DEFAULT_COST[d.quality];
     const ai = await this.settings.ai();
@@ -131,7 +163,7 @@ export class StudioService implements OnModuleInit {
     const job = await this.prisma.$transaction(async (tx) => {
       if (!byok && cost > 0) await this.credits.reserve(tx, userId, cost);
       return tx.aiJob.create({
-        data: { userId, kind: 'image', templateId: template?.id ?? null, prompt: d.prompt, inputs: (d.inputs ?? {}) as Prisma.InputJsonValue, quality: d.quality, size: d.size ?? template?.defaultSize ?? '1024x1024', provider, byok, costPoints: byok ? 0 : cost },
+        data: { userId, kind: 'image', templateId: template?.id ?? null, prompt: d.prompt, inputs: { ...(d.inputs ?? {}), ...(refUrls.length ? { __images: refUrls } : {}) } as Prisma.InputJsonValue, quality: d.quality, size: d.size ?? template?.defaultSize ?? '1024x1024', provider, byok, costPoints: byok ? 0 : cost },
       });
     });
     this.enqueue(job.id);
@@ -171,10 +203,11 @@ export class StudioService implements OnModuleInit {
     try {
       const ai = await this.settings.ai();
       const apiKey = job.byok ? await this.userKey(job.userId, 'openai') : ai.openaiKey;
-      const inputs = (job.inputs ?? {}) as Record<string, string>;
-      const fields = ((job.template?.inputFields as { key: string; label: string }[] | null) ?? []).filter((f) => inputs[f.key]).map((f) => `${f.label}：${inputs[f.key]}`);
-      const prompt = [job.template?.systemPrompt, ...fields, job.prompt].filter(Boolean).join('\n');
-      const result = await getProvider(job.provider ?? 'mock').generate({ prompt, size: job.size, quality: job.quality as 'standard' | 'high', apiKey: apiKey ?? undefined, model: ai.imageModel });
+      const inputs = (job.inputs ?? {}) as Record<string, unknown>;
+      const refUrls = Array.isArray(inputs.__images) ? (inputs.__images as string[]) : [];
+      const prompt = composeTemplatePrompt(job.template?.systemPrompt ?? '', (job.template?.inputFields as { key: string; label: string; type?: string }[] | null) ?? [], inputs, job.prompt);
+      const referenceImages = (await Promise.all(refUrls.map((u) => this.storage.fetchAsset(u)))).filter((x): x is { bytes: Buffer; mime: string } => !!x);
+      const result = await getProvider(job.provider ?? 'mock').generate({ prompt, size: job.size, quality: job.quality as 'standard' | 'high', apiKey: apiKey ?? undefined, model: ai.imageModel, referenceImages });
       const file = `${job.id}.${result.ext}`;
       const put = await this.storage.put(`ai/${file}`, result.bytes, result.ext === 'png' ? 'image/png' : result.ext === 'svg' ? 'image/svg+xml' : result.ext === 'webp' ? 'image/webp' : 'image/jpeg');
       const resultUrl = put.driver === 's3' ? put.url : `/api/assets/ai/${file}`;
