@@ -156,8 +156,15 @@ export const OPS_ACTIONS = {
   list_questions: { desc: '列出課程問答（courseId 或 slug 可選、status open|answered|hidden）', mutating: false },
   answer_question: { desc: '回覆學員提問（id、answer；isPublic 可選）——會通知提問者', mutating: true },
   post_announcement: { desc: '發布課程公告（courseId 或 slug、title、body）', mutating: true },
-  upsert_content: { desc: '建立或更新官網頁面／文章（type page|post、slug、title、body HTML、excerpt、coverUrl、tags、status draft|published；以 slug 冪等）', mutating: true },
-  list_content: { desc: '列出內容（type、status 可選）', mutating: false },
+  upsert_content: { desc: '建立或更新官網頁面／文章「草稿」（type page|post、slug、title、body HTML 或 design JSON、excerpt、coverUrl、tags；以 slug 冪等；一律先存草稿，不直接改線上頁，要上線請用 publish_content）', mutating: true },
+  list_content: { desc: '列出內容（type、status 可選；含 hasDraft／version）', mutating: false },
+  get_content_draft: { desc: '讀取頁面草稿（含 design JSON、沙盒預覽連結、發佈前檢測結果）', mutating: false },
+  preview_content: { desc: '產生沙盒預覽連結（草稿內容、不影響線上；連結 2 小時有效）', mutating: false },
+  publish_content: { desc: '把草稿發佈到線上（必須 confirm=true；發佈前先把目前線上版本備份成 revision、可回滾；發佈前檢測有 error 則拒絕）', mutating: true },
+  list_revisions: { desc: '列出頁面的歷史版本（每次發佈前的線上備份）', mutating: false },
+  restore_revision: { desc: '把某個歷史版本還原到「草稿」（不直接改線上；還原後需 publish_content 確認才上線）', mutating: true },
+  import_page_design: { desc: '匯入設計文件 JSON（design doc 或 blocks 陣列）建立／更新頁面草稿；不會自動發佈', mutating: true },
+  export_page_design: { desc: '匯出頁面設計文件 JSON（草稿優先，否則線上版）', mutating: false },
   create_admin: { desc: '建立後台管理員（email、password ≥8、role admin|superadmin；後台帳號與前台會員分離）', mutating: true },
   list_admins: { desc: '列出後台管理員', mutating: false },
   update_admin: { desc: '修改管理員（idOrEmail；password／displayName／role／status active|suspended）', mutating: true },
@@ -212,3 +219,5 @@ export interface OpsResult {
   data?: unknown;
   error?: string;
 }
+
+export * from './design';

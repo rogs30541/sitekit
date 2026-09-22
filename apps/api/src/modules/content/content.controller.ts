@@ -39,10 +39,11 @@ export class ContentController {
   async page(@Param('slug') slug: string) {
     const item = await this.prisma.content.findFirst({
       where: { slug, status: 'published', type: 'page' },
-      select: { slug: true, title: true, body: true, excerpt: true, coverUrl: true, publishedAt: true, updatedAt: true },
+      select: { slug: true, title: true, body: true, excerpt: true, coverUrl: true, publishedAt: true, updatedAt: true, version: true, design: true },
     });
     if (!item) throw new NotFoundException('page not found');
-    return item;
+    const { design, ...rest } = item;
+    return { ...rest, hasDesign: !!design };
   }
 
   /** 供 web middleware 套用 301 導向表。 */

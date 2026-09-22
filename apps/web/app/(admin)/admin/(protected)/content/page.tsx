@@ -16,6 +16,10 @@ interface Row {
   source: string;
   publishedAt: string | null;
   updatedAt: string;
+  version?: number;
+  hasDesign?: boolean;
+  hasUnpublished?: boolean;
+  draftUpdatedAt?: string | null;
 }
 const STATUS: Record<string, string> = { draft: '草稿', published: '已發布', archived: '封存' };
 
@@ -24,7 +28,7 @@ export default async function AdminContentPage({ searchParams }: { searchParams:
   const { type = 'page' } = await searchParams;
   const rows = (await apiServer<Row[]>(`/api/admin/content?type=${encodeURIComponent(type)}`)) ?? [];
   return (
-    <Section title="內容編輯" group="(admin)">
+    <Section title={type === 'post' ? '文章' : '頁面設計'} group="(admin)">
       <div className="mb-3 flex flex-wrap items-center gap-3 text-xs">
         <Link href="/admin/content?type=page" className={`underline ${type === 'page' ? 'font-bold' : ''}`}>
           官網頁面
@@ -33,7 +37,7 @@ export default async function AdminContentPage({ searchParams }: { searchParams:
           文章
         </Link>
         <NewContentButton type={type === 'post' ? 'post' : 'page'} />
-        <span style={{ color: 'var(--muted)' }}>頁面網址 /p/&lt;slug&gt;；slug 為 home 的已發布頁面會取代首頁預設內容。也可由 MCP upsert_content 操作。</span>
+        <span style={{ color: 'var(--muted)' }}>頁面網址 /p/&lt;slug&gt;；slug 為 home 的已發佈頁面即為首頁。所有新增／修改都先存草稿 → 沙盒預覽 → 確認發佈（發佈前自動備份上一版）。</span>
       </div>
       <table className="w-full text-left text-xs">
         <thead>
@@ -41,6 +45,7 @@ export default async function AdminContentPage({ searchParams }: { searchParams:
             <th className="py-1">標題</th>
             <th className="py-1">slug</th>
             <th className="py-1">狀態</th>
+            <th className="py-1">版本／草稿</th>
             <th className="py-1">來源</th>
             <th className="py-1">更新</th>
             <th className="py-1" />
@@ -56,6 +61,11 @@ export default async function AdminContentPage({ searchParams }: { searchParams:
               </td>
               <td className="py-1 font-mono">{r.slug}</td>
               <td className="py-1">{STATUS[r.status] ?? r.status}</td>
+              <td className="py-1">
+                {r.version ? `v${r.version}` : '—'}
+                {r.hasDesign ? <span className="ml-1 rounded bg-neutral-100 px-1 text-[10px]">設計器</span> : null}
+                {r.hasUnpublished ? <span className="ml-1 rounded bg-amber-100 px-1 text-[10px] text-amber-800">草稿未發佈</span> : null}
+              </td>
               <td className="py-1">{CONTENT_SOURCE_LABELS[r.source] ?? r.source}</td>
               <td className="py-1">{fmtDateTime(r.updatedAt)}</td>
               <td className="py-1">
@@ -69,7 +79,7 @@ export default async function AdminContentPage({ searchParams }: { searchParams:
           ))}
           {!rows.length ? (
             <tr>
-              <td colSpan={6} className="py-2" style={{ color: 'var(--muted)' }}>
+              <td colSpan={7} className="py-2" style={{ color: 'var(--muted)' }}>
                 尚無{type === 'post' ? '文章' : '頁面'}
               </td>
             </tr>

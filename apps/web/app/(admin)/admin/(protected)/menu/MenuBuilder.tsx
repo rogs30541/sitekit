@@ -33,12 +33,11 @@ interface Node {
 type Drag = { type: 'node'; key: string } | { type: 'new'; node: Omit<Node, 'key' | 'children'> };
 
 const ROUTES: { label: string; href: string }[] = [
-  { label: '官網', href: '/' },
+  { label: '首頁', href: '/' },
   { label: '文章', href: '/blog' },
   { label: '商城', href: '/store' },
   { label: '購物車', href: '/cart' },
   { label: '課程', href: '/courses' },
-  { label: 'AI 工作站', href: '/studio' },
   { label: '會員中心', href: '/member' },
   { label: '登入', href: '/login' },
 ];

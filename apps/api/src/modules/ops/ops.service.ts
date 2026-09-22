@@ -18,6 +18,7 @@ import { MenuService, parseLocation } from '../content/menu.controller';
 import { SiteService } from '../content/site.controller';
 import { LogisticsService } from '../logistics/logistics.service';
 import { InvoiceService } from '../invoice/invoice.service';
+import { DesignService } from '../content/design.service';
 
 const SECRET_KEY = /secret|key|token|password|hashiv|hash_iv|signing/i;
 const SECRET_PARAM = /^(password|apiKey)$/i;
@@ -44,6 +45,7 @@ export class OpsService {
     private readonly site: SiteService,
     private readonly logistics: LogisticsService,
     private readonly invoice: InvoiceService,
+    private readonly design: DesignService,
   ) {}
 
   listActions() {
@@ -56,7 +58,7 @@ export class OpsService {
     const base = { action: a, actor, at: new Date().toISOString() };
     const p = params ?? {};
     try {
-      const data = await this.execute(a, p);
+      const data = await this.execute(a, p, actor);
       if (OPS_ACTIONS[a].mutating) await this.log(actor, a, p, true, data);
       return { ok: true, ...base, data };
     } catch (e) {
@@ -79,7 +81,7 @@ export class OpsService {
     });
   }
 
-  private async execute(action: OpsAction, p: Record<string, unknown>): Promise<unknown> {
+  private async execute(action: OpsAction, p: Record<string, unknown>, actor = 'ops'): Promise<unknown> {
     switch (action) {
       case 'status': {
         const [users, contents, orders, paid, lastDeploy, provider, paymentMethods] = await Promise.all([
@@ -223,25 +225,37 @@ export class OpsService {
       case 'list_content':
         return this.prisma.content.findMany({ where: { ...(p.type ? { type: String(p.type) } : {}), ...(p.status ? { status: p.status as 'draft' | 'published' | 'archived' } : {}) }, orderBy: { updatedAt: 'desc' }, take: 200, select: { id: true, type: true, title: true, slug: true, status: true, publishedAt: true, updatedAt: true } });
       case 'upsert_content': {
+        // 防呆：新增／修改一律先存草稿；線上頁不動。status=archived／draft 允許直接下架；要上線請用 publish_content（confirm=true）。
         const slug = String(p.slug ?? '').trim();
         if (!slug) throw new Error('slug is required');
-        const existing = await this.prisma.content.findUnique({ where: { slug } });
+        let existing = await this.prisma.content.findUnique({ where: { slug } });
         const type = String(p.type ?? existing?.type ?? 'page');
-        const status = (p.status as 'draft' | 'published' | 'archived' | undefined) ?? existing?.status ?? 'draft';
-        const data = {
-          type,
-          title: p.title !== undefined ? String(p.title) : (existing?.title ?? slug),
-          ...(p.body !== undefined ? { body: p.body ? sanitizeHtml(String(p.body)) : null } : {}),
-          ...(p.excerpt !== undefined ? { excerpt: p.excerpt ? String(p.excerpt) : null } : {}),
-          ...(p.coverUrl !== undefined ? { coverUrl: p.coverUrl ? String(p.coverUrl) : null } : {}),
-          ...(Array.isArray(p.tags) ? { tags: (p.tags as unknown[]).map(String) } : {}),
-          status,
-          canonicalUrl: type === 'page' ? `/p/${slug}` : `/blog/${slug}`,
-          ...(status === 'published' && !existing?.publishedAt ? { publishedAt: new Date() } : {}),
-        };
-        const row = existing ? await this.prisma.content.update({ where: { id: existing.id }, data }) : await this.prisma.content.create({ data: { source: 'admin', externalId: `admin:${slug}`, slug, ...data, title: data.title } });
-        return { id: row.id, slug: row.slug, type: row.type, status: row.status, url: row.canonicalUrl, created: !existing };
+        let created = false;
+        if (!existing) {
+          existing = await this.prisma.content.create({ data: { source: 'admin', externalId: `admin:${slug}`, slug, type, title: p.title !== undefined ? String(p.title) : slug, status: 'draft', canonicalUrl: type === 'page' ? `/p/${slug}` : `/blog/${slug}`, ...(Array.isArray(p.tags) ? { tags: (p.tags as unknown[]).map(String) } : {}) } });
+          created = true;
+        } else if (Array.isArray(p.tags) || p.status === 'archived' || (p.status === 'draft' && existing.status === 'published')) {
+          existing = await this.prisma.content.update({ where: { id: existing.id }, data: { ...(Array.isArray(p.tags) ? { tags: (p.tags as unknown[]).map(String) } : {}), ...(p.status === 'archived' || p.status === 'draft' ? { status: p.status } : {}) } });
+        }
+        const r = await this.design.saveDraft(existing.id, { ...(p.title !== undefined ? { title: String(p.title) } : {}), ...(p.body !== undefined ? { body: p.body ? String(p.body) : null } : {}), ...(p.design !== undefined ? { design: p.design } : {}), ...(p.excerpt !== undefined ? { excerpt: p.excerpt ? String(p.excerpt) : null } : {}), ...(p.coverUrl !== undefined ? { coverUrl: p.coverUrl ? String(p.coverUrl) : null } : {}) }, actor);
+        return { id: existing.id, slug: existing.slug, type: existing.type, status: existing.status, liveVersion: r.content.version, created, savedAs: 'draft', dirty: r.dirty, lint: r.lint, preview: r.preview.url, next: p.status === 'published' ? '已改為只存草稿；請先用 preview_content 檢查，再 publish_content（confirm=true）上線' : '請用 preview_content 沙盒預覽，確認後 publish_content（confirm=true）' };
       }
+      case 'get_content_draft':
+        return this.design.getDraft(String(p.idOrSlug ?? p.slug ?? p.id ?? ''), actor);
+      case 'preview_content': {
+        const c = await this.design.content(String(p.idOrSlug ?? p.slug ?? p.id ?? ''));
+        return { id: c.id, slug: c.slug, ...(await this.design.previewLink(c.id)) };
+      }
+      case 'publish_content':
+        return this.design.publish(String(p.idOrSlug ?? p.slug ?? p.id ?? ''), { confirm: p.confirm === true || p.confirm === 'true', note: p.note ? String(p.note) : undefined }, actor);
+      case 'list_revisions':
+        return this.design.revisions(String(p.idOrSlug ?? p.slug ?? p.id ?? ''));
+      case 'restore_revision':
+        return this.design.restore(String(p.idOrSlug ?? p.slug ?? p.id ?? ''), Number(p.version), actor);
+      case 'import_page_design':
+        return this.design.importDesign(p as Record<string, unknown>, actor);
+      case 'export_page_design':
+        return this.design.exportDesign(String(p.idOrSlug ?? p.slug ?? p.id ?? ''));
       case 'create_admin':
         return this.admins.create(p);
       case 'list_admins':

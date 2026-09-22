@@ -532,9 +532,15 @@ model Content {
   status       ContentStatus @default(draft)
   publishedAt  DateTime?
   raw          Json?
+  /// 設計器文件（線上版）；null＝傳統 HTML body
+  design       Json?
+  /// 線上版本號（每次發佈 +1；0＝從未經發佈流程）
+  version      Int           @default(0)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   menuItems    MenuItem[]
+  draft        ContentDraft?
+  revisions    ContentRevision[]
 
   @@unique([source, externalId])
   @@index([status, publishedAt])
@@ -594,4 +600,44 @@ model AuditLog {
 
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+/// 每個內容一份工作草稿：新增／修改一律先進這裡，沙盒預覽讀這裡，發佈確認後才複製到 Content（線上）。
+model ContentDraft {
+  id        String   @id @default(cuid())
+  contentId String   @unique
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  title     String
+  slug      String
+  excerpt   String?
+  coverUrl  String?
+  body      String?
+  design    Json?
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("content_drafts")
+}
+
+/// 發佈前的線上版本備份（防呆／回滾）：restore 只還原到草稿，不直接改線上。
+model ContentRevision {
+  id        String   @id @default(cuid())
+  contentId String
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  version   Int
+  title     String
+  slug      String
+  excerpt   String?
+  coverUrl  String?
+  body      String?
+  design    Json?
+  status    String
+  note      String?
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@unique([contentId, version])
+  @@index([contentId, createdAt])
+  @@map("content_revisions")
 }

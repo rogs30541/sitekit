@@ -136,11 +136,23 @@ server.tool('sitekit_post_announcement', '發布課程公告', { slug: z.string(
 
 server.tool(
   'sitekit_upsert_content',
-  '建立或更新官網頁面（type=page，網址 /p/<slug>；slug=home 會顯示在首頁）或文章（type=post，/blog/<slug>）；body 為 HTML；以 slug 冪等',
-  { slug: z.string(), type: z.enum(['page', 'post']).optional(), title: z.string().optional(), body: z.string().optional(), excerpt: z.string().optional(), coverUrl: z.string().optional(), tags: z.array(z.string()).optional(), status: z.enum(['draft', 'published', 'archived']).optional() },
+  '建立或更新官網頁面（type=page，/p/<slug>；slug=home＝首頁）或文章（type=post，/blog/<slug>）的「草稿」。body 為 HTML，或給 design（設計文件 JSON：{root:{type:"root",children:[...]}}，區塊類型 section/container/columns/column/heading/text/richtext/button/spacer/divider/image/video/embed/quote/list/iconbox/card/faq/html/products/courses/posts）。防呆：一律只存草稿、線上頁不動；接著用 sitekit_preview_content 取沙盒預覽連結給人確認，再 sitekit_publish_content（confirm=true）上線。status 只接受 draft|archived（下架）。',
+  { slug: z.string(), type: z.enum(['page', 'post']).optional(), title: z.string().optional(), body: z.string().optional(), design: z.any().optional(), excerpt: z.string().optional(), coverUrl: z.string().optional(), tags: z.array(z.string()).optional(), status: z.enum(['draft', 'archived']).optional() },
   async (p) => asText(await ops('upsert_content', p)),
 );
 server.tool('sitekit_list_content', '列出官網頁面與文章', { type: z.enum(['page', 'post']).optional(), status: z.enum(['draft', 'published', 'archived']).optional() }, async (p) => asText(await ops('list_content', p)));
+server.tool('sitekit_get_content_draft', '讀取頁面草稿（design JSON／body、與線上是否有差異 dirty、發佈前檢測 lint、沙盒預覽連結）', { idOrSlug: z.string() }, async (p) => asText(await ops('get_content_draft', p)));
+server.tool('sitekit_preview_content', '產生沙盒預覽連結（讀草稿、不影響線上、2 小時有效）——發佈前務必先預覽', { idOrSlug: z.string() }, async (p) => asText(await ops('preview_content', p)));
+server.tool(
+  'sitekit_publish_content',
+  '把草稿發佈到線上（必須 confirm=true 表示已經人工確認預覽）。發佈前自動把目前線上版本備份成 revision；lint 有 error 會拒絕。',
+  { idOrSlug: z.string(), confirm: z.boolean(), note: z.string().optional() },
+  async (p) => asText(await ops('publish_content', p)),
+);
+server.tool('sitekit_list_revisions', '列出頁面歷史版本（每次發佈前的線上備份）', { idOrSlug: z.string() }, async (p) => asText(await ops('list_revisions', p)));
+server.tool('sitekit_restore_revision', '把歷史版本還原到「草稿」（線上不變；之後需 preview＋publish 確認）', { idOrSlug: z.string(), version: z.number() }, async (p) => asText(await ops('restore_revision', p)));
+server.tool('sitekit_import_page_design', '匯入設計文件 JSON 建立／更新頁面草稿（不自動發佈）', { slug: z.string().optional(), title: z.string().optional(), type: z.enum(['page', 'post']).optional(), design: z.any(), excerpt: z.string().optional(), coverUrl: z.string().optional() }, async (p) => asText(await ops('import_page_design', p)));
+server.tool('sitekit_export_page_design', '匯出頁面設計文件 JSON（草稿優先）', { idOrSlug: z.string() }, async (p) => asText(await ops('export_page_design', p)));
 server.tool('sitekit_create_admin', '建立後台管理員（後台帳號與前台會員分離；上線後用此建立第一位管理員）', { email: z.string().email(), password: z.string().min(8), displayName: z.string().optional(), role: z.enum(['admin', 'superadmin']).default('admin') }, async (p) => asText(await ops('create_admin', p)));
 server.tool('sitekit_list_admins', '列出後台管理員', {}, async () => asText(await ops('list_admins')));
 server.tool('sitekit_update_admin', '修改管理員密碼／名稱／角色／狀態', { idOrEmail: z.string(), password: z.string().min(8).optional(), displayName: z.string().optional(), role: z.enum(['admin', 'superadmin']).optional(), status: z.enum(['active', 'suspended']).optional() }, async (p) => asText(await ops('update_admin', p)));

@@ -34,8 +34,8 @@ export class AdminContentController {
       where: { ...(type ? { type } : {}), ...(status ? { status: status as 'draft' | 'published' | 'archived' } : {}) },
       orderBy: { updatedAt: 'desc' },
       take: 300,
-      select: { id: true, type: true, title: true, slug: true, status: true, source: true, publishedAt: true, updatedAt: true, excerpt: true, coverUrl: true, tags: true },
-    });
+      select: { id: true, type: true, title: true, slug: true, status: true, source: true, publishedAt: true, updatedAt: true, excerpt: true, coverUrl: true, tags: true, version: true, design: true, draft: { select: { updatedAt: true, updatedBy: true } } },
+    }).then((rows) => rows.map(({ design, draft, ...r }) => ({ ...r, hasDesign: !!design, draftUpdatedAt: draft?.updatedAt ?? null, draftUpdatedBy: draft?.updatedBy ?? null, hasUnpublished: !!draft && (r.version === 0 || draft.updatedAt.getTime() > r.updatedAt.getTime()) })));
   }
 
   @Get(':id')

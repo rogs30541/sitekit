@@ -29,7 +29,7 @@ export function stripTags(html: string): string {
 export function sanitizeHtml(html: string): string {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
+    .replace(/<iframe[\s\S]*?<\/iframe>/gi, (m) => (/\ssrc=["']https:\/\/(www\.youtube\.com\/embed\/|player\.vimeo\.com\/video\/)[^"']*["']/i.test(m) && !/srcdoc|on[a-z]+\s*=/i.test(m) ? m : ''))
     .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
     .replace(/javascript:/gi, '');
 }

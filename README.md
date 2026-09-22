@@ -28,6 +28,25 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 **P3 產品化（完成）**：點數帳本（保留再結算、失敗釋放）、AI Provider 抽象層（mock／OpenAI、平台金鑰或 BYOK）、程序內任務佇列（可換 BullMQ）、`/studio` AI 創作工作站、`/admin/studio` 模板管理與點數調整、MCP／AI API 的 `adjust_credits`。
 
+## P9 網站 CMS 與頁面設計器（2026-09-22，v0.8.0）
+
+- **後台五大分類選單**（`components/AdminNav.tsx`）：網站（頁面設計／文章／網站架構／網站設定）、電商（商品／訂單／折扣碼／報表／金流／物流／發票）、課程、AI 工作站、系統功能（總覽／儲存與通知／管理員）；點擊或滑入展開，所在分類高亮。AI 工作站只在後台，前台預設導覽與網站架構「系統路徑」已移除 `/studio`。
+- **防呆發佈流程（所有內容一體適用，含 OPS／MCP）**：
+  1. **一律先存草稿**：`ContentDraft`（每個內容一份）。後台工作台自動儲存（1.5 秒），API `PUT /api/admin/content/:id/draft`；OPS `upsert_content` 也只寫草稿（`status` 只接受 draft|archived）。線上 `Content` 完全不動。
+  2. **沙盒預覽與測試**：`POST /api/admin/content/:id/preview-token` → `/preview/<id>?token=`（HMAC，2 小時有效，可交給測試者，不需登入，noindex），頂部黃色橫幅標示草稿與線上版本；發佈前檢測 `lintDesign`（error：圖片無網址／嵌入網址無效／按鈕無文字／HTML 含 script／頁面空白 → 阻擋；warn：空文字、無 alt、按鈕無連結 → 提示）。
+  3. **發佈需再確認**：`POST /api/admin/content/:id/publish` 必帶 `confirm:true`；後台「發佈…」對話框顯示檢測結果、版本變化（v n → v n+1）與備份說明，需勾選「已在沙盒預覽確認」才可按下。
+  4. **發佈前自動備份**：目前線上版本存成 `ContentRevision`（保留 30 版）；`GET …/revisions` 列表；`POST …/revisions/:v/restore` **只還原到草稿**（線上不變），再走預覽＋確認發佈＝回滾。
+- **視覺設計器**（`content/[id]/DesignEditor.tsx`，Elementor／Webflow／Figma 式）：
+  - 左欄：**物件庫**（版面：區段／容器／多欄／欄；基礎：標題／文字／富文本／按鈕／留白／分隔線；媒體：圖片／影片／YouTube；內容：引言／清單／圖示卡／卡片／問答／HTML；商務：商品列表／課程列表／最新文章＝前台自動帶入）、**區塊模板**（首屏 Hero／三大特色／CTA／方案定價／常見問題／客戶見證／圖片牆／商品＋課程／聯絡資訊）、**圖層樹**（拖曳移動）。
+  - 畫布：拖放到任意位置（前／後／放入容器）、點選、雙擊直接改文字、複製／刪除／上下移、Ctrl+Z／Y 復原重做；**三種裝置寬度**（桌機 1200／平板 820／手機 390）以 `@container` 查詢在同一畫布模擬 RWD（發佈輸出用 `@media`），自動縮放。
+  - 右欄：**內容屬性**（依區塊類型；圖片可上傳）、**樣式**（版面／尺寸／間距／外觀／文字，桌機基礎＋平板／手機各自覆寫）、**程式碼**（乾淨 HTML／CSS 唯讀輸出＋設計 JSON 可直接編輯套用）。
+  - **JSON 匯入／匯出**：列表頁「匯入設計 JSON」建立草稿、工作台匯入到目前草稿、匯出下載；OPS `import_page_design`／`export_page_design`；接受 `{root}` 或 `{blocks:[...]}`，未知類型／過深／過多節點拒絕，richtext／html 儲存即消毒。
+  - 渲染器在 `packages/shared/src/design.ts` 單一來源：發佈時 `renderDesignDocument` 產出 `<style>`＋語意 HTML 存進 `body`（前台 `/p/<slug>`、首頁 slug=home 以 `DesignBody` 全幅呈現、商務區塊前端 portal 帶入資料）。
+- **傳統編輯器**保留（富文本／HTML 原始碼），同樣走草稿→預覽→確認發佈；可一鍵切換到設計器（內文轉成富文本區塊）。
+- OPS／MCP 新增：`get_content_draft`、`preview_content`、`publish_content`、`list_revisions`、`restore_revision`、`import_page_design`、`export_page_design`（`sitekit_*` 同名）。
+- 資料：`contents.design`／`contents.version`、`content_drafts`、`content_revisions`（migration `20260922100000_content_drafts`）。
+- 本機 E2E：`local-p13-e2e.mjs` 43 項全過（草稿不動線上／token 竄改與過期／lint 阻擋／首發備份 v0／二發備份 v1／還原到草稿再發佈＝回滾 v3／匯入匯出／OPS 防呆／前台 preview 與 /p 渲染／列表旗標）。
+
 ## P8 物流與電子發票（2026-09-21，v0.7.0）
 
 - **物流設定**（`/admin/shipping`）：物流商＝不串接／綠界物流（測試環境 logistics-stage）；配送方式逐一啟用與運費（自行配送、7-ELEVEN／全家／萊爾富／OK 超商取貨 C2C、黑貓、宅配通）、滿額免運、寄件人資料。設定鍵 `logistics.*`、`ecpayLogistics.*`（MCP `update_settings`）。

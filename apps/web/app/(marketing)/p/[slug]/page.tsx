@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Section } from '@/components/Section';
 import { apiPublic } from '@/lib/api-public';
+import { DesignBody } from '@/components/DesignBody';
 
 export const revalidate = 60;
 
@@ -12,6 +13,8 @@ interface PageDoc {
   excerpt: string | null;
   coverUrl: string | null;
   updatedAt: string;
+  hasDesign?: boolean;
+  version?: number;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -25,6 +28,7 @@ export default async function SitePage({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const page = await apiPublic<PageDoc>(`/api/content/pages/${encodeURIComponent(slug)}`);
   if (!page) notFound();
+  if (page.hasDesign) return <DesignBody html={page.body ?? ''} />;
   return (
     <Section title={page.title} group="(marketing)">
       {page.coverUrl ? <img src={page.coverUrl} alt="" className="mb-4 w-full rounded-lg object-cover" /> : null}

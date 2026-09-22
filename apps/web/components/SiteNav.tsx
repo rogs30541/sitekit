@@ -14,10 +14,9 @@ export interface NavItem {
 
 /** 後台「網站架構」尚未設定時的預設導覽 */
 export const DEFAULT_NAV: NavItem[] = [
-  { id: 'home', label: '官網', href: '/', newTab: false, children: [] },
+  { id: 'home', label: '首頁', href: '/', newTab: false, children: [] },
   { id: 'store', label: '商城', href: '/store', newTab: false, children: [] },
   { id: 'courses', label: '課程', href: '/courses', newTab: false, children: [] },
-  { id: 'studio', label: '工作站', href: '/studio', newTab: false, children: [] },
   { id: 'member', label: '會員', href: '/member', newTab: false, children: [] },
 ];
 
