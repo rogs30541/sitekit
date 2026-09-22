@@ -54,6 +54,10 @@ const PROP_FIELDS: Record<string, PropField[]> = {
     { key: 'href', label: '按鈕連結', kind: 'text' },
   ],
   faq: [{ key: 'items', label: '問答', kind: 'faq' }],
+  addtocart: [
+    { key: 'text', label: '按鈕文字', kind: 'text' },
+    { key: 'target', label: '目標（#sk-products＝產品區塊）', kind: 'text' },
+  ],
   products: [
     { key: 'title', label: '標題', kind: 'text' },
     { key: 'limit', label: '顯示筆數', kind: 'number', min: 1, max: 24 },

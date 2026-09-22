@@ -183,6 +183,13 @@ export const OPS_ACTIONS = {
   upsert_course: { desc: '以 slug 建立或更新線上課程（product{sku,name,price,description,coverUrl}、summary、isPublished、accessMode）', mutating: true },
   add_chapter: { desc: '為課程新增章節（courseSlug、title、body、videoProvider youtube|bunny、videoProviderId、isPreview、parentId）', mutating: true },
   generate_image: { desc: 'AI 產圖（prompt；或 templateKey＋inputs{欄位key:值} 套用產圖模板；referenceImages[] 參考圖網址≤4；size 1024x1024|1536x1024|1024x1536、quality standard|high、purpose product|banner|illustration）→ 存到儲存空間回公開 url；會產生費用', mutating: true },
+  list_sales_pages: { desc: '列出一頁式銷售頁（slug、標題、狀態、版本、是否有未發佈草稿）', mutating: false },
+  get_sales_page: { desc: '讀取銷售頁草稿全文（doc：通知／倒數／內文設計文件／產品區塊／表單／順序／追蹤／SEO／排程）＋掛載商品＋檢測＋預覽連結', mutating: false },
+  upsert_sales_page: { desc: '建立或更新一頁式銷售頁「草稿」（slug 冪等；title、code 訂單前綴、doc 深度合併：notice/countdown/content(設計文件)/sections/items[{productId,kind offer|bundle|product|addon,order,badge}]/theme/display/form/contact/tracking/seo/schedule/access）；線上不動，需 publish_sales_page 確認', mutating: true },
+  preview_sales_page: { desc: '產生銷售頁沙盒預覽連結（草稿、2 小時）', mutating: false },
+  publish_sales_page: { desc: '把銷售頁草稿發佈上線（confirm=true；發佈前自動備份上一版；lint error 拒絕）；unpublish=true 則下架', mutating: true },
+  list_sales_revisions: { desc: '列出銷售頁歷史版本', mutating: false },
+  restore_sales_revision: { desc: '把銷售頁歷史版本還原到草稿（線上不變）', mutating: true },
   list_image_templates: { desc: '列出 AI 產圖模板（key、名稱、分類、說明、欄位定義、預設尺寸；商品製圖／Banner 先用此挑模板）', mutating: false },
   upsert_image_template: { desc: '以 key 建立或更新 AI 產圖模板（name、category、description、systemPrompt、inputFields[]、defaultSize、costPoints、highCostPoints、isActive、sortOrder；coverBase64＋coverMime 上傳封面）', mutating: true },
   import_products: { desc: '商品 CSV 匯入（sku,name,price,type,description,cover_url,stock,active；相容 Shopify 商品 CSV；dryRun 預設 true）', mutating: true },
@@ -247,5 +254,7 @@ export const COMMAND_TASKS: { key: string; label: string; desc: string; examples
   { key: 'image', label: '商品製圖', desc: 'AI 產生商品情境圖／主圖並設定到商品', examples: ['幫 SKU DEMO-MUG 產生一張白底簡約的商品主圖，1024x1024，並設成商品封面'] },
   { key: 'product', label: '商品上架／分類', desc: '新增商品、改價、上下架、分類整理', examples: ['上架商品：SKU AI-TEE、名稱「AI 創客 T 恤」、價格 590、分類 服飾、庫存 50', '把所有分類是「服飾」的商品下架'] },
   { key: 'course', label: '線上課程上架', desc: '建立課程、章節、發布', examples: ['建立課程 slug ai-basics「AI 入門」，價格 1990，摘要一句話，先不發布，並新增三個章節：認識 AI、提示詞入門、實作練習'] },
+  { key: 'sales', label: '一頁式銷售頁', desc: '建立銷售頁草稿：內文＋掛商品＋表單規則，預覽後確認上線', examples: ['建立一頁式銷售頁 slug autumn-sale「秋季限定組合」：內文放 Hero＋三個賣點，掛上 SKU DEMO-MUG 當優惠區塊、DEMO-TEE 當一般產品，先存草稿給我預覽'] },
   { key: 'banner', label: 'BANNER 設計', desc: 'AI 產生橫幅圖並放進頁面／首頁區塊草稿', examples: ['做一張秋季課程優惠的 Banner（1536x1024，暖色系），放進首頁草稿最上方的 Hero 區塊，給我預覽'] },
 ];
+export * from './sales';

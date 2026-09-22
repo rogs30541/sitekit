@@ -86,6 +86,7 @@ export const BLOCK_DEFS: BlockDef[] = [
   { type: 'card', label: '卡片', category: '內容', desc: '圖＋標題＋文＋按鈕', make: () => n('card', { image: '', title: '卡片標題', text: '卡片說明文字。', buttonText: '了解更多', href: '#' }, { borderRadius: '14px', background: '#ffffff', border: '1px solid #e5e7eb', padding: '0' }) },
   { type: 'faq', label: '問答', category: '內容', desc: '可展開的問答', make: () => n('faq', { items: [{ q: '如何購買？', a: '到商城加入購物車後結帳。' }, { q: '有退費嗎？', a: '依退款政策辦理。' }] }, {}) },
   { type: 'html', label: 'HTML', category: '內容', desc: '自訂 HTML 區塊（不可含 script）', make: () => n('html', { html: '<div>自訂 HTML</div>' }, {}) },
+  { type: 'addtocart', label: '加入購物車按鈕', category: '商務', desc: '銷售頁內文用：點擊滾動到產品區塊', make: () => n('addtocart', { text: '立即選購', target: '#sk-products' }, { display: 'inline-block', padding: '14px 28px', borderRadius: '999px', fontWeight: '700', textAlign: 'center' }) },
   { type: 'products', label: '商品列表', category: '商務', desc: '自動帶入商城商品', make: () => n('products', { limit: 6, title: '精選商品' }, {}) },
   { type: 'courses', label: '課程列表', category: '商務', desc: '自動帶入課程', make: () => n('courses', { limit: 3, title: '熱門課程' }, {}) },
   { type: 'posts', label: '最新文章', category: '商務', desc: '自動帶入文章', make: () => n('posts', { limit: 3, title: '最新文章' }, {}) },
@@ -457,6 +458,8 @@ export function renderDesign(doc: DesignDoc, opts: RenderOptions = {}): { html: 
         const v = ['primary', 'outline', 'ghost'].includes(String(p.variant)) ? String(p.variant) : 'primary';
         return `<a ${attr(node, `sk-btn sk-btn-${v}`)} href="${escapeHtml(safeUrl(p.href) || '#')}"${p.newTab ? ' target="_blank" rel="noopener"' : ''}>${escapeHtml(p.text)}</a>`;
       }
+      case 'addtocart':
+        return `<div class="sk-atc-wrap" style="text-align:center"><a ${attr(node, 'sk-btn sk-btn-primary sk-addtocart')} href="${escapeHtml(safeUrl(p.target) || '#sk-products')}">${escapeHtml(p.text || '立即選購')}</a></div>`;
       case 'spacer':
         return `<div ${attr(node, 'sk-spacer')}></div>`;
       case 'divider':

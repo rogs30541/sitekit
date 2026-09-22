@@ -21,6 +21,7 @@ import { InvoiceService } from '../invoice/invoice.service';
 import { DesignService } from '../content/design.service';
 import { getProvider } from '../studio/providers';
 import { composeTemplatePrompt, StudioService } from '../studio/studio.service';
+import { SalesService } from '../sales/sales.service';
 
 const SECRET_KEY = /secret|key|token|password|hashiv|hash_iv|signing/i;
 const SECRET_PARAM = /^(password|apiKey)$/i;
@@ -49,6 +50,7 @@ export class OpsService {
     private readonly invoice: InvoiceService,
     private readonly design: DesignService,
     private readonly studio: StudioService,
+    private readonly sales: SalesService,
   ) {}
 
   listActions() {
@@ -212,6 +214,34 @@ export class OpsService {
         const ch = await this.catalog.addChapter(course.id, { title: String(p.title ?? '未命名章節'), ...(p.body !== undefined ? { body: String(p.body) } : {}), ...(p.videoProvider ? { videoProvider: p.videoProvider } : {}), ...(p.videoProviderId !== undefined ? { videoProviderId: p.videoProviderId ? String(p.videoProviderId) : null } : {}), ...(p.isPreview !== undefined ? { isPreview: !!p.isPreview } : {}), ...(p.isPublished !== undefined ? { isPublished: !!p.isPublished } : {}), ...(p.parentId ? { parentId: String(p.parentId) } : {}), ...(p.order !== undefined ? { order: Number(p.order) } : {}) });
         return { id: ch.id, courseSlug: course.slug, title: ch.title, order: ch.order, parentId: ch.parentId };
       }
+      case 'list_sales_pages':
+        return this.sales.list();
+      case 'get_sales_page':
+        return this.sales.present(await this.sales.page(String(p.idOrSlug ?? p.slug ?? p.id ?? '')));
+      case 'upsert_sales_page': {
+        const slug = String(p.slug ?? '').trim();
+        if (!slug) throw new Error('slug is required');
+        let page = await this.prisma.salesPage.findUnique({ where: { slug } });
+        let created = false;
+        if (!page) {
+          const r = await this.sales.create({ title: String(p.title ?? slug), slug, ...(p.code ? { code: String(p.code) } : {}) }, actor);
+          page = await this.sales.page(r.page.id);
+          created = true;
+        }
+        const r = await this.sales.saveDraft(page.id, { ...(p.title !== undefined ? { title: String(p.title) } : {}), ...(p.code !== undefined ? { code: String(p.code) } : {}), doc: (p.doc && typeof p.doc === 'object' ? p.doc : {}) as Record<string, unknown> }, actor);
+        return { id: r.page.id, slug: r.page.slug, status: r.page.status, version: r.page.version, created, savedAs: 'draft', dirty: r.dirty, lint: r.lint, items: r.doc.items.length, preview: r.preview.url, next: '請用 preview_sales_page 沙盒預覽，確認後 publish_sales_page（confirm=true）' };
+      }
+      case 'preview_sales_page': {
+        const page = await this.sales.page(String(p.idOrSlug ?? p.slug ?? p.id ?? ''));
+        return { id: page.id, slug: page.slug, ...(await this.sales.previewLink(page.id)) };
+      }
+      case 'publish_sales_page':
+        if (p.unpublish === true || p.unpublish === 'true') return this.sales.unpublish(String(p.idOrSlug ?? p.slug ?? p.id ?? ''));
+        return this.sales.publish(String(p.idOrSlug ?? p.slug ?? p.id ?? ''), { confirm: p.confirm === true || p.confirm === 'true', note: p.note ? String(p.note) : undefined }, actor);
+      case 'list_sales_revisions':
+        return this.sales.revisions(String(p.idOrSlug ?? p.slug ?? p.id ?? ''));
+      case 'restore_sales_revision':
+        return this.sales.restore(String(p.idOrSlug ?? p.slug ?? p.id ?? ''), Number(p.version), actor);
       case 'list_image_templates': {
         const rows = await this.prisma.aiTemplate.findMany({ where: { isActive: true }, orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }] });
         return rows.map((t) => ({ key: t.key, name: t.name, category: t.category, description: t.description, coverUrl: t.coverUrl, defaultSize: t.defaultSize, inputFields: t.inputFields }));

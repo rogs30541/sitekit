@@ -28,6 +28,17 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 **P3 產品化（完成）**：點數帳本（保留再結算、失敗釋放）、AI Provider 抽象層（mock／OpenAI、平台金鑰或 BYOK）、程序內任務佇列（可換 BullMQ）、`/studio` AI 創作工作站、`/admin/studio` 模板管理與點數調整、MCP／AI API 的 `adjust_credits`。
 
+## P11 一頁式銷售頁（2026-09-22，v0.10.0）
+
+對標 1shop「銷售頁」編輯模式（設定／內文／銷售／表單／順序／追蹤／SEO）。後台「網站 → 一頁式銷售頁」（`/admin/sales`），前台 `/s/<slug>`。
+
+- **資料**：`sales_pages`（`draft` 草稿文件、`live` 發佈快照、`version`、`code` 訂單前綴、排程）＋`sales_page_revisions`；文件結構 `SalesPageDoc`（`packages/shared/src/sales.ts`：notice 通知列／countdown 優惠倒數／content 內文設計文件／contentOptions／sections 區塊啟用・標題・順序／items 掛載商品（offer 優惠・bundle 組合・product 單品・addon 加購，順序與標籤）／theme 主色・背景・最大寬・留白・自訂 CSS／display 圖片比例・按鈕樣式・數量方式・每行數・數量顯示／cartLimits／form 下單方式・結帳倒數・會員登入・下單說明・電話 Email 收貨時間規則・自訂欄位・發票・優惠券・隱私／contact 客服／tracking GA4・GTM・FB Pixel・LINE・TikTok・Head/Body 自訂碼・購物車事件 JS／success 訂單成立說明・推薦／seo／schedule 預約開啟・關閉訊息／access 密碼）；`normalizeSalesDoc` 深度合併到預設值。
+- **防呆流程與頁面設計器相同**：所有修改自動存草稿（`PUT /api/admin/sales/:id/draft`，內文設計文件驗證＋消毒、商品清單只留存在者、密碼雜湊）→ 沙盒預覽 `/preview/sales/<id>?token=`（2 小時、追蹤碼不注入）→ 發佈需 `confirm:true`＋檢測（空頁／倒數無時間／密碼未設／排程矛盾＝error）→ 發佈前備份上一版（保留 30 版）→ 版本「還原到草稿」。下架 `unpublish`。
+- **前台** `components/SalesPageView.tsx`：通知列（可關）／優惠倒數（sticky）／內文（DesignBody，含「加入購物車」區塊滾動到產品區）／依順序渲染優惠・組合・單品・加購區塊（列表式或每行 N 個、標籤、庫存／銷量、加減或下拉數量、選購走既有購物車＋購物車上限）／購物車區塊與浮動結帳列（`/cart?sp=<code>`）／洽詢客服（收合或展開）／主色調・背景・自訂 CSS／GA4・FB Pixel・自訂 Head/Body 碼／排程未開・已關閉訊息／密碼閘（伺服器比對雜湊）。
+- **OPS／MCP**：`list_sales_pages`、`get_sales_page`、`upsert_sales_page`（只存草稿）、`preview_sales_page`、`publish_sales_page`（confirm／unpublish）、`list_sales_revisions`、`restore_sales_revision`；指令台七大工作項目新增「一頁式銷售頁」；設計器新增 `addtocart` 區塊。
+- 本機 E2E：`local-p16-e2e.mjs` 37 項全過。
+- 尚未對標：一步下單表單（目前沿用 `/cart` 多步驟；表單規則已存文件待結帳頁套用）、優惠組合／加購的專屬價格邏輯（目前以商品本身價格顯示）、瀏覽漏斗統計。
+
 ## v0.9.1（2026-09-22）產圖模板庫：20 組電商模板＋參考圖
 
 - **匯入 20 組產圖模板**（`scripts/import-image-templates.mjs <資料夾> --token <OPS_TOKEN> [--api]`，走 OPS `upsert_image_template`，本機／線上皆可）：來源為「產圖模板風格」資料夾（成品圖 JPG＝模板封面、表單欄位 md＝欄位定義、Prompt 提示詞 md＝英文通用 Prompt＋負面提示詞＋套用注意事項）。分類 A 商品展示（4）／B 促銷優惠（5）／C 品牌社群（4）／D 活動招生（4）／E 門市售後（3）；1:1 → 1024x1024、2:3 → 1024x1536；欄位 key 取 Prompt 變數名（`{product_name}` 等，產圖時直接代入），下拉選項與預設值一併帶入，「商品圖／服務圖」為 `image` 型別。

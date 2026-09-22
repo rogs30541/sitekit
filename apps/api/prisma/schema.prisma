@@ -643,3 +643,39 @@ model ContentRevision {
   @@index([contentId, createdAt])
   @@map("content_revisions")
 }
+
+/// 一頁式銷售頁：draft＝草稿文件、live＝發佈快照；發佈需確認並備份版本。
+model SalesPage {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  /// 訂單編號前綴（1–3 碼英數）
+  code        String    @default("SP")
+  status      String    @default("draft")
+  draft       Json
+  live        Json?
+  version     Int       @default(0)
+  publishedAt DateTime?
+  updatedBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  revisions   SalesPageRevision[]
+
+  @@map("sales_pages")
+}
+
+model SalesPageRevision {
+  id        String    @id @default(cuid())
+  pageId    String
+  page      SalesPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  version   Int
+  title     String
+  slug      String
+  snapshot  Json
+  note      String?
+  createdBy String?
+  createdAt DateTime  @default(now())
+
+  @@unique([pageId, version])
+  @@map("sales_page_revisions")
+}
