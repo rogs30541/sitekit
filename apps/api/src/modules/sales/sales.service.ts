@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException, UnauthorizedExcepti
 import { Prisma } from '@prisma/client';
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
-import { lintDesign, mapTree, normalizeSalesDoc, parseDesignDoc, renderDesignDocument, salesPageState, type DesignDoc, type SalesPageDoc } from '@sitekit/shared';
+import { lintDesign, mapTree, normalizeSalesDoc, parseDesignDoc, renderDesignDocument, salesPageState, effectivePrice, type DesignDoc, type SalesPageDoc } from '@sitekit/shared';
 import { env } from '../../config/env';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
@@ -123,8 +123,8 @@ export class SalesService {
 
   async resolveProducts(ids: string[]) {
     if (!ids.length) return [];
-    const rows = await this.prisma.product.findMany({ where: { id: { in: ids } }, select: { id: true, sku: true, name: true, description: true, coverUrl: true, price: true, stock: true, isActive: true, category: true, type: true, course: { select: { slug: true, isPublished: true } }, variants: { where: { isActive: true }, orderBy: { sortOrder: 'asc' }, select: { id: true, name: true, price: true, stock: true } }, _count: { select: { items: true } } } });
-    return rows.map((r) => ({ id: r.id, sku: r.sku, name: r.name, description: r.description, coverUrl: r.coverUrl, price: r.price, stock: r.stock, isActive: r.isActive, category: r.category, type: r.type, courseSlug: r.course?.slug ?? null, coursePublished: r.course?.isPublished ?? null, variants: r.variants, sold: r._count.items }));
+    const rows = await this.prisma.product.findMany({ where: { id: { in: ids } }, select: { id: true, sku: true, name: true, description: true, coverUrl: true, price: true, salePrice: true, saleStartsAt: true, saleEndsAt: true, stock: true, isActive: true, category: true, type: true, course: { select: { slug: true, isPublished: true } }, variants: { where: { isActive: true }, orderBy: { sortOrder: 'asc' }, select: { id: true, name: true, price: true, stock: true } }, _count: { select: { items: true } } } });
+    return rows.map((r) => ({ id: r.id, sku: r.sku, name: r.name, description: r.description, coverUrl: r.coverUrl, price: effectivePrice(r).price, originalPrice: r.price, onSale: effectivePrice(r).onSale, stock: r.stock, isActive: r.isActive, category: r.category, type: r.type, courseSlug: r.course?.slug ?? null, coursePublished: r.course?.isPublished ?? null, variants: r.variants, sold: r._count.items }));
   }
 
   /* ---------- 預覽 ---------- */

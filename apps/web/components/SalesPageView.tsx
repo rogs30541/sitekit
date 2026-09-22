@@ -20,6 +20,8 @@ export interface SalesProduct {
   sold: number;
   type?: string;
   courseSlug?: string | null;
+  originalPrice?: number;
+  onSale?: boolean;
   variants?: { id: string; name: string; price: number | null; stock: number | null }[];
 }
 export interface SalesRender {
@@ -136,6 +138,7 @@ export function SalesPageView({ page, preview = false, siteTracking }: { page: S
                 {p.description ? <p className="line-clamp-2 text-xs opacity-70">{p.description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()}</p> : null}
                 <p className="text-lg font-bold" style={{ color: accent }}>
                   {twd(p.price)}
+                  {p.onSale && p.originalPrice ? <s className="ml-1 text-xs font-normal opacity-60">{twd(p.originalPrice)}</s> : null}
                 </p>
                 <p className="text-[11px] opacity-60">
                   {doc.display.showStock !== 'never' && p.stock !== null && (doc.display.showStock === 'always' || p.stock < 10) ? `剩餘 ${p.stock} ` : ''}

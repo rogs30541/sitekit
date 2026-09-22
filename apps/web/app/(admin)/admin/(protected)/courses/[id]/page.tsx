@@ -6,6 +6,7 @@ import { ChapterTree, type AdminChapter } from './ChapterTree';
 import { CourseSettingsForm, type AdminCourse } from './CourseSettingsForm';
 import { VideoLibrary, type VideoAsset } from './VideoLibrary';
 import { CourseCommunityAdmin } from './CourseCommunityAdmin';
+import { CourseStudio } from './CourseStudio';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,32 +15,25 @@ export default async function AdminCourseDetailPage({ params }: { params: Promis
   const [course, videos] = await Promise.all([apiServer<AdminCourse & { chapters: AdminChapter[] }>(`/api/admin/catalog/courses/${id}`), apiServer<VideoAsset[]>('/api/admin/videos?provider=youtube')]);
   if (!course) notFound();
   return (
-    <div className="space-y-4">
-      <Section title={`課程設定：${course.product.name}`} group="(admin)">
-        <p className="mb-3 text-xs">
-          <Link href="/admin/courses" className="underline">
-            回課程列表
-          </Link>
-          {' · '}
-          <Link href={`/course/${course.slug}`} className="underline" target="_blank">
-            銷售頁
-          </Link>
-          {' · '}
-          <Link href={`/classroom/${course.slug}`} className="underline" target="_blank">
-            教室
-          </Link>
-        </p>
-        <CourseSettingsForm course={course} />
-      </Section>
-      <Section title="章節" group="(admin)">
-        <ChapterTree courseId={course.id} chapters={course.chapters} videos={videos ?? []} />
-      </Section>
-      <Section title="問答與公告" group="(admin)">
-        <CourseCommunityAdmin courseId={course.id} />
-      </Section>
-      <Section title="YouTube 影片庫" group="(admin)">
-        <VideoLibrary videos={videos ?? []} />
-      </Section>
-    </div>
+    <Section title={`課程：${course.product.name}`} group="(admin)">
+      <p className="mb-3 text-xs">
+        <Link href="/admin/courses" className="underline">
+          回課程列表
+        </Link>
+        {' · '}
+        <Link href={`/course/${course.slug}`} className="underline" target="_blank">
+          查看銷售頁
+        </Link>
+        {' · '}
+        <Link href={`/classroom/${course.slug}`} className="underline" target="_blank">
+          開啟教室
+        </Link>
+        {' · '}
+        <Link href="/admin/course-orders" className="underline">
+          課程訂單
+        </Link>
+      </p>
+      <CourseStudio course={course} chapterCount={course.chapters.length} describe={<CourseSettingsForm course={course} section="describe" />} pricing={<CourseSettingsForm course={course} section="pricing" />} chapters={<ChapterTree courseId={course.id} chapters={course.chapters} videos={videos ?? []} />} community={<CourseCommunityAdmin courseId={course.id} />} videos={<VideoLibrary videos={videos ?? []} />} />
+    </Section>
   );
 }

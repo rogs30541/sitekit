@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import { Prisma } from '@prisma/client';
-import { SETTING_KEYS, SHIPPING_STATUSES } from '@sitekit/shared';
+import { SETTING_KEYS, SHIPPING_STATUSES, effectivePrice } from '@sitekit/shared';
 import { z } from 'zod';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InvoiceService } from '../invoice/invoice.service';
@@ -82,7 +82,7 @@ export class OrdersService implements OnModuleInit {
       if (i.variantId && !v) throw new BadRequestException(`「${p.name}」規格不存在或已下架`);
       const stock = v ? v.stock : p.stock;
       if (stock !== null && stock < i.qty) throw new BadRequestException(`「${p.name}${v ? `（${v.name}）` : ''}」庫存不足（剩 ${stock}）`);
-      return { productId: p.id, variantId: v?.id ?? null, name: v ? `${p.name}（${v.name}）` : p.name, qty: i.qty, unitPrice: v?.price ?? p.price, type: p.type };
+      return { productId: p.id, variantId: v?.id ?? null, name: v ? `${p.name}（${v.name}）` : p.name, qty: i.qty, unitPrice: v?.price ?? effectivePrice(p).price, type: p.type };
     });
     const subtotal = items.reduce((s, i) => s + i.unitPrice * i.qty, 0);
     const needsShipping = items.some((i) => i.type === 'physical');

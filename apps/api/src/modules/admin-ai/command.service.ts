@@ -93,6 +93,33 @@ export class CommandService {
     return { provider, model: model || (provider === 'anthropic' ? 'claude-sonnet-5' : provider === 'openai' ? 'gpt-4.1' : 'rules'), ready: provider === 'mock' || !!key, key, anthropicConfigured: !!anthropicKey, openaiConfigured: !!openaiKey, tasks: COMMAND_TASKS, actions: this.actions().map((a) => ({ action: a, desc: OPS_ACTIONS[a].desc, mutating: OPS_ACTIONS[a].mutating })) };
   }
 
+  /** 自動偵測供應商可用模型（用已存或傳入的金鑰；OpenAI 只列聊天／推理模型） */
+  async listModels(provider: string, apiKey?: string): Promise<{ provider: string; models: { id: string; label: string }[]; default: string; error?: string }> {
+    const key = apiKey?.trim() || (provider === 'anthropic' ? await this.settings.get(SETTING_KEYS.anthropicApiKey, 'ANTHROPIC_API_KEY') : provider === 'openai' ? await this.settings.get(SETTING_KEYS.openaiApiKey, 'OPENAI_API_KEY') : '');
+    if (provider === 'mock') return { provider, models: [{ id: 'rules', label: '規則模式（不呼叫模型）' }], default: 'rules' };
+    const fallback = provider === 'anthropic' ? 'claude-sonnet-5' : 'gpt-4.1';
+    if (!key) return { provider, models: [], default: fallback, error: '尚未設定金鑰' };
+    try {
+      if (provider === 'anthropic') {
+        const res = await fetch('https://api.anthropic.com/v1/models?limit=100', { headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' }, signal: AbortSignal.timeout(15_000) });
+        const j = (await res.json()) as { data?: { id: string; display_name?: string; created_at?: string }[]; error?: { message?: string } };
+        if (!res.ok) return { provider, models: [], default: fallback, error: `Anthropic ${res.status}：${j.error?.message ?? ''}` };
+        const models = (j.data ?? []).sort((a, b) => String(b.created_at ?? '').localeCompare(String(a.created_at ?? ''))).map((m) => ({ id: m.id, label: m.display_name ? `${m.display_name}（${m.id}）` : m.id }));
+        return { provider, models, default: models.find((m) => /sonnet/.test(m.id))?.id ?? models[0]?.id ?? fallback };
+      }
+      const res = await fetch('https://api.openai.com/v1/models', { headers: { authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15_000) });
+      const j = (await res.json()) as { data?: { id: string; created?: number }[]; error?: { message?: string } };
+      if (!res.ok) return { provider, models: [], default: fallback, error: `OpenAI ${res.status}：${j.error?.message ?? ''}` };
+      const models = (j.data ?? [])
+        .filter((m) => /^(gpt-|o\d|chatgpt-)/.test(m.id) && !/(audio|realtime|tts|transcribe|search|image|embedding|moderation|instruct|-\d{4}-\d{2}-\d{2}$)/.test(m.id))
+        .sort((a, b) => (b.created ?? 0) - (a.created ?? 0))
+        .map((m) => ({ id: m.id, label: m.id }));
+      return { provider, models, default: models.find((m) => m.id === 'gpt-4.1')?.id ?? models[0]?.id ?? fallback };
+    } catch (e) {
+      return { provider, models: [], default: fallback, error: e instanceof Error ? e.message : String(e) };
+    }
+  }
+
   actions(): OpsAction[] {
     return OPS_ACTION_KEYS.filter((a) => !COMMAND_EXCLUDED_ACTIONS.includes(a));
   }

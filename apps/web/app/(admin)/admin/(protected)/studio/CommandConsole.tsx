@@ -351,6 +351,25 @@ function ResultCard({ r, label }: { r: Exec; label: string }) {
 function Settings({ config, onSave, onClose }: { config: CommandConfig; onSave: (s: { provider: string; model: string; anthropicKey: string; openaiKey: string }) => Promise<void>; onClose: () => void }) {
   const [s, setS] = useState({ provider: config.provider, model: config.model === 'rules' ? '' : config.model, anthropicKey: '', openaiKey: '' });
   const [busy, setBusy] = useState(false);
+  const [models, setModels] = useState<{ id: string; label: string }[]>([]);
+  const [detect, setDetect] = useState<{ loading: boolean; error?: string; def?: string }>({ loading: false });
+  const detectModels = async (provider = s.provider, key?: string) => {
+    if (provider === 'mock') {
+      setModels([]);
+      setDetect({ loading: false });
+      return;
+    }
+    setDetect({ loading: true });
+    const r = await fetch('/api/admin/ai/command/models', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ provider, apiKey: key ?? (provider === 'anthropic' ? s.anthropicKey : s.openaiKey) }) });
+    const j = await r.json().catch(() => ({ models: [] }));
+    setModels(j.models ?? []);
+    setDetect({ loading: false, error: j.error, def: j.default });
+    if (j.models?.length && !j.models.some((m: { id: string }) => m.id === s.model)) setS((cur) => ({ ...cur, model: j.default ?? j.models[0].id }));
+  };
+  useEffect(() => {
+    void detectModels(s.provider);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s.provider]);
   return (
     <div className="border-b p-3 text-xs" style={{ ...line, background: 'var(--card)' }}>
       <div className="grid gap-2 sm:grid-cols-2">
@@ -363,16 +382,28 @@ function Settings({ config, onSave, onClose }: { config: CommandConfig; onSave: 
           </select>
         </label>
         <label className="block">
-          模型（留空用預設：Claude claude-sonnet-5／OpenAI gpt-4.1）
-          <input className={input} style={line} value={s.model} onChange={(e) => setS({ ...s, model: e.target.value })} placeholder="claude-sonnet-5" />
+          模型
+          {detect.loading ? <span style={{ color: 'var(--muted)' }}>（偵測可用模型中…）</span> : models.length ? <span className="text-green-700">（已自動偵測 {models.length} 個可用模型）</span> : detect.error ? <span className="text-red-700">（{detect.error}）</span> : <span style={{ color: 'var(--muted)' }}>（填金鑰後自動偵測；留空用預設）</span>}
+          {models.length ? (
+            <select className={input} style={line} value={s.model} onChange={(e) => setS({ ...s, model: e.target.value })}>
+              {models.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
+                  {m.id === detect.def ? '（建議）' : ''}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input className={input} style={line} value={s.model} onChange={(e) => setS({ ...s, model: e.target.value })} placeholder={s.provider === 'openai' ? 'gpt-4.1' : 'claude-sonnet-5'} disabled={s.provider === 'mock'} />
+          )}
         </label>
         <label className="block">
           Anthropic API Key {config.anthropicConfigured ? <span className="text-green-700">（已設定，留空不變）</span> : null}
-          <input className={input} style={line} type="password" autoComplete="off" value={s.anthropicKey} onChange={(e) => setS({ ...s, anthropicKey: e.target.value })} />
+          <input className={input} style={line} type="password" autoComplete="off" value={s.anthropicKey} onChange={(e) => setS({ ...s, anthropicKey: e.target.value })} onBlur={() => s.provider === 'anthropic' && s.anthropicKey && void detectModels('anthropic', s.anthropicKey)} />
         </label>
         <label className="block">
           OpenAI API Key {config.openaiConfigured ? <span className="text-green-700">（已設定，留空不變）</span> : null}（也供 AI 產圖使用）
-          <input className={input} style={line} type="password" autoComplete="off" value={s.openaiKey} onChange={(e) => setS({ ...s, openaiKey: e.target.value })} />
+          <input className={input} style={line} type="password" autoComplete="off" value={s.openaiKey} onChange={(e) => setS({ ...s, openaiKey: e.target.value })} onBlur={() => s.provider === 'openai' && s.openaiKey && void detectModels('openai', s.openaiKey)} />
         </label>
       </div>
       <div className="mt-2 flex gap-2">
@@ -386,6 +417,9 @@ function Settings({ config, onSave, onClose }: { config: CommandConfig; onSave: 
           className="rounded bg-black px-3 py-1 text-white disabled:opacity-50"
         >
           儲存設定
+        </button>
+        <button onClick={() => void detectModels()} disabled={detect.loading || s.provider === 'mock'} className="rounded border px-3 py-1 disabled:opacity-50" style={line}>
+          重新偵測模型
         </button>
         <button onClick={onClose} className="rounded border px-3 py-1" style={line}>
           關閉

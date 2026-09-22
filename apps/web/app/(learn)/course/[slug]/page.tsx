@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Section } from '@/components/Section';
-import { apiPublic, buildTree, fmtDuration, twd, type CourseDetail, fmtDate } from '@/lib/api-public';
+import { apiPublic, buildTree, fmtDuration, priceParts, twd, type CourseDetail, fmtDate } from '@/lib/api-public';
 import { apiServer, getMe } from '@/lib/api-server';
 import { BuyButton } from './BuyButton';
 import { YouTubePlayer } from './YouTubePlayer';
@@ -44,7 +44,10 @@ export default async function CoursePage({ params }: Params) {
           {course.chapters.length} 個章節{totalSec ? `，共 ${fmtDuration(totalSec)}` : ''} · {ACCESS_LABEL(course)}
         </p>
         <div className="mt-4 flex items-center gap-3">
-          <span className="text-lg font-bold">{course.product.price === 0 ? '免費' : twd(course.product.price)}</span>
+          <span className="text-lg font-bold">
+            {course.product.price === 0 ? '免費' : priceParts(course.product).onSale ? <><span className="text-red-700">{twd(priceParts(course.product).price)}</span> <s className="text-sm font-normal opacity-60">{twd(course.product.price)}</s></> : twd(course.product.price)}
+          </span>
+          {course.instructorName ? <span className="text-xs" style={{ color: 'var(--muted)' }}>講師：{course.instructorName}</span> : null}
           {entitled ? (
             <>
               <span className="rounded bg-green-100 px-2 py-1 text-xs text-green-800">已擁有{course.expiresAt ? `（至 ${fmtDate(course.expiresAt)}）` : ''}</span>
@@ -53,7 +56,14 @@ export default async function CoursePage({ params }: Params) {
               </Link>
             </>
           ) : authed ? (
-            <BuyButton productId={course.product.id} />
+            <>
+              <BuyButton productId={course.product.id} label={course.buttonText} />
+              {course.purchaseNote ? (
+                <span className="block w-full text-xs" style={{ color: 'var(--muted)' }}>
+                  {course.purchaseNote}
+                </span>
+              ) : null}
+            </>
           ) : (
             <Link href={`/login?next=/course/${course.slug}`} className="rounded bg-black px-4 py-2 text-sm text-white">
               登入後購買

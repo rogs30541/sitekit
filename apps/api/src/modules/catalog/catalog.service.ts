@@ -14,6 +14,11 @@ const productInput = z.object({
   stock: z.number().int().min(0).nullable().optional(),
   sortOrder: z.number().int().optional(),
   category: z.string().trim().max(60).nullable().optional(),
+  salePrice: z.number().int().min(0).nullable().optional(),
+  saleStartsAt: z.string().datetime().nullable().optional(),
+  saleEndsAt: z.string().datetime().nullable().optional(),
+  tags: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
+  hidden: z.boolean().optional(),
 });
 const videoRef = z.object({ provider: z.enum(['youtube', 'bunny']), id: z.string().trim().max(120) }).nullable().optional();
 const courseInput = z.object({
@@ -26,6 +31,11 @@ const courseInput = z.object({
   accessMode: z.enum(['unlimited', 'days', 'until']).optional(),
   accessDays: z.number().int().min(1).max(3650).nullable().optional(),
   accessUntil: z.string().datetime().nullable().optional(),
+  publishedAt: z.string().datetime().nullable().optional(),
+  instructorName: z.string().max(80).nullable().optional(),
+  instructorBio: z.string().max(2000).nullable().optional(),
+  purchaseNote: z.string().max(2000).nullable().optional(),
+  buttonText: z.string().max(50).nullable().optional(),
 });
 const chapterInput = z.object({
   parentId: z.string().nullable().optional(),
@@ -64,9 +74,9 @@ export class CatalogService {
   // ---- 公開 ----
   listProducts(type?: string, category?: string) {
     return this.prisma.product.findMany({
-      where: { isActive: true, ...(type ? { type: type as 'physical' | 'course' | 'credit_pack' } : {}), ...(category ? { category } : {}) },
+      where: { isActive: true, hidden: false, ...(type ? { type: type as 'physical' | 'course' | 'credit_pack' } : {}), ...(category ? { category } : {}) },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-      select: { id: true, type: true, sku: true, name: true, description: true, coverUrl: true, price: true, stock: true, category: true, specs: true, course: { select: { slug: true } }, variants: { where: { isActive: true }, orderBy: { sortOrder: 'asc' }, select: PUBLIC_VARIANT } },
+      select: { id: true, type: true, sku: true, name: true, description: true, coverUrl: true, price: true, salePrice: true, saleStartsAt: true, saleEndsAt: true, tags: true, stock: true, category: true, specs: true, course: { select: { slug: true } }, variants: { where: { isActive: true }, orderBy: { sortOrder: 'asc' }, select: PUBLIC_VARIANT } },
     });
   }
 
@@ -129,9 +139,9 @@ export class CatalogService {
 
   listCourses() {
     return this.prisma.course.findMany({
-      where: { isPublished: true, product: { isActive: true } },
-      orderBy: { product: { createdAt: 'desc' } },
-      select: { id: true, slug: true, summary: true, product: { select: { id: true, name: true, description: true, coverUrl: true, price: true } }, _count: { select: { chapters: { where: { isPublished: true } } } } },
+      where: { isPublished: true, product: { isActive: true, hidden: false } },
+      orderBy: [{ publishedAt: 'desc' }, { product: { createdAt: 'desc' } }],
+      select: { id: true, slug: true, summary: true, instructorName: true, publishedAt: true, product: { select: { id: true, name: true, description: true, coverUrl: true, price: true, salePrice: true, saleStartsAt: true, saleEndsAt: true, tags: true, category: true } }, _count: { select: { chapters: { where: { isPublished: true } } } } },
     });
   }
 
@@ -139,7 +149,7 @@ export class CatalogService {
     const c = await this.prisma.course.findFirst({
       where: { slug, isPublished: true },
       include: {
-        product: { select: { id: true, name: true, description: true, coverUrl: true, price: true, isActive: true } },
+        product: { select: { id: true, name: true, description: true, coverUrl: true, price: true, salePrice: true, saleStartsAt: true, saleEndsAt: true, tags: true, category: true, isActive: true } },
         chapters: { where: { isPublished: true }, orderBy: [{ order: 'asc' }], select: PUBLIC_CHAPTER },
       },
     });
@@ -165,15 +175,20 @@ export class CatalogService {
     return c;
   }
 
+  private productData(d: Partial<z.infer<typeof productInput>>) {
+    return { ...d, ...(d.saleStartsAt !== undefined ? { saleStartsAt: d.saleStartsAt ? new Date(d.saleStartsAt) : null } : {}), ...(d.saleEndsAt !== undefined ? { saleEndsAt: d.saleEndsAt ? new Date(d.saleEndsAt) : null } : {}) };
+  }
+
   createProduct(input: unknown) {
-    return this.prisma.product.create({ data: parse(productInput, input) });
+    const d = parse(productInput, input);
+    return this.prisma.product.create({ data: { ...this.productData(d), type: d.type, sku: d.sku, name: d.name, price: d.price } });
   }
 
   updateProduct(id: string, input: unknown) {
-    return this.prisma.product.update({ where: { id }, data: parse(productInput.partial(), input) });
+    return this.prisma.product.update({ where: { id }, data: this.productData(parse(productInput.partial(), input)) });
   }
 
-  private courseData(d: z.infer<typeof courseInput> | Partial<z.infer<typeof courseInput>>) {
+  private courseData(d: Omit<Partial<z.infer<typeof courseInput>>, 'product'>) {
     return {
       slug: d.slug,
       summary: d.summary,
@@ -183,22 +198,27 @@ export class CatalogService {
       accessMode: d.accessMode,
       accessDays: d.accessDays,
       ...(d.accessUntil !== undefined ? { accessUntil: d.accessUntil ? new Date(d.accessUntil) : null } : {}),
+      ...(d.publishedAt !== undefined ? { publishedAt: d.publishedAt ? new Date(d.publishedAt) : null } : {}),
+      instructorName: d.instructorName,
+      instructorBio: d.instructorBio,
+      purchaseNote: d.purchaseNote,
+      buttonText: d.buttonText,
     };
   }
 
   createCourse(input: unknown) {
     const d = parse(courseInput, input);
     return this.prisma.course.create({
-      data: { ...this.courseData(d), slug: d.slug, product: { create: { ...d.product, type: 'course' } } },
+      data: { ...this.courseData(d), slug: d.slug, product: { create: { ...this.productData(d.product), sku: d.product.sku, name: d.product.name, price: d.product.price, type: 'course' } } },
       include: { product: true },
     });
   }
 
   updateCourse(id: string, input: unknown) {
-    const d = parse(courseInput.partial(), input);
+    const d = parse(courseInput.partial().extend({ product: productInput.omit({ type: true }).partial().optional() }), input);
     return this.prisma.course.update({
       where: { id },
-      data: { ...this.courseData(d), ...(d.product ? { product: { update: d.product } } : {}) },
+      data: { ...this.courseData(d), ...(d.product ? { product: { update: this.productData(d.product) } } : {}) },
       include: { product: true },
     });
   }

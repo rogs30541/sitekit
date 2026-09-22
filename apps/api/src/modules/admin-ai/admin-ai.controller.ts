@@ -30,6 +30,12 @@ export class AdminAiController {
     return { provider: c.provider, model: c.model, ready: c.ready, anthropicConfigured: c.anthropicConfigured, openaiConfigured: c.openaiConfigured, tasks: c.tasks, actions: c.actions };
   }
 
+  /** 自動偵測供應商可用模型（可先傳 apiKey 測試，不必先儲存） */
+  @Post('command/models')
+  models(@Body() body: { provider?: string; apiKey?: string } | undefined) {
+    return this.command.listModels(String(body?.provider ?? 'anthropic'), body?.apiKey);
+  }
+
   /** 自然語言指令 → 唯讀動作立即執行、寫入動作列成待確認 */
   @Post('command')
   run(@Body() body: { message: string; history?: ChatTurn[] }, @Req() req: AuthedRequest) {

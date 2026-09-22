@@ -207,6 +207,13 @@ model Product {
   sortOrder    Int           @default(0)
   /// 商品分類（自由字串；前台可依分類篩選）
   category     String?
+  /// 特價與排程（saleStartsAt／saleEndsAt 空＝立即／永久）；effectivePrice 決定實際售價
+  salePrice    Int?
+  saleStartsAt DateTime?
+  saleEndsAt   DateTime?
+  tags         String[]      @default([])
+  /// 隱藏：不出現在列表，仍可由網址直接訪問（與下架不同）
+  hidden       Boolean       @default(false)
   /// 規格定義 [{name:'顏色', values:['黑','白']}]；組合在 variants
   specs        Json?
   variants     ProductVariant[]
@@ -255,6 +262,12 @@ model Course {
   accessMode           String    @default("unlimited")
   accessDays           Int?
   accessUntil          DateTime?
+  /// 發布時間（影響列表排序）、講師、購買備註、購買按鈕文字
+  publishedAt          DateTime?
+  instructorName       String?
+  instructorBio        String?
+  purchaseNote         String?
+  buttonText           String?
   product              Product   @relation(fields: [productId], references: [id])
   chapters             Chapter[]
   questions            CourseQuestion[]

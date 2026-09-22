@@ -28,6 +28,14 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 **P3 產品化（完成）**：點數帳本（保留再結算、失敗釋放）、AI Provider 抽象層（mock／OpenAI、平台金鑰或 BYOK）、程序內任務佇列（可換 BullMQ）、`/studio` AI 創作工作站、`/admin/studio` 模板管理與點數調整、MCP／AI API 的 `adjust_credits`。
 
+## P15 課程編輯對標 Power Course、工作站對標 inShow、AI 模型自動偵測（2026-09-22，v0.14.0）
+
+- **課程編輯分頁**（`/admin/courses/[id]`，對標 Power Course）：課程描述（課程發佈：網址 slug／在前台列表中隱藏（仍可直連）／發布時間；描述：名稱／分類／標籤／簡短描述／內容／封面圖上傳／封面影片／試看影片；講師名稱與簡介）、課程定價（原價／特價／特價排程／免費／購買按鈕文字／購買備註／觀看時間限制）、章節、問答與公告、影片庫；「儲存為草稿／儲存並發布」。資料：`courses.publishedAt/instructorName/instructorBio/purchaseNote/buttonText`、`products.salePrice/saleStartsAt/saleEndsAt/tags/hidden`。
+- **特價**：`effectivePrice()`（`packages/shared`）——特價在排程內才生效；試算／下單／銷售頁／商城／課程列表與詳情一致；商品編輯頁亦可設。隱藏商品／課程不出現在公開列表，直連仍可購買。
+- **會員 AI 工作站**（`/studio`，對標 inShow generate）：上方模板庫（封面卡、分類、說明、點數、搜尋、收合）→ 左「生成記錄」（結果縮圖、下載、以此圖微調、範例參考）→ 右「生成配置」（生成／微調、標準／高品質・印刷卡片、欄位含必填徽章、商品圖上傳、必填提醒、BYOK 徽章）。
+- **AI 指令台供應商切換自動偵測可用模型**：`POST /api/admin/ai/command/models`（Anthropic `/v1/models`、OpenAI `/v1/models` 過濾聊天／推理模型；可先傳金鑰測試）→ 設定面板模型改下拉（標示建議），填金鑰失焦或切換供應商即自動偵測，可「重新偵測」。
+- 本機 E2E：`local-p21-e2e.mjs` 15 項全過。
+
 ## P14 商品多規格、商品刪除、課程新增、子選單按鈕（2026-09-22，v0.13.0）
 
 - **商品編輯頁** `/admin/products/[id]`（商品列表點名稱或「編輯／規格」）：簡易資訊（名稱／SKU／分類／價格／庫存／說明／封面上傳／上架／排序）＋**多規格**：定義最多 3 層規格與選項 → 「產生規格組合」→ 每個組合自訂 SKU、價格（空＝沿用主商品）、庫存（空＝不追蹤）、上架；`PUT /api/admin/catalog/products/:id/variants` 整組覆寫（已有訂單的規格改下架不刪）。資料：`product_variants`、`products.specs`、`order_items.variantId`。

@@ -280,3 +280,13 @@ export * from './tracking';
 export const ORDER_SCOPES = ['shop', 'course'] as const;
 export type OrderScope = (typeof ORDER_SCOPES)[number];
 export const ORDER_SCOPE_LABELS: Record<string, string> = { shop: '電商', course: '課程', all: '電商＋課程' };
+
+/** 實際售價：特價在排程內才生效；回 original（原價）與 onSale */
+export function effectivePrice(p: { price: number; salePrice?: number | null; saleStartsAt?: string | Date | null; saleEndsAt?: string | Date | null }, now = Date.now()): { price: number; original: number; onSale: boolean } {
+  const sp = p.salePrice;
+  if (sp === null || sp === undefined || sp < 0 || sp >= p.price) return { price: p.price, original: p.price, onSale: false };
+  const s = p.saleStartsAt ? new Date(p.saleStartsAt).getTime() : null;
+  const e = p.saleEndsAt ? new Date(p.saleEndsAt).getTime() : null;
+  if ((s && s > now) || (e && e < now)) return { price: p.price, original: p.price, onSale: false };
+  return { price: sp, original: p.price, onSale: true };
+}

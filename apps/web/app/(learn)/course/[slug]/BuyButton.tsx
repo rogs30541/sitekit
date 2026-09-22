@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { fetchPaymentMethods, startCheckout, type PaymentMethod } from '@/lib/checkout';
 
 /** 課程單品購買：建單 → 結帳（多家金流時顯示付款方式選單）。 */
-export function BuyButton({ productId }: { productId: string }) {
+export function BuyButton({ productId, label }: { productId: string; label?: string | null }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
@@ -48,7 +48,7 @@ export function BuyButton({ productId }: { productId: string }) {
         </select>
       ) : null}
       <button onClick={buy} disabled={busy} className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50">
-        {busy ? '前往付款…' : '立即購買'}
+        {busy ? '前往付款…' : label || '立即購買'}
       </button>
       {methods.length === 1 && methods[0].testMode && methods[0].id !== 'mock' ? (
         <span className="text-xs" style={{ color: 'var(--muted)' }}>
