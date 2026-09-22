@@ -156,9 +156,9 @@ export const OPS_ACTIONS = {
   import_content: { desc: '外站內容匯入（WordPress / CSV，冪等 upsert）', mutating: true },
   adjust_credits: { desc: '調整用戶點數（客服補點、活動贈點、沖正；需 email 或 userId、amount、reason）', mutating: true },
   audit: { desc: '讀取稽核日誌', mutating: false },
-  sales_report: { desc: '銷售報表（期間營收、訂單數、客單價、各商品銷量、退款、金流分布；from/to ISO 日期、groupBy day|month）', mutating: false },
+  sales_report: { desc: '（scope shop|course|all）銷售報表（期間營收、訂單數、客單價、各商品銷量、退款、金流分布；from/to ISO 日期、groupBy day|month）', mutating: false },
   update_shipping: { desc: '更新訂單物流（orderNo、status pending|shipped|delivered|returned、carrier、trackingNo）', mutating: true },
-  manage_coupon: { desc: '折扣碼建立／修改／停用（op create|update|disable、code、type percent|fixed、value、minAmount、maxUses、expiresAt）', mutating: true },
+  manage_coupon: { desc: '（scope shop|course|all 適用範疇）折扣碼建立／修改／停用（op create|update|disable、code、type percent|fixed、value、minAmount、maxUses、expiresAt）', mutating: true },
   adjust_stock: { desc: '調整商品庫存（sku 或 productId；set 絕對值或 delta 增減；null＝不追蹤）', mutating: true },
   expire_orders: { desc: '取消逾期未付款訂單並回補庫存（hours 預設讀 order.expireHours）', mutating: true },
   get_menu: { desc: '讀取網站架構樹（location header 主選單｜footer 頁尾，含隱藏節點）', mutating: false },
@@ -189,7 +189,7 @@ export const OPS_ACTIONS = {
   storage_status: { desc: '物件儲存狀態（driver local|s3、R2 是否設定完成）與最近通知紀錄', mutating: false },
   list_products: { desc: '列出商品（後台視角，含下架／庫存／分類；q 關鍵字、type physical|course|credit_pack、category、isActive、limit）', mutating: false },
   upsert_product: { desc: '以 sku 建立或更新商品（name、price 整數、type、description、coverUrl、stock、isActive 上架/下架、category 分類、sortOrder）', mutating: true },
-  list_orders: { desc: '列出訂單（status pending|paid|failed|refunded|canceled、shipping、from/to 日期、q 訂單編號或 Email、limit）', mutating: false },
+  list_orders: { desc: '列出訂單（scope shop|course 電商或課程、status pending|paid|failed|refunded|canceled、shipping、from/to 日期、q 訂單編號或 Email、limit）', mutating: false },
   get_order: { desc: '讀取單一訂單完整資料（orderNo 或 id）', mutating: false },
   list_courses: { desc: '列出課程（含未發布；slug、商品、章節數）', mutating: false },
   upsert_course: { desc: '以 slug 建立或更新線上課程（product{sku,name,price,description,coverUrl}、summary、isPublished、accessMode）', mutating: true },
@@ -273,3 +273,8 @@ export const COMMAND_TASKS: { key: string; label: string; desc: string; examples
 ];
 export * from './sales';
 export * from './tracking';
+
+/** 訂單／折扣碼範疇：電商與課程各自獨立的購物車、訂單、折扣碼、報表 */
+export const ORDER_SCOPES = ['shop', 'course'] as const;
+export type OrderScope = (typeof ORDER_SCOPES)[number];
+export const ORDER_SCOPE_LABELS: Record<string, string> = { shop: '電商', course: '課程', all: '電商＋課程' };

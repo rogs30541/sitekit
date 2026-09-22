@@ -230,6 +230,8 @@ model Coupon {
   expiresAt DateTime?
   isActive  Boolean   @default(true)
   note      String?
+  /// 適用範疇：shop（電商）／course（課程）／all
+  scope     String    @default("shop")
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -317,6 +319,8 @@ model Order {
   merchantOrderNo String         @unique
   userId          String
   status          OrderStatus    @default(pending)
+  /// 訂單範疇：shop（電商）／course（課程）——兩者購物車、訂單、折扣碼、報表各自獨立
+  scope           String         @default("shop")
   /// amount＝應付總額＝subtotal − discount ＋ shippingFee
   amount          Int
   subtotal        Int            @default(0)

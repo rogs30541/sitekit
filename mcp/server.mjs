@@ -68,7 +68,7 @@ server.tool('sitekit_audit', '讀取最近的維運稽核日誌', { limit: z.num
 server.tool(
   'sitekit_sales_report',
   '銷售報表：期間營收、已付款訂單數、客單價、退款、折扣、運費、各商品銷量、金流分布（以付款時間計）',
-  { from: z.string().optional().describe('YYYY-MM-DD，預設 30 天前'), to: z.string().optional().describe('YYYY-MM-DD，預設今天'), groupBy: z.enum(['day', 'month']).default('day') },
+  { scope: z.enum(['shop', 'course', 'all']).optional(), from: z.string().optional().describe('YYYY-MM-DD，預設 30 天前'), to: z.string().optional().describe('YYYY-MM-DD，預設今天'), groupBy: z.enum(['day', 'month']).default('day') },
   async (p) => asText(await ops('sales_report', p)),
 );
 
@@ -82,7 +82,7 @@ server.tool(
 server.tool(
   'sitekit_manage_coupon',
   '折扣碼：建立（op=create）、修改（op=update）、停用（op=disable）',
-  {
+  { scope: z.enum(['shop', 'course', 'all']).optional(),
     op: z.enum(['create', 'update', 'disable']).default('create'),
     code: z.string().describe('代碼，會轉大寫'),
     type: z.enum(['percent', 'fixed']).optional(),
@@ -142,7 +142,7 @@ server.tool(
 );
 server.tool('sitekit_list_products', '列出商品（後台視角：含下架／庫存／分類）', { q: z.string().optional(), type: z.enum(['physical', 'course', 'credit_pack']).optional(), category: z.string().optional(), isActive: z.boolean().optional(), limit: z.number().optional() }, async (p) => asText(await ops('list_products', p)));
 server.tool('sitekit_upsert_product', '以 sku 建立或更新商品（上架／下架／改價／分類／封面）', { sku: z.string(), type: z.enum(['physical', 'course', 'credit_pack']).optional(), name: z.string().optional(), price: z.number().optional(), description: z.string().optional(), coverUrl: z.string().optional(), stock: z.number().nullable().optional(), isActive: z.boolean().optional(), category: z.string().optional(), sortOrder: z.number().optional() }, async (p) => asText(await ops('upsert_product', p)));
-server.tool('sitekit_list_orders', '列出訂單（狀態／物流狀態／日期區間／關鍵字）', { status: z.enum(['pending', 'paid', 'failed', 'refunded', 'canceled']).optional(), shipping: z.string().optional(), from: z.string().optional(), to: z.string().optional(), q: z.string().optional(), limit: z.number().optional() }, async (p) => asText(await ops('list_orders', p)));
+server.tool('sitekit_list_orders', '列出訂單（scope shop 電商｜course 課程；狀態／物流狀態／日期區間／關鍵字）', { scope: z.enum(['shop', 'course', 'all']).optional(), status: z.enum(['pending', 'paid', 'failed', 'refunded', 'canceled']).optional(), shipping: z.string().optional(), from: z.string().optional(), to: z.string().optional(), q: z.string().optional(), limit: z.number().optional() }, async (p) => asText(await ops('list_orders', p)));
 server.tool('sitekit_get_order', '讀取單一訂單', { orderNo: z.string() }, async (p) => asText(await ops('get_order', p)));
 server.tool('sitekit_list_courses', '列出課程（含未發布）', {}, async () => asText(await ops('list_courses', {})));
 server.tool('sitekit_upsert_course', '以 slug 建立或更新線上課程', { slug: z.string(), name: z.string().optional(), price: z.number().optional(), sku: z.string().optional(), description: z.string().optional(), coverUrl: z.string().optional(), summary: z.string().optional(), isPublished: z.boolean().optional(), accessMode: z.enum(['unlimited', 'days', 'until']).optional(), accessDays: z.number().optional() }, async (p) => asText(await ops('upsert_course', p)));

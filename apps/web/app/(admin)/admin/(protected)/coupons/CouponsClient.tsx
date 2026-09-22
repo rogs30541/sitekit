@@ -16,19 +16,20 @@ export interface Coupon {
   expiresAt: string | null;
   isActive: boolean;
   note: string | null;
+  scope?: 'shop' | 'course' | 'all';
 }
 const input = 'rounded border px-2 py-1 text-sm';
 
-export function CouponsClient({ coupons }: { coupons: Coupon[] }) {
+export function CouponsClient({ coupons, scope = 'shop' }: { coupons: Coupon[]; scope?: 'shop' | 'course' }) {
   const router = useRouter();
-  const [form, setForm] = useState({ code: '', type: 'percent', value: '10', minAmount: '0', maxUses: '', expiresAt: '', note: '' });
+  const [form, setForm] = useState({ code: '', type: 'percent', value: '10', minAmount: '0', maxUses: '', expiresAt: '', note: '', scope: scope as 'shop' | 'course' | 'all' });
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
 
   async function create() {
     setBusy(true);
     setMsg('');
-    const body = { code: form.code, type: form.type, value: Number(form.value), minAmount: Number(form.minAmount) || 0, maxUses: form.maxUses ? Number(form.maxUses) : null, expiresAt: form.expiresAt ? new Date(form.expiresAt + 'T23:59:59+08:00').toISOString() : null, note: form.note || null };
+    const body = { code: form.code, type: form.type, value: Number(form.value), minAmount: Number(form.minAmount) || 0, maxUses: form.maxUses ? Number(form.maxUses) : null, expiresAt: form.expiresAt ? new Date(form.expiresAt + 'T23:59:59+08:00').toISOString() : null, note: form.note || null, scope: form.scope };
     const r = await fetch('/api/admin/coupons', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
     const j = await r.json().catch(() => ({}));
     setMsg(r.ok ? `已建立 ${j.code}` : typeof j.message === 'string' ? j.message : JSON.stringify(j.message ?? j));
@@ -51,6 +52,14 @@ export function CouponsClient({ coupons }: { coupons: Coupon[] }) {
           代碼
           <br />
           <input className={input} style={{ borderColor: 'var(--line)' }} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} placeholder="WELCOME10" />
+        </label>
+        <label className="text-xs">
+          適用範疇
+          <br />
+          <select className={input} style={{ borderColor: 'var(--line)' }} value={form.scope} onChange={(e) => setForm({ ...form, scope: e.target.value as 'shop' | 'course' | 'all' })}>
+            <option value={scope}>{scope === 'course' ? '課程' : '電商'}</option>
+            <option value="all">電商＋課程通用</option>
+          </select>
         </label>
         <label className="text-xs">
           類型

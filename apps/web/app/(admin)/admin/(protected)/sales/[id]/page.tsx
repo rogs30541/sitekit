@@ -13,7 +13,7 @@ export default async function AdminSalesEditPage({ params }: { params: Promise<{
     <div>
       <p className="mb-2 text-xs" style={{ color: 'var(--muted)' }}>
         <Link href="/admin/sales" className="underline">
-          回銷售頁列表
+          回一頁式網頁列表
         </Link>
         {data.page.status === 'published' ? (
           <>

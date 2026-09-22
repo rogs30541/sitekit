@@ -27,7 +27,7 @@ const STATUS: Record<string, string> = { draft: '草稿', published: '已發布'
 export async function ContentList({ type }: { type: 'page' | 'post' }) {
   const rows = (await apiServer<Row[]>(`/api/admin/content?type=${encodeURIComponent(type)}`)) ?? [];
   return (
-    <Section title={type === 'post' ? '文章' : '頁面設計'} group="(admin)">
+    <Section title={type === 'post' ? '文章' : '新增網頁'} group="(admin)">
       <div className="mb-3 flex flex-wrap items-center gap-3 text-xs">
         <NewContentButton type={type} />
         <span style={{ color: 'var(--muted)' }}>

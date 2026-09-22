@@ -36,7 +36,6 @@ export const BRAND_FIELDS = [
   { key: SETTING_KEYS.brandYoutube, label: 'YouTube 網址', def: '' },
   { key: SETTING_KEYS.brandFooterText, label: '頁尾文字', def: '' },
   { key: SETTING_KEYS.seoOgImage, label: '預設分享圖（OG image）網址', def: '' },
-  { key: SETTING_KEYS.seoGaId, label: 'Google Analytics 評估 ID（G-XXXX）', def: '' },
 ] as const;
 
 /** 站台外觀設定：品牌／聯絡／社群／SEO 全走 settings（後台或 MCP update_settings 可改）；首頁版面區塊存 `home.sections`（JSON，經驗證）。 */

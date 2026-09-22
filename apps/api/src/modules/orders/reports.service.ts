@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { PrismaService } from '../../prisma/prisma.service';
 
 const reportInput = z.object({
+  scope: z.enum(['shop', 'course', 'all']).optional(),
   from: z.string().optional(),
   to: z.string().optional(),
   groupBy: z.enum(['day', 'month']).default('day'),
@@ -27,10 +28,12 @@ export class ReportsService {
 
   async sales(raw: unknown) {
     const { from, to, groupBy } = this.range(raw);
+    const scopeRaw = (raw as { scope?: string } | undefined)?.scope;
+    const scope = scopeRaw && scopeRaw !== 'all' ? { scope: scopeRaw } : {};
     const [paid, refunded, pendingCount] = await Promise.all([
-      this.prisma.order.findMany({ where: { status: { in: ['paid', 'refunded'] }, paidAt: { gte: from, lt: to } }, include: { items: true }, orderBy: { paidAt: 'asc' } }),
-      this.prisma.order.findMany({ where: { status: 'refunded', refundedAt: { gte: from, lt: to } }, select: { amount: true } }),
-      this.prisma.order.count({ where: { status: 'pending', createdAt: { gte: from, lt: to } } }),
+      this.prisma.order.findMany({ where: { ...scope, status: { in: ['paid', 'refunded'] }, paidAt: { gte: from, lt: to } }, include: { items: true }, orderBy: { paidAt: 'asc' } }),
+      this.prisma.order.findMany({ where: { ...scope, status: 'refunded', refundedAt: { gte: from, lt: to } }, select: { amount: true } }),
+      this.prisma.order.count({ where: { ...scope, status: 'pending', createdAt: { gte: from, lt: to } } }),
     ]);
     const key = groupBy === 'month' ? monthKey : dayKey;
     const series = new Map<string, { revenue: number; orders: number }>();
@@ -75,8 +78,9 @@ export class ReportsService {
   async ordersCsv(raw: unknown & { status?: string }) {
     const { from, to } = this.range(raw);
     const status = (raw as { status?: string })?.status;
+    const scopeRaw = (raw as { scope?: string })?.scope;
     const orders = await this.prisma.order.findMany({
-      where: { createdAt: { gte: from, lt: to }, ...(status ? { status: status as 'pending' | 'paid' | 'failed' | 'refunded' | 'canceled' } : {}) },
+      where: { createdAt: { gte: from, lt: to }, ...(status ? { status: status as 'pending' | 'paid' | 'failed' | 'refunded' | 'canceled' } : {}), ...(scopeRaw && scopeRaw !== 'all' ? { scope: scopeRaw } : {}) },
       include: { items: true, user: { select: { email: true } }, invoices: { select: { number: true } } },
       orderBy: { createdAt: 'asc' },
     });

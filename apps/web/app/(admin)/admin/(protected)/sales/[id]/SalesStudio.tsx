@@ -364,7 +364,7 @@ export function SalesStudio({ initial, allProducts }: { initial: SalesPayload; a
 
       {tab === 'products' ? (
         <div className="grid gap-3 lg:grid-cols-2">
-          <Card title="挑選產品" desc="勾選要放進這個銷售頁的商品，並指定放在哪個區塊。">
+          <Card title="挑選產品／課程" desc="勾選要放進這個銷售頁的商品或課程，並指定放在哪個區塊。課程在前台以「立即購買課程」導向課程結帳（課程與商品購物車各自獨立）。">
             <div className="max-h-[60vh] space-y-1 overflow-auto">
               {allProducts.map((pr) => {
                 const it = doc.items.find((i) => i.productId === pr.id);
@@ -379,6 +379,7 @@ export function SalesStudio({ initial, allProducts }: { initial: SalesPayload; a
                     />
                     {pr.coverUrl ? <img src={pr.coverUrl} alt="" className="h-8 w-8 rounded object-cover" /> : <span className="h-8 w-8 rounded bg-neutral-100" />}
                     <span className="min-w-0 flex-1 truncate">
+                      <span className={`mr-1 rounded px-1 text-[10px] ${pr.type === 'course' ? 'bg-blue-100 text-blue-800' : 'bg-neutral-100'}`}>{pr.type === 'course' ? '課程' : pr.type === 'credit_pack' ? '點數' : '商品'}</span>
                       {pr.name} <span className="font-mono opacity-60">{pr.sku}</span> NT$ {pr.price}
                       {!pr.isActive ? <span className="ml-1 rounded bg-neutral-200 px-1 text-[10px]">已下架</span> : null}
                     </span>
@@ -394,7 +395,7 @@ export function SalesStudio({ initial, allProducts }: { initial: SalesPayload; a
                   </label>
                 );
               })}
-              {!allProducts.length ? <p style={{ color: 'var(--muted)' }}>尚無商品，先到「電商 → 商品」建立。</p> : null}
+              {!allProducts.length ? <p style={{ color: 'var(--muted)' }}>尚無商品或課程，先到「電商 → 商品」或「課程 → 課程管理」建立。</p> : null}
             </div>
           </Card>
           <Card title="產品區塊設定" desc="可更改各區塊的顯示與標題；強制關閉的區塊不會顯示。">

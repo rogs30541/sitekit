@@ -13,6 +13,7 @@ const couponInput = z.object({
   expiresAt: z.string().datetime().nullable().optional(),
   isActive: z.boolean().optional(),
   note: z.string().max(200).nullable().optional(),
+  scope: z.enum(['shop', 'course', 'all']).default('shop'),
 });
 
 /** 折扣碼：驗證（有效期／次數／低消）與折扣計算；usedCount 只在 markPaid 累加。 */
@@ -20,8 +21,8 @@ const couponInput = z.object({
 export class CouponsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  list() {
-    return this.prisma.coupon.findMany({ orderBy: { createdAt: 'desc' }, take: 200 });
+  list(scope?: string) {
+    return this.prisma.coupon.findMany({ where: scope && scope !== 'all' ? { scope: { in: [scope, 'all'] } } : {}, orderBy: { createdAt: 'desc' }, take: 200 });
   }
 
   create(input: unknown) {
@@ -46,10 +47,11 @@ export class CouponsService {
   }
 
   /** 回傳折扣金額；不可用時丟 BadRequest（訊息給前端顯示）。 */
-  async evaluate(code: string, subtotal: number): Promise<{ code: string; discount: number }> {
+  async evaluate(code: string, subtotal: number, scope: 'shop' | 'course' = 'shop'): Promise<{ code: string; discount: number }> {
     const c = await this.prisma.coupon.findUnique({ where: { code: code.trim().toUpperCase() } });
     const now = Date.now();
     if (!c || !c.isActive) throw new BadRequestException('折扣碼不存在或已停用');
+    if (c.scope !== 'all' && c.scope !== scope) throw new BadRequestException(scope === 'course' ? '此折扣碼僅適用於商品訂單' : '此折扣碼僅適用於課程訂單');
     if (c.startsAt && c.startsAt.getTime() > now) throw new BadRequestException('折扣碼尚未開始');
     if (c.expiresAt && c.expiresAt.getTime() < now) throw new BadRequestException('折扣碼已過期');
     if (c.maxUses !== null && c.usedCount >= c.maxUses) throw new BadRequestException('折扣碼已達使用上限');

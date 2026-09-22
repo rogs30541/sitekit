@@ -81,10 +81,14 @@ export class OrdersService implements OnModuleInit {
     });
     const subtotal = items.reduce((s, i) => s + i.unitPrice * i.qty, 0);
     const needsShipping = items.some((i) => i.type === 'physical');
+    // 電商與課程購物車各自獨立：同一張訂單不可混合
+    const courseCount = items.filter((i) => i.type === 'course').length;
+    if (courseCount && courseCount !== items.length) throw new BadRequestException('課程與商品請分開結帳');
+    const scope: 'shop' | 'course' = courseCount ? 'course' : 'shop';
     let discount = 0;
     let couponCode: string | null = null;
     if (r.data.couponCode) {
-      const c = await this.coupons.evaluate(r.data.couponCode, subtotal);
+      const c = await this.coupons.evaluate(r.data.couponCode, subtotal, scope);
       discount = c.discount;
       couponCode = c.code;
     }
@@ -96,7 +100,7 @@ export class OrdersService implements OnModuleInit {
     if (needsShipping && shippingMethod && shippingMethod.kind !== 'cvs' && r.data.shipping && !r.data.shipping.address) throw new BadRequestException('宅配需填寫地址');
     const amount = Math.max(0, subtotal - discount) + shippingFee;
     const invoice = this.invoice.validateRequest(r.data.invoice);
-    return { items, subtotal, discount, couponCode, shippingFee, needsShipping, amount, shipping: r.data.shipping ?? null, shippingMethod, store, invoice };
+    return { items, subtotal, discount, couponCode, shippingFee, needsShipping, amount, shipping: r.data.shipping ?? null, shippingMethod, store, invoice, scope };
   }
 
   async create(userId: string, input: unknown) {
@@ -108,6 +112,7 @@ export class OrdersService implements OnModuleInit {
         data: {
           userId,
           merchantOrderNo: newMerchantOrderNo(),
+          scope: q.scope,
           amount: q.amount,
           subtotal: q.subtotal,
           discount: q.discount,
@@ -169,9 +174,9 @@ export class OrdersService implements OnModuleInit {
     return this.prisma.order.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, include: { items: true }, take: 100 });
   }
 
-  listAll(status?: string, shippingStatus?: string) {
+  listAll(status?: string, shippingStatus?: string, scope?: string) {
     return this.prisma.order.findMany({
-      where: { ...(status ? { status: status as 'pending' | 'paid' | 'failed' | 'refunded' | 'canceled' } : {}), ...(shippingStatus ? { shippingStatus } : {}) },
+      where: { ...(status ? { status: status as 'pending' | 'paid' | 'failed' | 'refunded' | 'canceled' } : {}), ...(shippingStatus ? { shippingStatus } : {}), ...(scope && scope !== 'all' ? { scope } : {}) },
       orderBy: { createdAt: 'desc' },
       include: ORDER_INCLUDE,
       take: 200,

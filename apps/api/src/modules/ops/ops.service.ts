@@ -173,7 +173,7 @@ export class OpsService {
         return { id: c.id, sku: c.sku, name: c.name, price: c.price, isActive: c.isActive, category: c.category, coverUrl: c.coverUrl, stock: c.stock, created: true };
       }
       case 'list_orders': {
-        const rows = await this.orders.listAll(p.status ? String(p.status) : undefined, p.shipping ? String(p.shipping) : undefined);
+        const rows = await this.orders.listAll(p.status ? String(p.status) : undefined, p.shipping ? String(p.shipping) : undefined, p.scope ? String(p.scope) : undefined);
         const from = p.from ? new Date(String(p.from)) : null;
         const to = p.to ? new Date(String(p.to)) : null;
         if (to && String(p.to).length <= 10) to.setHours(23, 59, 59, 999);
@@ -182,7 +182,7 @@ export class OpsService {
         return rows
           .filter((o) => (!from || o.createdAt >= from) && (!to || o.createdAt <= to) && (!q || `${o.merchantOrderNo} ${o.user?.email ?? ''}`.toLowerCase().includes(q)))
           .slice(0, limit)
-          .map((o) => ({ orderNo: o.merchantOrderNo, status: o.status, amount: o.amount, provider: o.provider, shippingStatus: o.shippingStatus, shippingMethod: o.shippingMethod, carrier: o.carrier, trackingNo: o.trackingNo, email: o.user?.email ?? null, items: o.items.map((i) => `${i.name}×${i.qty}`).join(', '), createdAt: o.createdAt, paidAt: o.paidAt ?? null }));
+          .map((o) => ({ orderNo: o.merchantOrderNo, scope: o.scope, status: o.status, amount: o.amount, provider: o.provider, shippingStatus: o.shippingStatus, shippingMethod: o.shippingMethod, carrier: o.carrier, trackingNo: o.trackingNo, email: o.user?.email ?? null, items: o.items.map((i) => `${i.name}×${i.qty}`).join(', '), createdAt: o.createdAt, paidAt: o.paidAt ?? null }));
       }
       case 'get_order':
         return this.orders.findByIdOrNo(String(p.orderNo ?? p.id ?? ''));

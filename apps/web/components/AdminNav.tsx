@@ -16,11 +16,20 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     key: 'site',
     label: '網站',
     items: [
-      { href: '/admin/content', label: '頁面設計', desc: '視覺設計器／草稿／沙盒預覽／發佈／版本' },
-      { href: '/admin/sales', label: '一頁式銷售頁', desc: '通知／倒數／內文／產品區塊／表單／順序／追蹤' },
-      { href: '/admin/posts', label: '文章', desc: '部落格文章（/blog）' },
+      { href: '/admin/site', label: '網站設定', desc: '品牌／SEO／追蹤設定（全站）／首頁區塊' },
       { href: '/admin/menu', label: '網站架構', desc: '主選單／頁尾選單（拖曳）' },
-      { href: '/admin/site', label: '網站設定', desc: '品牌／SEO／GA／首頁區塊' },
+      { href: '/admin/content', label: '新增網頁', desc: '視覺設計器／草稿／沙盒預覽／發佈／版本' },
+      { href: '/admin/sales', label: '一頁式網頁', desc: '通知／倒數／內文／產品與課程區塊／表單／順序／追蹤' },
+      { href: '/admin/posts', label: '文章', desc: '部落格文章（/blog）' },
+    ],
+  },
+  {
+    key: 'finance',
+    label: '帳務',
+    items: [
+      { href: '/admin/payments', label: '金流', desc: '全站共用：藍新／統一／綠界／LINE Pay／支付連' },
+      { href: '/admin/shipping', label: '物流', desc: '全站共用：綠界／藍新超商與宅配' },
+      { href: '/admin/invoice', label: '發票', desc: '全站共用：ezPay／綠界／光貿電子發票' },
     ],
   },
   {
@@ -28,15 +37,21 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     label: '電商',
     items: [
       { href: '/admin/products', label: '商品' },
-      { href: '/admin/orders', label: '訂單' },
-      { href: '/admin/coupons', label: '折扣碼' },
-      { href: '/admin/reports', label: '報表' },
-      { href: '/admin/payments', label: '金流' },
-      { href: '/admin/shipping', label: '物流' },
-      { href: '/admin/invoice', label: '發票' },
+      { href: '/admin/orders', label: '電商訂單' },
+      { href: '/admin/coupons', label: '電商折扣碼' },
+      { href: '/admin/reports', label: '電商報表' },
     ],
   },
-  { key: 'learn', label: '課程', items: [{ href: '/admin/courses', label: '課程管理' }] },
+  {
+    key: 'learn',
+    label: '課程',
+    items: [
+      { href: '/admin/courses', label: '課程管理' },
+      { href: '/admin/course-orders', label: '課程訂單' },
+      { href: '/admin/course-coupons', label: '課程折扣碼' },
+      { href: '/admin/course-reports', label: '課程報表' },
+    ],
+  },
   { key: 'ai', label: 'AI 工作站', items: [{ href: '/admin/studio', label: 'AI 工作站' }] },
   {
     key: 'system',

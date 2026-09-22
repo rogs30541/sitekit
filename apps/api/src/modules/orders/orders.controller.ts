@@ -50,8 +50,8 @@ export class AdminOrdersController {
   ) {}
 
   @Get()
-  list(@Query('status') status?: string, @Query('shipping') shipping?: string) {
-    return this.orders.listAll(status, shipping);
+  list(@Query('status') status?: string, @Query('shipping') shipping?: string, @Query('scope') scope?: string) {
+    return this.orders.listAll(status, shipping, scope);
   }
 
   /** 對帳檔：?from=YYYY-MM-DD&to=YYYY-MM-DD&status=paid */
@@ -109,8 +109,8 @@ export class AdminCouponsController {
   constructor(private readonly coupons: CouponsService) {}
 
   @Get()
-  list() {
-    return this.coupons.list();
+  list(@Query('scope') scope?: string) {
+    return this.coupons.list(scope);
   }
 
   @Post()

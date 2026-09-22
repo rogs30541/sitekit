@@ -123,8 +123,8 @@ export class SalesService {
 
   async resolveProducts(ids: string[]) {
     if (!ids.length) return [];
-    const rows = await this.prisma.product.findMany({ where: { id: { in: ids } }, select: { id: true, sku: true, name: true, description: true, coverUrl: true, price: true, stock: true, isActive: true, category: true, type: true, _count: { select: { items: true } } } });
-    return rows.map((r) => ({ id: r.id, sku: r.sku, name: r.name, description: r.description, coverUrl: r.coverUrl, price: r.price, stock: r.stock, isActive: r.isActive, category: r.category, type: r.type, sold: r._count.items }));
+    const rows = await this.prisma.product.findMany({ where: { id: { in: ids } }, select: { id: true, sku: true, name: true, description: true, coverUrl: true, price: true, stock: true, isActive: true, category: true, type: true, course: { select: { slug: true, isPublished: true } }, _count: { select: { items: true } } } });
+    return rows.map((r) => ({ id: r.id, sku: r.sku, name: r.name, description: r.description, coverUrl: r.coverUrl, price: r.price, stock: r.stock, isActive: r.isActive, category: r.category, type: r.type, courseSlug: r.course?.slug ?? null, coursePublished: r.course?.isPublished ?? null, sold: r._count.items }));
   }
 
   /* ---------- 預覽 ---------- */

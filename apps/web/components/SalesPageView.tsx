@@ -18,6 +18,8 @@ export interface SalesProduct {
   stock: number | null;
   isActive: boolean;
   sold: number;
+  type?: string;
+  courseSlug?: string | null;
 }
 export interface SalesRender {
   id: string;
@@ -132,7 +134,7 @@ export function SalesPageView({ page, preview = false, siteTracking }: { page: S
                   {doc.display.showSold !== 'never' ? `已售 ${p.sold}` : ''}
                 </p>
                 <div className="mt-auto flex items-center gap-2">
-                  {doc.display.quantityMode === 'select' ? (
+                  {p.type === 'course' ? null : doc.display.quantityMode === 'select' ? (
                     <select className="rounded border px-1 py-1 text-sm" style={{ borderColor: 'var(--line)' }} value={qty[p.id] ?? 1} onChange={(e) => setQty({ ...qty, [p.id]: Number(e.target.value) })}>
                       {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
                         <option key={n} value={n}>
@@ -151,9 +153,15 @@ export function SalesPageView({ page, preview = false, siteTracking }: { page: S
                       </button>
                     </span>
                   )}
-                  <button onClick={() => add(p, kind)} disabled={p.stock === 0} className="px-4 py-1.5 text-sm font-bold text-white disabled:opacity-40" style={{ background: accent, borderRadius: radius }}>
-                    {p.stock === 0 ? '售完' : '選購'}
-                  </button>
+                  {p.type === 'course' && p.courseSlug ? (
+                    <Link href={`/course/${p.courseSlug}`} className="px-4 py-1.5 text-sm font-bold text-white" style={{ background: accent, borderRadius: radius }}>
+                      立即購買課程
+                    </Link>
+                  ) : (
+                    <button onClick={() => add(p, kind)} disabled={p.stock === 0} className="px-4 py-1.5 text-sm font-bold text-white disabled:opacity-40" style={{ background: accent, borderRadius: radius }}>
+                      {p.stock === 0 ? '售完' : '選購'}
+                    </button>
+                  )}
                 </div>
               </div>
             </article>

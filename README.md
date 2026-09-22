@@ -28,6 +28,14 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 **P3 產品化（完成）**：點數帳本（保留再結算、失敗釋放）、AI Provider 抽象層（mock／OpenAI、平台金鑰或 BYOK）、程序內任務佇列（可換 BullMQ）、`/studio` AI 創作工作站、`/admin/studio` 模板管理與點數調整、MCP／AI API 的 `adjust_credits`。
 
+## P13 電商／課程分流、帳務大選單、設計器全視窗（2026-09-22，v0.12.0）
+
+- **後台六大選單**：網站（網站設定 › 網站架構 › 新增網頁 › 一頁式網頁 › 文章）／**帳務**（金流、物流、發票——全站共用，從電商拉出獨立）／電商（商品、電商訂單、電商折扣碼、電商報表）／課程（課程管理、課程訂單、課程折扣碼、課程報表）／AI 工作站／系統功能。網站設定移除舊「Google Analytics 評估 ID」欄位，統一用「追蹤設定（全站）」（`seo.gaId` 舊值仍作 GA4 後備）。
+- **電商與課程各自獨立的購物車／訂單／折扣碼／報表**：`orders.scope`（shop｜course，依品項自動判定；同一張訂單不可混合課程與商品 → 400「課程與商品請分開結帳」）；`coupons.scope`（shop｜course｜all，試算時範疇不符即拒絕）；後台訂單／折扣碼／報表／對帳檔皆依 `?scope=` 分頁（`/admin/course-orders`、`/admin/course-coupons`、`/admin/course-reports` 與電商同元件不同範疇）；OPS／MCP `list_orders`、`sales_report`、`manage_coupon` 加 `scope`。
+- **一頁式網頁可掛課程**：產品挑選列出商品與課程（標示類型）；前台課程卡片顯示「立即購買課程」導向課程頁結帳（`courseSlug`），商品仍走購物車。
+- **設計器**（新增網頁與一頁式網頁內文共用）：「⛶ 全視窗」把畫布放大到整個視窗（Esc 離開）；「◧ 物件」「◨ 屬性」可收合左右面板，畫布自動填滿。
+- 本機 E2E：`local-p18-e2e.mjs` 20 項全過。
+
 ## P12 追蹤碼區塊與連接追蹤設定（2026-09-22，v0.11.0）
 
 對標 1shop「追蹤」頁；所有網頁設計（官網頁面、首頁、銷售頁）與全站都能內嵌追蹤碼。

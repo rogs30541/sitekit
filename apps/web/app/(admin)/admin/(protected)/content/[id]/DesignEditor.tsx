@@ -96,6 +96,21 @@ export function DesignEditor({ doc, onChange, onUpload }: DesignEditorProps) {
   const [right, setRight] = useState<'props' | 'style' | 'code'>('props');
   const [drop, setDrop] = useState<Drop>(null);
   const [zoom, setZoom] = useState(1);
+  const [full, setFull] = useState(false);
+  const [showLeft, setShowLeft] = useState(true);
+  const [showRight, setShowRight] = useState(true);
+  useEffect(() => {
+    if (!full) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFull(false);
+    };
+    window.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [full]);
   const history = useRef<{ past: DesignDoc[]; future: DesignDoc[] }>({ past: [], future: [] });
   const canvas = useRef<HTMLDivElement>(null);
   const canvasWrap = useRef<HTMLDivElement>(null);
@@ -137,7 +152,7 @@ export function DesignEditor({ doc, onChange, onUpload }: DesignEditorProps) {
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, [device]);
+  }, [device, full, showLeft, showRight]);
 
   /* ---------- 插入／移動 ---------- */
   const place = (target: Drop, make: () => DesignNode | null, moveId?: string) => {
@@ -298,9 +313,25 @@ export function DesignEditor({ doc, onChange, onUpload }: DesignEditorProps) {
   const width = BREAKPOINTS.find((b) => b.key === device)!.width;
   const parent = node ? findParent(doc.root, node.id) : null;
 
+  const panelH = full ? 'calc(100vh - 3.5rem)' : '70vh';
+  const canvasH = full ? 'calc(100vh - 6rem)' : '72vh';
   return (
-    <div className="grid gap-2" style={{ gridTemplateColumns: '15rem minmax(0,1fr) 19rem' }}>
+    <div className={full ? 'fixed inset-0 z-50 overflow-hidden bg-white p-2' : ''}>
+    <div className="mb-1 flex flex-wrap items-center gap-1 text-xs">
+      <button onClick={() => setShowLeft((v) => !v)} className={`rounded border px-2 py-1 ${showLeft ? '' : 'opacity-60'}`} style={line} title="收合／展開左側物件面板">
+        ◧ 物件
+      </button>
+      <button onClick={() => setShowRight((v) => !v)} className={`rounded border px-2 py-1 ${showRight ? '' : 'opacity-60'}`} style={line} title="收合／展開右側屬性面板">
+        ◨ 屬性
+      </button>
+      <button onClick={() => setFull((v) => !v)} className={`rounded border px-2 py-1 ${full ? 'bg-black text-white' : ''}`} style={line} title="全視窗編輯（Esc 離開）">
+        ⛶ {full ? '離開全視窗（Esc）' : '全視窗'}
+      </button>
+      <span style={{ color: 'var(--muted)' }}>{full ? '全視窗模式：畫布佔滿整個視窗；面板可收合' : ''}</span>
+    </div>
+    <div className="grid gap-2" style={{ gridTemplateColumns: `${showLeft ? '15rem ' : ''}minmax(0,1fr)${showRight ? ' 19rem' : ''}` }}>
       {/* 左欄 */}
+      {showLeft ? (
       <aside className="rounded-lg border text-xs" style={line}>
         <div className="flex border-b" style={line}>
           {(['blocks', 'templates', 'layers'] as const).map((k) => (
@@ -309,7 +340,7 @@ export function DesignEditor({ doc, onChange, onUpload }: DesignEditorProps) {
             </button>
           ))}
         </div>
-        <div className="max-h-[70vh] overflow-auto p-2">
+        <div className="overflow-auto p-2" style={{ maxHeight: panelH }}>
           {left === 'blocks' ? (
             ['版面', '基礎', '媒體', '內容', '商務'].map((cat) => (
               <div key={cat} className="mb-2">
@@ -364,6 +395,7 @@ export function DesignEditor({ doc, onChange, onUpload }: DesignEditorProps) {
           )}
         </div>
       </aside>
+      ) : null}
 
       {/* 畫布 */}
       <section className="min-w-0">
@@ -411,7 +443,7 @@ export function DesignEditor({ doc, onChange, onUpload }: DesignEditorProps) {
             )}
           </span>
         </div>
-        <div ref={canvasWrap} className="overflow-auto rounded-lg border bg-neutral-100 p-3" style={{ ...line, maxHeight: '72vh' }}>
+        <div ref={canvasWrap} className="overflow-auto rounded-lg border bg-neutral-100 p-3" style={{ ...line, maxHeight: canvasH }}>
           <div style={{ width: width * zoom, height: 'auto' }}>
             <div
               ref={canvas}
@@ -442,6 +474,7 @@ export function DesignEditor({ doc, onChange, onUpload }: DesignEditorProps) {
       </section>
 
       {/* 右欄 */}
+      {showRight ? (
       <aside className="rounded-lg border text-xs" style={line}>
         <div className="flex border-b" style={line}>
           {(['props', 'style', 'code'] as const).map((k) => (
@@ -450,7 +483,7 @@ export function DesignEditor({ doc, onChange, onUpload }: DesignEditorProps) {
             </button>
           ))}
         </div>
-        <div className="max-h-[70vh] space-y-2 overflow-auto p-2">
+        <div className="space-y-2 overflow-auto p-2" style={{ maxHeight: panelH }}>
           {right === 'props' ? (
             node ? (
               <PropsPanel node={node} onPatch={(p) => patchProps(node.id, p)} onUpload={onUpload} />
@@ -468,6 +501,8 @@ export function DesignEditor({ doc, onChange, onUpload }: DesignEditorProps) {
           )}
         </div>
       </aside>
+      ) : null}
+    </div>
     </div>
   );
 }

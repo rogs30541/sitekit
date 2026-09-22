@@ -26,7 +26,7 @@ interface Row {
 export default async function AdminSalesPage() {
   const rows = (await apiServer<Row[]>('/api/admin/sales')) ?? [];
   return (
-    <Section title="一頁式銷售頁" group="(admin)">
+    <Section title="一頁式網頁" group="(admin)">
       <div className="mb-3 flex flex-wrap items-center gap-3 text-xs">
         <NewSalesPageButton />
         <span style={{ color: 'var(--muted)' }}>網址 /s/&lt;slug&gt;。每頁＝通知列＋優惠倒數＋內文（設計器）＋優惠／組合／單品／加購產品區塊＋購物車＋客服；所有修改先存草稿 → 沙盒預覽 → 確認發佈（自動備份上一版）。</span>
