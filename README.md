@@ -146,6 +146,7 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 ## P5 營運化＋後台分離（2026-09-21，v0.4.0）
 
+- **前台註冊只填 Email＋密碼**（v0.16.2）：註冊表單移除顯示名稱欄位（後端 displayName 仍為選填、預設取 Email 前綴），姓名／電話／地址等資料在購買課程或下單時再收集。
 - **會員資料庫**（v0.16.0，後台大選單「會員資料庫」`/admin/members`）：前台會員名單＋自動標籤——有已付款電商（scope shop）訂單＝**電商客戶**、有已付款課程訂單或課程 entitlement＝**課程學員**，兩者皆有同時顯示兩個標籤；搜尋／標籤篩選（全部／電商客戶／課程學員／兩者皆有／尚無交易）；單筆與勾選批次刪除：有訂單／點數／任務紀錄者匿名化停用（email 改 `deleted+<id>@deleted.local`、清密碼與登入方式、撤銷課程權限、保留訂單），無交易者直接刪除；系統帳號 admin-studio@system.local 不列入也不可刪。API `GET /api/admin/members?q=&tag=&limit=`、`DELETE /api/admin/members/:id`、`POST /api/admin/members/delete {ids}`；OPS／MCP `list_members`／`delete_member`。
 - **日期格式 hydration 修正**（v0.16.1）：`fmtDateTime`／`fmtDate` 改以 `Intl.DateTimeFormat.formatToParts` 自組 `YYYY/MM/DD HH:mm`——Node 的 ICU 在日期與時間之間輸出 U+2009 thin space、Chrome 輸出一般空白，肉眼相同但 React hydration 失敗（會員資料庫實測）。
 - **網站架構樹拖曳排序**（v0.16.0 修正）：列改以函式渲染（內嵌元件每次 setState 重建＝拖曳中來源被 remount、拖曳立即中斷）；整列皆為放置區（上半＝放前、下半＝放後、主選單列右側 1/4＝成為子選單），另加 ▲▼ 上下移按鈕。

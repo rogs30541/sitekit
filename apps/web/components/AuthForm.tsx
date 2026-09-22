@@ -9,7 +9,6 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const next = search.get('next') || '/member';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const isDev = process.env.NEXT_PUBLIC_APP_ENV !== 'production';
@@ -22,7 +21,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
       const r = await fetch(`/api/auth/${mode}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(mode === 'register' ? { email, password, displayName: displayName || undefined } : { email, password }),
+        body: JSON.stringify({ email, password }),
       });
       const j = await r.json();
       if (!r.ok) throw new Error(typeof j.message === 'string' ? j.message : JSON.stringify(j.message ?? j));
@@ -46,7 +45,6 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const input = 'w-full rounded border px-3 py-2 text-sm';
   return (
     <form onSubmit={submit} className="max-w-sm space-y-3">
-      {mode === 'register' ? <input className={input} style={{ borderColor: 'var(--line)' }} placeholder="顯示名稱（選填）" value={displayName} onChange={(e) => setDisplayName(e.target.value)} /> : null}
       <input className={input} style={{ borderColor: 'var(--line)' }} type="email" required placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
       <input className={input} style={{ borderColor: 'var(--line)' }} type="password" required minLength={8} placeholder="密碼（至少 8 碼）" value={password} onChange={(e) => setPassword(e.target.value)} />
       {error ? <p className="text-xs text-red-700">{error}</p> : null}

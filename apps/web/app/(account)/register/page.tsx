@@ -10,7 +10,7 @@ export default function RegisterPage() {
   return (
     <Section title="註冊" group="(account)">
       <p className="mb-3 text-xs" style={{ color: 'var(--muted)' }}>
-        註冊成為本站會員（購買商品、課程與會員中心）。前台會員與後台管理員完全分離，前台註冊不會取得任何管理權限。
+        只需 Email 與密碼即可註冊；姓名、電話、地址等資料在購買課程或下單時再填寫。前台會員與後台管理員完全分離，前台註冊不會取得任何管理權限。
       </p>
       <Suspense>
         <AuthForm mode="register" />
