@@ -37,7 +37,7 @@ const line = { borderColor: 'var(--line)' } as const;
 /**
  * 工作站（對標 inShow generate）：上方模板庫（封面卡＋搜尋）→ 左「生成記錄」→ 右「生成配置」（生成／微調、標準／高品質、欄位、參考圖、必填提醒、範例參考）。
  */
-/** 後台產圖工作站（inShow 版面）：模板庫／生成記錄／生成配置；模型自動偵測後在此選擇，不顯示點數。 */
+/** API 產圖工作站（inShow 版面）：模板庫／生成記錄／生成配置；模型自動偵測後在此選擇，不顯示點數。 */
 export function ImageStudio({ templates }: { templates: AiTemplate[] }) {
   const [models, setModels] = useState<{ id: string; label: string }[]>([]);
   const [model, setModel] = useState('');
@@ -239,7 +239,7 @@ export function ImageStudio({ templates }: { templates: AiTemplate[] }) {
               <h2 className="text-sm font-bold">生成配置</h2>
               <p style={{ color: 'var(--muted)' }}>{tpl ? tpl.name : '自由提示詞'}</p>
             </div>
-            <span className="rounded bg-neutral-100 px-2 py-0.5">{detect.provider === 'openai' ? 'OpenAI' : detect.provider === 'mock' ? 'mock 佔位' : '…'}</span>
+            <span className="rounded bg-neutral-100 px-2 py-0.5">API 產圖・{detect.provider === 'openai' ? 'OpenAI' : detect.provider === 'mock' ? 'mock 佔位' : '…'}</span>
           </div>
           <div className="grid grid-cols-2 gap-1">
             <button type="button" onClick={() => setMode('generate')} className={`rounded px-2 py-1.5 ${mode === 'generate' ? 'bg-black text-white' : 'border'}`} style={mode === 'generate' ? undefined : line}>

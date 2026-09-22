@@ -15,7 +15,7 @@ export default async function AdminStudioPage() {
   return (
     <Section title="AI 工作站" group="(admin)">
       <p className="mb-3 text-xs" style={{ color: 'var(--muted)' }}>
-        後台全站工作總控：指令台用自然語言操作全站（寫入需確認）；產圖以 20 組模板＋參考圖生成商品圖／Banner；模板與任務管理可編輯模板與查看所有任務。
+        後台全站工作總控：指令台用自然語言操作全站（寫入需確認）；API 產圖以 20 組模板＋參考圖生成商品圖／Banner；模板與任務管理可編輯模板與查看所有任務。
       </p>
       <StudioTabs command={<CommandConsole config={config ?? FALLBACK} />} images={<ImageStudio templates={templates ?? []} />} manage={<AdminStudioClient templates={adminTemplates ?? []} jobs={jobs ?? []} />} />
     </Section>

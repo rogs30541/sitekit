@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 const TABS = [
   { key: 'command', label: '指令台' },
-  { key: 'images', label: '產圖' },
+  { key: 'images', label: 'API 產圖' },
   { key: 'manage', label: '模板與任務管理' },
 ] as const;
 

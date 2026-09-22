@@ -4,7 +4,6 @@ import { Section } from '@/components/Section';
 import { LEDGER_TYPE_LABELS, REFUND_STATUS_LABELS, ROLE_LABELS, SHIPPING_LABELS } from '@sitekit/shared';
 import { twd, type Order, fmtDateTime } from '@/lib/api-public';
 import { apiServer, getMe } from '@/lib/api-server';
-import { ApiKeyForm } from './ApiKeyForm';
 import { ProfileForm } from './ProfileForm';
 import { RefundRequestButton } from './RefundRequestButton';
 
@@ -105,7 +104,6 @@ export default async function MemberPage() {
         </table>
       </Section>
       <Section title="我的金鑰（BYOK）" group="(account)">
-        <ApiKeyForm keys={keys ?? []} />
       </Section>
       <Section title="我的訂單" group="(account)">
         {orders?.length ? (
