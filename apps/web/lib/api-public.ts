@@ -171,10 +171,31 @@ export const fmtDuration = (sec: number | null | undefined) => {
   return h ? `${h} 時 ${m} 分` : `${m} 分`;
 };
 
-/** 固定台北時區、24 小時制：SSR 與瀏覽器輸出一致，避免 hydration 不一致 */
+/**
+ * 固定台北時區、24 小時制，且**不用 toLocaleString 直接輸出**：Node 與 Chrome 的 ICU 版本在日期與時間之間會輸出不同空白
+ * （U+202F／U+00A0／一般空白），看起來一樣卻讓 hydration 失敗（v0.16.0 會員資料庫實測）；改用 formatToParts 自組固定格式。
+ */
 const TZ = { timeZone: "Asia/Taipei", hour12: false } as const;
-export const fmtDateTime = (iso: string | Date | null | undefined) => (iso ? new Date(iso).toLocaleString("zh-TW", { ...TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "");
-export const fmtDate = (iso: string | Date | null | undefined) => (iso ? new Date(iso).toLocaleDateString("zh-TW", { ...TZ, year: "numeric", month: "2-digit", day: "2-digit" }) : "");
+const partsOf = (d: Date, withTime: boolean) => {
+  const p = new Intl.DateTimeFormat("en-US", { ...TZ, year: "numeric", month: "2-digit", day: "2-digit", ...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}) }).formatToParts(d);
+  const get = (t: string) => p.find((x) => x.type === t)?.value ?? "";
+  const hour = get("hour") === "24" ? "00" : get("hour");
+  return { y: get("year"), m: get("month"), d: get("day"), h: hour, mi: get("minute") };
+};
+export const fmtDateTime = (iso: string | Date | null | undefined) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const { y, m, d: dd, h, mi } = partsOf(d, true);
+  return `${y}/${m}/${dd} ${h}:${mi}`;
+};
+export const fmtDate = (iso: string | Date | null | undefined) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const { y, m, d: dd } = partsOf(d, false);
+  return `${y}/${m}/${dd}`;
+};
 
 /** 價格顯示：特價中顯示「特價＋刪除線原價」 */
 export function priceParts(p: { price: number; salePrice?: number | null; saleStartsAt?: string | null; saleEndsAt?: string | null }) {
