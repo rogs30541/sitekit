@@ -7,6 +7,7 @@ import { INVOICE_TYPE_LABELS } from '@sitekit/shared';
 import { twd, type Product } from '@/lib/api-public';
 import { clearCart, onCartChange, readCart, setQty, type CartLine } from '@/lib/cart';
 import { fetchPaymentMethods, startCheckout, type PaymentMethod } from '@/lib/checkout';
+import { skTrack } from '@/lib/track';
 
 interface Quote {
   items: { productId: string; name: string; qty: number; unitPrice: number; type: string }[];
@@ -166,6 +167,7 @@ export function CartClient() {
   async function submit() {
     setBusy(true);
     setError('');
+    skTrack('InitiateCheckout', { value: quote?.amount, items: lines.map((l) => ({ id: l.productId, name: products[l.productId]?.name ?? l.productId, price: products[l.productId]?.price ?? 0, qty: l.qty })) });
     try {
       const body = {
         items: lines,

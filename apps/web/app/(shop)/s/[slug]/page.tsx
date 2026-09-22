@@ -4,6 +4,7 @@ import { Section } from '@/components/Section';
 import { SalesPageView, type SalesRender } from '@/components/SalesPageView';
 import { API_INTERNAL_URL } from '@/lib/api-public';
 import { PasswordGate } from './PasswordGate';
+import { getSite } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,5 +40,6 @@ export default async function SalesPage({ params, searchParams }: { params: Prom
       </Section>
     );
   if (p.state === 'locked') return <PasswordGate title={p.title} wrong={!!pw} />;
-  return <SalesPageView page={p as SalesRender} />;
+  const site = await getSite();
+  return <SalesPageView page={p as SalesRender} siteTracking={site.tracking} />;
 }

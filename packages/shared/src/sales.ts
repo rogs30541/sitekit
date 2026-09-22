@@ -3,6 +3,7 @@
  * 草稿（draft）與線上快照（live）分開存；發佈需確認並備份版本。
  */
 import type { DesignDoc } from './design';
+import { defaultTracking, normalizeTracking, type TrackingConfig } from './tracking';
 
 export type SalesItemKind = 'offer' | 'bundle' | 'product' | 'addon';
 export const SALES_ITEM_KINDS: { key: SalesItemKind; label: string; desc: string }[] = [
@@ -48,7 +49,8 @@ export interface SalesPageDoc {
   cartLimits: { offer: number | null; product: number | null; addon: number | null };
   form: { mode: 'multi' | 'one' | 'one-after-click'; checkoutCountdown: { enabled: boolean; minutes: number; text: string }; memberLogin: 'optional' | 'required' | 'hidden'; note: { enabled: boolean; text: string }; phone: { label: string; help: string; rule: 'none' | 'mobile' | 'landline' | 'any' }; email: { label: string; help: string; required: boolean }; deliveryTime: { enabled: boolean; label: string; help: string }; customFields: SalesCustomField[]; invoice: boolean; coupon: boolean; privacy: boolean };
   contact: { line: string; facebook: string; telegram: string; email: string; phone: string; display: 'collapsed' | 'expanded' };
-  tracking: { ga4: string; gtm: string; fbPixel: string; lineTag: string; tiktok: string; head: string; bodyTop: string; bodyBottom: string; events: { pageView: string; viewContent: string; addToCart: string; purchase: string } };
+  /** 頁面層級追蹤碼（留空沿用網站設定） */
+  tracking: TrackingConfig;
   success: { note: { enabled: boolean; text: string }; recommendSlug: string };
   seo: { title: string; description: string; ogImage: string; favicon: string };
   schedule: { openAt: string; closeAt: string; closedMessage: string; closedOrdersPayable: boolean };
@@ -69,7 +71,7 @@ export const defaultSalesDoc = (): SalesPageDoc => ({
   cartLimits: { offer: null, product: null, addon: null },
   form: { mode: 'multi', checkoutCountdown: { enabled: false, minutes: 10, text: '限時優惠，請儘速完成結帳' }, memberLogin: 'optional', note: { enabled: false, text: '' }, phone: { label: '聯絡電話', help: '', rule: 'mobile' }, email: { label: 'Email', help: '', required: true }, deliveryTime: { enabled: false, label: '方便收貨時間', help: '' }, customFields: [], invoice: true, coupon: true, privacy: true },
   contact: { line: '', facebook: '', telegram: '', email: '', phone: '', display: 'collapsed' },
-  tracking: { ga4: '', gtm: '', fbPixel: '', lineTag: '', tiktok: '', head: '', bodyTop: '', bodyBottom: '', events: { pageView: '', viewContent: '', addToCart: '', purchase: '' } },
+  tracking: defaultTracking(),
   success: { note: { enabled: false, text: '' }, recommendSlug: '' },
   seo: { title: '', description: '', ogImage: '', favicon: '' },
   schedule: { openAt: '', closeAt: '', closedMessage: '本銷售頁已結束，感謝您的支持。', closedOrdersPayable: true },
@@ -93,7 +95,11 @@ export function mergeSalesDoc(base: SalesPageDoc, patch: unknown): SalesPageDoc 
   };
   return walk(base, patch) as SalesPageDoc;
 }
-export const normalizeSalesDoc = (input: unknown): SalesPageDoc => mergeSalesDoc(defaultSalesDoc(), input);
+export const normalizeSalesDoc = (input: unknown): SalesPageDoc => {
+  const d = mergeSalesDoc(defaultSalesDoc(), input);
+  d.tracking = normalizeTracking(d.tracking);
+  return d;
+};
 
 /** 銷售頁狀態（依排程） */
 export function salesPageState(page: { status: string; doc: SalesPageDoc }, now = Date.now()): 'draft' | 'open' | 'scheduled' | 'closed' {

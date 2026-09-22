@@ -43,7 +43,8 @@ export class ContentController {
     });
     if (!item) throw new NotFoundException('page not found');
     const { design, ...rest } = item;
-    return { ...rest, hasDesign: !!design };
+    const tracking = design && typeof design === 'object' && (design as { settings?: { tracking?: unknown } }).settings?.tracking ? (design as { settings: { tracking: unknown } }).settings.tracking : null;
+    return { ...rest, hasDesign: !!design, tracking };
   }
 
   /** 供 web middleware 套用 301 導向表。 */

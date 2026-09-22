@@ -52,6 +52,7 @@ const TOOL_HINTS: Partial<Record<OpsAction, string>> = {
   list_content: '參數：type、status。',
   list_questions: '參數：status open|answered。',
   generate_image: '參數：prompt（英文描述效果較好）或 templateKey＋inputs（先用 list_image_templates 挑模板，inputs 的 key 依模板 inputFields；商品製圖／Banner 優先套模板）、referenceImages（商品現有 coverUrl 等公開圖網址，≤4）、size、quality、purpose。回 url 後可 upsert_product 設 coverUrl，或放進 upsert_content 的 design image 區塊。',
+  set_tracking: '參數：ga4、gtm、fbPixel、tiktok、lineTag、googleAdsId、googleAdsLabel、head、bodyTop、bodyBottom、events{pageView,viewContent,addToCart,initiateCheckout,purchase}（未給的欄位會被清空，先 get_tracking 取現值再整份回傳）。頁面層級追蹤放在 upsert_content 的 design.settings.tracking 或 upsert_sales_page 的 doc.tracking。',
   upsert_sales_page: '參數：slug(必填)、title、code、doc（深度合併）。doc.content 為設計文件（同 upsert_content 的 design 格式，可放 addtocart 區塊）；doc.items=[{productId,kind:offer|bundle|product|addon,order}]（productId 先用 list_products 查）；doc.notice/countdown/theme/display/form/contact/tracking/seo/schedule。存草稿後用 preview_sales_page 給預覽連結。',
   publish_sales_page: '參數：idOrSlug、confirm(true)、note；unpublish=true 為下架。',
   list_image_templates: '無參數。回每個模板的 key／分類／說明／欄位定義（inputFields[].key、label、required、options）。',

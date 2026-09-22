@@ -214,6 +214,10 @@ export class OpsService {
         const ch = await this.catalog.addChapter(course.id, { title: String(p.title ?? '未命名章節'), ...(p.body !== undefined ? { body: String(p.body) } : {}), ...(p.videoProvider ? { videoProvider: p.videoProvider } : {}), ...(p.videoProviderId !== undefined ? { videoProviderId: p.videoProviderId ? String(p.videoProviderId) : null } : {}), ...(p.isPreview !== undefined ? { isPreview: !!p.isPreview } : {}), ...(p.isPublished !== undefined ? { isPublished: !!p.isPublished } : {}), ...(p.parentId ? { parentId: String(p.parentId) } : {}), ...(p.order !== undefined ? { order: Number(p.order) } : {}) });
         return { id: ch.id, courseSlug: course.slug, title: ch.title, order: ch.order, parentId: ch.parentId };
       }
+      case 'get_tracking':
+        return this.site.tracking();
+      case 'set_tracking':
+        return this.site.setTracking(p);
       case 'list_sales_pages':
         return this.sales.list();
       case 'get_sales_page':

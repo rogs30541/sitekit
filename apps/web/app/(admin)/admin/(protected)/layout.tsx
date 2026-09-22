@@ -15,7 +15,7 @@ export default async function AdminProtectedLayout({ children }: { children: Rea
   if (!me?.authenticated || !me.admin) redirect('/admin/login?next=/admin');
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border px-4 py-2 text-xs" style={{ borderColor: 'var(--line)', background: 'var(--card)' }}>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-1.5 text-xs" style={{ borderColor: 'var(--line)', background: 'var(--card)' }}>
         <div className="flex flex-wrap items-center gap-3">
           <Link href="/admin" className="font-bold">
             {site.brand.siteName} 後台

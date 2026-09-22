@@ -16,9 +16,9 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     key: 'site',
     label: '網站',
     items: [
-      { href: '/admin/content?type=page', label: '頁面設計', desc: '視覺設計器／草稿／沙盒預覽／發佈／版本' },
+      { href: '/admin/content', label: '頁面設計', desc: '視覺設計器／草稿／沙盒預覽／發佈／版本' },
       { href: '/admin/sales', label: '一頁式銷售頁', desc: '通知／倒數／內文／產品區塊／表單／順序／追蹤' },
-      { href: '/admin/content?type=post', label: '文章', desc: '部落格文章' },
+      { href: '/admin/posts', label: '文章', desc: '部落格文章（/blog）' },
       { href: '/admin/menu', label: '網站架構', desc: '主選單／頁尾選單（拖曳）' },
       { href: '/admin/site', label: '網站設定', desc: '品牌／SEO／GA／首頁區塊' },
     ],

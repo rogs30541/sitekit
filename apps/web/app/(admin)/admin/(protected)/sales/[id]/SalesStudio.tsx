@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BLOCK_MAP, SALES_ITEM_KINDS, SALES_SECTIONS, SALES_STATUS_LABELS, emptyDesign, insertNode, type DesignDoc, type SalesItemKind, type SalesPageDoc, type SalesSectionKey } from '@sitekit/shared';
 import { DesignEditor } from '../../content/[id]/DesignEditor';
+import { TrackingFields } from '@/components/TrackingFields';
 
 export interface ProductRow {
   id: string;
@@ -536,28 +537,11 @@ export function SalesStudio({ initial, allProducts }: { initial: SalesPayload; a
       ) : null}
 
       {tab === 'tracking' ? (
-        <div className="grid gap-3 lg:grid-cols-2">
-          <Card title="分析設定" desc="自動追蹤 PageView／ViewContent／AddToCart／InitiateCheckout／Purchase 事件。">
-            {(['ga4', 'gtm', 'fbPixel', 'lineTag', 'tiktok'] as const).map((k) => (
-              <Field key={k} label={{ ga4: 'Google Analytics 4 量測 ID（G-…）', gtm: 'Google Tag Manager（GTM-…）', fbPixel: 'Facebook Pixel ID', lineTag: 'LINE Tag ID', tiktok: 'TikTok Pixel ID' }[k]}>
-                <input className={input} style={line} value={doc.tracking[k]} onChange={(e) => set('tracking', { [k]: e.target.value } as Partial<SalesPageDoc['tracking']>)} />
-              </Field>
-            ))}
-          </Card>
-          <Card title="自訂程式碼" desc="在 Head 內／Body 最上方／Body 最下方插入 HTML；語法錯誤可能造成頁面無法使用，請務必下單測試。">
-            {(['head', 'bodyTop', 'bodyBottom'] as const).map((k) => (
-              <Field key={k} label={{ head: 'Head 內', bodyTop: 'Body 最上方', bodyBottom: 'Body 最下方' }[k]}>
-                <textarea className={`${input} font-mono`} style={line} rows={3} value={doc.tracking[k]} onChange={(e) => set('tracking', { [k]: e.target.value } as Partial<SalesPageDoc['tracking']>)} />
-              </Field>
-            ))}
-          </Card>
-          <Card title="購物車事件（JavaScript）" desc="加入 JavaScript 追蹤轉換；不要貼 HTML。">
-            {(['pageView', 'viewContent', 'addToCart', 'purchase'] as const).map((k) => (
-              <Field key={k} label={{ pageView: '瀏覽頁面 PageView', viewContent: '查看產品 ViewContent', addToCart: '加入購物車 AddToCart', purchase: '訂單成立 Purchase' }[k]}>
-                <textarea className={`${input} font-mono`} style={line} rows={2} value={doc.tracking.events[k]} onChange={(e) => set('tracking', { events: { ...doc.tracking.events, [k]: e.target.value } })} />
-              </Field>
-            ))}
-          </Card>
+        <div className="space-y-2">
+          <p className="text-xs" style={{ color: 'var(--muted)' }}>
+            此銷售頁專用的追蹤設定；留空的欄位沿用「網站設定 → 追蹤」。自動事件：PageView、ViewContent（看到產品）、AddToCart、InitiateCheckout、Purchase。
+          </p>
+          <TrackingFields inherit value={doc.tracking} onChange={(t) => patch({ tracking: t })} />
         </div>
       ) : null}
 

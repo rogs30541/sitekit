@@ -13,7 +13,7 @@ export default async function AdminContentEditPage({ params }: { params: Promise
   return (
     <div>
       <p className="mb-2 text-xs" style={{ color: 'var(--muted)' }}>
-        <Link href={`/admin/content?type=${draft.content.type}`} className="underline">
+        <Link href={draft.content.type === 'post' ? '/admin/posts' : '/admin/content'} className="underline">
           回{draft.content.type === 'page' ? '頁面設計' : '文章'}列表
         </Link>
         {draft.content.status === 'published' ? (

@@ -97,6 +97,18 @@ export const SETTING_KEYS = {
   brandFooterText: 'brand.footerText',
   seoOgImage: 'seo.ogImage',
   seoGaId: 'seo.gaId',
+  /** 網站層級追蹤碼（tracking.events 為 JSON） */
+  trackingGa4: 'tracking.ga4',
+  trackingGtm: 'tracking.gtm',
+  trackingFbPixel: 'tracking.fbPixel',
+  trackingTiktok: 'tracking.tiktok',
+  trackingLineTag: 'tracking.lineTag',
+  trackingGoogleAdsId: 'tracking.googleAdsId',
+  trackingGoogleAdsLabel: 'tracking.googleAdsLabel',
+  trackingHead: 'tracking.head',
+  trackingBodyTop: 'tracking.bodyTop',
+  trackingBodyBottom: 'tracking.bodyBottom',
+  trackingEvents: 'tracking.events',
   homeSections: 'home.sections',
   logisticsProvider: 'logistics.provider',
   logisticsMethods: 'logistics.methods',
@@ -183,6 +195,8 @@ export const OPS_ACTIONS = {
   upsert_course: { desc: '以 slug 建立或更新線上課程（product{sku,name,price,description,coverUrl}、summary、isPublished、accessMode）', mutating: true },
   add_chapter: { desc: '為課程新增章節（courseSlug、title、body、videoProvider youtube|bunny、videoProviderId、isPreview、parentId）', mutating: true },
   generate_image: { desc: 'AI 產圖（prompt；或 templateKey＋inputs{欄位key:值} 套用產圖模板；referenceImages[] 參考圖網址≤4；size 1024x1024|1536x1024|1024x1536、quality standard|high、purpose product|banner|illustration）→ 存到儲存空間回公開 url；會產生費用', mutating: true },
+  get_tracking: { desc: '讀取網站層級追蹤設定（GTM／GA4／Meta Pixel／TikTok／LINE Tag／Google Ads／自訂 Head・Body 碼／購物車事件 JS）', mutating: false },
+  set_tracking: { desc: '設定網站層級追蹤碼（套用到所有頁面；ga4、gtm、fbPixel、tiktok、lineTag、googleAdsId、googleAdsLabel、head、bodyTop、bodyBottom、events{pageView,viewContent,addToCart,initiateCheckout,purchase}）', mutating: true },
   list_sales_pages: { desc: '列出一頁式銷售頁（slug、標題、狀態、版本、是否有未發佈草稿）', mutating: false },
   get_sales_page: { desc: '讀取銷售頁草稿全文（doc：通知／倒數／內文設計文件／產品區塊／表單／順序／追蹤／SEO／排程）＋掛載商品＋檢測＋預覽連結', mutating: false },
   upsert_sales_page: { desc: '建立或更新一頁式銷售頁「草稿」（slug 冪等；title、code 訂單前綴、doc 深度合併：notice/countdown/content(設計文件)/sections/items[{productId,kind offer|bundle|product|addon,order,badge}]/theme/display/form/contact/tracking/seo/schedule/access）；線上不動，需 publish_sales_page 確認', mutating: true },
@@ -258,3 +272,4 @@ export const COMMAND_TASKS: { key: string; label: string; desc: string; examples
   { key: 'banner', label: 'BANNER 設計', desc: 'AI 產生橫幅圖並放進頁面／首頁區塊草稿', examples: ['做一張秋季課程優惠的 Banner（1536x1024，暖色系），放進首頁草稿最上方的 Hero 區塊，給我預覽'] },
 ];
 export * from './sales';
+export * from './tracking';

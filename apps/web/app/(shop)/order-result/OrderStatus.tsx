@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { paymentLabel } from '@sitekit/shared';
 import { twd, type Order } from '@/lib/api-public';
+import { skTrack } from '@/lib/track';
 
 const LABEL: Record<Order['status'], string> = { pending: '等待付款', paid: '付款成功', failed: '付款失敗', refunded: '已退款', canceled: '已取消' };
 
@@ -27,6 +28,7 @@ export function OrderStatus() {
       const o = (await r.json()) as Order;
       if (stop) return;
       setOrder(o);
+      if (o.status === 'paid') skTrack('Purchase', { order: { no: o.merchantOrderNo, amount: o.amount, items: o.items.map((i) => ({ name: i.name, qty: i.qty })) }, value: o.amount, items: o.items.map((i) => ({ id: i.id, name: i.name, price: i.unitPrice ?? 0, qty: i.qty })) }, o.merchantOrderNo);
       if (o.status === 'pending') setTimeout(tick, 3000);
     }
     tick();

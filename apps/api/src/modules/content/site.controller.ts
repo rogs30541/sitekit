@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Injectable, Put, UseGuards } from '@nestjs/common';
-import { BRAND, SETTING_KEYS } from '@sitekit/shared';
+import { BRAND, SETTING_KEYS, normalizeTracking, type TrackingConfig } from '@sitekit/shared';
 import { z } from 'zod';
 import { AdminSessionGuard } from '../../common/guards';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -69,6 +69,26 @@ export class SiteService {
     };
   }
 
+  /** 網站層級追蹤碼（seo.gaId 為舊欄位：tracking.ga4 未設時沿用） */
+  async tracking(): Promise<TrackingConfig> {
+    const all = await this.settings.all();
+    const get = (k: string) => all.get(k) ?? '';
+    let events: unknown = {};
+    try {
+      events = JSON.parse(get(SETTING_KEYS.trackingEvents) || '{}');
+    } catch {
+      events = {};
+    }
+    return normalizeTracking({ ga4: get(SETTING_KEYS.trackingGa4) || get(SETTING_KEYS.seoGaId), gtm: get(SETTING_KEYS.trackingGtm), fbPixel: get(SETTING_KEYS.trackingFbPixel), tiktok: get(SETTING_KEYS.trackingTiktok), lineTag: get(SETTING_KEYS.trackingLineTag), googleAdsId: get(SETTING_KEYS.trackingGoogleAdsId), googleAdsLabel: get(SETTING_KEYS.trackingGoogleAdsLabel), head: get(SETTING_KEYS.trackingHead), bodyTop: get(SETTING_KEYS.trackingBodyTop), bodyBottom: get(SETTING_KEYS.trackingBodyBottom), events });
+  }
+  async setTracking(input: unknown) {
+    const t = normalizeTracking(input);
+    const rows: [string, string][] = [[SETTING_KEYS.trackingGa4, t.ga4], [SETTING_KEYS.trackingGtm, t.gtm], [SETTING_KEYS.trackingFbPixel, t.fbPixel], [SETTING_KEYS.trackingTiktok, t.tiktok], [SETTING_KEYS.trackingLineTag, t.lineTag], [SETTING_KEYS.trackingGoogleAdsId, t.googleAdsId], [SETTING_KEYS.trackingGoogleAdsLabel, t.googleAdsLabel], [SETTING_KEYS.trackingHead, t.head], [SETTING_KEYS.trackingBodyTop, t.bodyTop], [SETTING_KEYS.trackingBodyBottom, t.bodyBottom], [SETTING_KEYS.trackingEvents, JSON.stringify(t.events)]];
+    for (const [key, value] of rows) await this.prisma.setting.upsert({ where: { key }, create: { key, value, isSecret: false }, update: { value } });
+    this.settings.invalidate();
+    return t;
+  }
+
   async homeSections(): Promise<HomeSection[]> {
     const raw = await this.settings.get(SETTING_KEYS.homeSections, 'HOME_SECTIONS', '');
     if (!raw) return [];
@@ -91,13 +111,14 @@ export class SiteService {
   /** 前台一次拿齊：品牌、SEO、主選單、頁尾選單、首頁區塊 */
   async publicSite() {
     const [brand, header, footer, sections] = await Promise.all([this.brand(), this.menu.tree(true, 'header'), this.menu.tree(true, 'footer'), this.homeSections()]);
-    return { brand, menus: { header, footer }, home: { sections } };
+    const tracking = await this.tracking();
+    return { tracking, brand, menus: { header, footer }, home: { sections } };
   }
 
   /** 後台編輯用：目前值（settings 原值）＋欄位定義＋首頁區塊 */
   async adminSite() {
     const all = await this.settings.all();
-    return { fields: BRAND_FIELDS.map((f) => ({ key: f.key, label: f.label, value: all.get(f.key) ?? '', placeholder: f.def })), sections: await this.homeSections() };
+    return { fields: BRAND_FIELDS.map((f) => ({ key: f.key, label: f.label, value: all.get(f.key) ?? '', placeholder: f.def })), sections: await this.homeSections(), tracking: await this.tracking() };
   }
 }
 
@@ -125,6 +146,12 @@ export class AdminSiteController {
   @Get()
   get() {
     return this.site.adminSite();
+  }
+
+  /** 網站層級追蹤碼 */
+  @Put('tracking')
+  tracking(@Body() body: unknown) {
+    return this.site.setTracking(body);
   }
 
   /** 首頁版面區塊（驗證後存 home.sections） */

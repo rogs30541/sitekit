@@ -28,6 +28,16 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 **P3 產品化（完成）**：點數帳本（保留再結算、失敗釋放）、AI Provider 抽象層（mock／OpenAI、平台金鑰或 BYOK）、程序內任務佇列（可換 BullMQ）、`/studio` AI 創作工作站、`/admin/studio` 模板管理與點數調整、MCP／AI API 的 `adjust_credits`。
 
+## P12 追蹤碼區塊與連接追蹤設定（2026-09-22，v0.11.0）
+
+對標 1shop「追蹤」頁；所有網頁設計（官網頁面、首頁、銷售頁）與全站都能內嵌追蹤碼。
+
+- **網站層級**（後台「網站 → 網站設定 → 追蹤設定（全站）」，`PUT /api/admin/site/tracking`；OPS／MCP `get_tracking`／`set_tracking`）：Google Tag Manager、GA4、Meta（Facebook）Pixel、TikTok Pixel、LINE Tag、Google Ads 轉換 ID／標籤；自訂程式碼 Head 內／Body 最上方／Body 最下方（HTML，可含 script，前台以 DOM 重建 script 讓它真的執行）；購物車事件 JavaScript（PageView／ViewContent／AddToCart／InitiateCheckout／Purchase，可用變數 page、product、qty、value、currency、items、order）。設定鍵 `tracking.*`（`seo.gaId` 舊欄位仍作 GA4 後備）。ID 格式驗證，不符者清空（`normalizeTracking`，`packages/shared/src/tracking.ts`）。
+- **頁面層級**：頁面設計器「頁面設定 → 追蹤碼區塊」寫進 `design.settings.tracking`（發佈後 `GET /api/content/pages/:slug` 回 `tracking`，不進 body HTML）；銷售頁「追蹤」分頁 `doc.tracking`。留空沿用網站設定；與網站相同的 ID 不重複載入；自訂碼與事件 JS 網站先、頁面後串接（`mergeTracking`）。沙盒預覽不載入頁面追蹤碼。
+- **前台**：`components/Tracking.tsx`（root layout 全站＋各頁面 page scope；原生 `<script>` SSR 輸出，平台驗證工具看得到；GTM 含 noscript）＋`lib/track.ts` `skTrack()` 一次送 GA4（page_view／view_item／add_to_cart／begin_checkout／purchase＋Google Ads conversion）、Meta（PageView／ViewContent／AddToCart／InitiateCheckout／Purchase 附 pageId、pageTitle、value、currency）、TikTok、LINE Tag，再執行自訂事件 JS。自動事件：路由變更 PageView；銷售頁看到產品區 ViewContent（IntersectionObserver）、選購 AddToCart、前往結帳 InitiateCheckout；購物車結帳 InitiateCheckout；訂單成立頁付款成功 Purchase（同一訂單只送一次）。
+- **後台版面**：`components/MainFrame.tsx`——`/admin` 縮小邊界、全寬（最大 1800px）、內容字級放大；頁面設計（`/admin/content`）與文章（`/admin/posts`）拆成兩個獨立列表頁。
+- 本機 E2E：`local-p17-e2e.mjs` 21 項全過。
+
 ## P11 一頁式銷售頁（2026-09-22，v0.10.0）
 
 對標 1shop「銷售頁」編輯模式（設定／內文／銷售／表單／順序／追蹤／SEO）。後台「網站 → 一頁式銷售頁」（`/admin/sales`），前台 `/s/<slug>`。

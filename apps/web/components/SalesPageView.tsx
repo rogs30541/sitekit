@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import Script from 'next/script';
 import { useEffect, useMemo, useState } from 'react';
-import { SALES_ITEM_KINDS, type SalesItemKind, type SalesPageDoc } from '@sitekit/shared';
+import { SALES_ITEM_KINDS, type SalesItemKind, type SalesPageDoc, type TrackingConfig } from '@sitekit/shared';
 import { addToCart, onCartChange, readCart } from '@/lib/cart';
+import { skTrack } from '@/lib/track';
 import { DesignBody } from './DesignBody';
+import { Tracking } from './Tracking';
 
 export interface SalesProduct {
   id: string;
@@ -35,7 +36,7 @@ const twd = (n: number) => `NT$ ${n.toLocaleString('zh-TW')}`;
  * 一頁式銷售頁前台：通知列／優惠倒數／內文（設計器輸出）／優惠・組合・單品・加購產品區塊（依順序）／浮動購物車／洽詢客服／追蹤碼。
  * 加入購物車走既有 localStorage 購物車，結帳走 /cart（帶 ?sp=<code> 供訂單識別）。
  */
-export function SalesPageView({ page, preview = false }: { page: SalesRender; preview?: boolean }) {
+export function SalesPageView({ page, preview = false, siteTracking }: { page: SalesRender; preview?: boolean; siteTracking?: TrackingConfig }) {
   const { doc, items } = page;
   const [noticeOpen, setNoticeOpen] = useState(true);
   const [qty, setQty] = useState<Record<string, number>>({});
@@ -78,13 +79,27 @@ export function SalesPageView({ page, preview = false }: { page: SalesRender; pr
     addToCart(p.id, n);
     setToast(`已加入購物車：${p.name} ×${n}`);
     setTimeout(() => setToast(''), 2500);
-    try {
-      if (doc.tracking.events.addToCart) new Function('product', 'qty', doc.tracking.events.addToCart)(p, n);
-    } catch {
-      /* ignore */
-    }
+    if (!preview) skTrack('AddToCart', { product: { id: p.id, name: p.name, price: p.price }, qty: n, page: { id: page.id, title: page.title, type: 'sales' } });
   }
 
+  // 看到產品區塊 → ViewContent（一次）
+  useEffect(() => {
+    if (preview || typeof IntersectionObserver === 'undefined') return;
+    const el = document.getElementById('sk-products');
+    if (!el) return;
+    const io = new IntersectionObserver((es) => {
+      if (es.some((e) => e.isIntersecting)) {
+        skTrack('ViewContent', { items: items.map((i) => ({ id: i.product.id, name: i.product.name, price: i.product.price })), page: { id: page.id, title: page.title, type: 'sales' } }, page.id);
+        io.disconnect();
+      }
+    });
+    io.observe(el);
+    return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preview, page.id]);
+  const checkout = () => {
+    if (!preview) skTrack('InitiateCheckout', { value: readCart().reduce((s, l) => s + l.qty * (items.find((i) => i.product.id === l.productId)?.product.price ?? 0), 0), page: { id: page.id, title: page.title, type: 'sales' } });
+  };
   const cols = doc.display.columnsDesktop;
   const gridClass = cols === 0 ? 'grid-cols-1' : cols === 1 ? 'sm:grid-cols-1' : cols === 2 ? 'sm:grid-cols-2' : cols === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-4';
   const mobileClass = doc.display.columnsMobile === 2 ? 'grid-cols-2' : 'grid-cols-1';
@@ -151,15 +166,7 @@ export function SalesPageView({ page, preview = false }: { page: SalesRender; pr
   return (
     <div className="sk-sales" style={{ ['--accent' as string]: accent, ...(bg ? { background: bg } : {}) }}>
       {doc.theme.customCss ? <style dangerouslySetInnerHTML={{ __html: doc.theme.customCss }} /> : null}
-      {!preview && doc.tracking.head ? <div dangerouslySetInnerHTML={{ __html: doc.tracking.head }} /> : null}
-      {!preview && doc.tracking.ga4 ? (
-        <>
-          <Script src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(doc.tracking.ga4)}`} strategy="afterInteractive" />
-          <Script id="sk-ga4" strategy="afterInteractive">{`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${doc.tracking.ga4.replace(/'/g, '')}');`}</Script>
-        </>
-      ) : null}
-      {!preview && doc.tracking.fbPixel ? <Script id="sk-fbq" strategy="afterInteractive">{`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${doc.tracking.fbPixel.replace(/'/g, '')}');fbq('track','PageView',{pageId:'${page.id}',pageTitle:${JSON.stringify(page.title)}});`}</Script> : null}
-      {!preview && doc.tracking.bodyTop ? <div dangerouslySetInnerHTML={{ __html: doc.tracking.bodyTop }} /> : null}
+      {!preview ? <Tracking config={doc.tracking} site={siteTracking} scope="page" page={{ id: page.id, title: page.title, type: 'sales' }} /> : null}
 
       {doc.notice.enabled && doc.notice.text && noticeOpen ? (
         <div className="sticky top-0 z-30 flex items-center justify-between gap-2 px-4 py-2 text-sm text-white" style={{ background: accent }}>
@@ -181,7 +188,7 @@ export function SalesPageView({ page, preview = false }: { page: SalesRender; pr
                   <p className="text-sm">
                     購物車 <strong>{cartCount}</strong> 件
                   </p>
-                  <Link href={`/cart?sp=${encodeURIComponent(page.code)}`} className="mt-2 inline-block px-6 py-2 font-bold text-white" style={{ background: accent, borderRadius: radius }}>
+                  <Link href={`/cart?sp=${encodeURIComponent(page.code)}`} onClick={checkout} className="mt-2 inline-block px-6 py-2 font-bold text-white" style={{ background: accent, borderRadius: radius }}>
                     前往結帳
                   </Link>
                   {doc.form.note.enabled && doc.form.note.text ? <div className="mt-3 text-left text-xs opacity-80" dangerouslySetInnerHTML={{ __html: doc.form.note.text }} /> : null}
@@ -207,7 +214,7 @@ export function SalesPageView({ page, preview = false }: { page: SalesRender; pr
 
       {cartCount > 0 ? (
         <div className="fixed bottom-4 left-1/2 z-30 -translate-x-1/2 rounded-full px-5 py-2 text-sm font-bold text-white shadow-lg" style={{ background: accent }}>
-          <Link href={`/cart?sp=${encodeURIComponent(page.code)}`}>購物車 {cartCount} 件 → 前往結帳</Link>
+          <Link href={`/cart?sp=${encodeURIComponent(page.code)}`} onClick={checkout}>購物車 {cartCount} 件 → 前往結帳</Link>
         </div>
       ) : null}
       {contacts.length ? (
@@ -225,7 +232,6 @@ export function SalesPageView({ page, preview = false }: { page: SalesRender; pr
         </div>
       ) : null}
       {toast ? <div className="fixed bottom-16 left-1/2 z-40 -translate-x-1/2 rounded-lg bg-black/80 px-4 py-2 text-sm text-white">{toast}</div> : null}
-      {!preview && doc.tracking.bodyBottom ? <div dangerouslySetInnerHTML={{ __html: doc.tracking.bodyBottom }} /> : null}
     </div>
   );
 }

@@ -168,7 +168,7 @@ export function PageStudio({ initial }: { initial: DraftPayload }) {
     if (!window.confirm('確定刪除這個內容（含草稿與所有版本）？此動作不可復原。')) return;
     if (!window.confirm('再次確認：刪除後線上頁面立即消失。')) return;
     await fetch(`/api/admin/content/${data.content.id}`, { method: 'DELETE' });
-    router.push(`/admin/content?type=${data.content.type}`);
+    router.push(data.content.type === 'post' ? '/admin/posts' : '/admin/content');
     router.refresh();
   }
   function exportJson() {

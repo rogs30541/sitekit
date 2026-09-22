@@ -4,19 +4,28 @@ import { apiPublic, type PostList } from '@/lib/api-public';
 import { HomeSections } from '@/components/HomeSections';
 import { getSite } from '@/lib/site';
 import { DesignBody } from '@/components/DesignBody';
+import { Tracking } from '@/components/Tracking';
+import type { TrackingConfig } from '@sitekit/shared';
 
 interface PageDoc {
   slug: string;
   title: string;
   body: string | null;
   hasDesign?: boolean;
+  tracking?: Partial<TrackingConfig> | null;
 }
 
 export const revalidate = 60;
 
 export default async function HomePage() {
   const [posts, home, site] = await Promise.all([apiPublic<PostList>('/api/content/posts?limit=3'), apiPublic<PageDoc>('/api/content/pages/home'), getSite()]);
-  if (home?.hasDesign && home.body) return <DesignBody html={home.body} />;
+  if (home?.hasDesign && home.body)
+    return (
+      <>
+        <Tracking config={home.tracking ?? null} site={site.tracking} scope="page" page={{ id: 'home', title: home.title, type: 'page' }} />
+        <DesignBody html={home.body} />
+      </>
+    );
   if (site.home.sections.length) return <HomeSections sections={site.home.sections} />;
   return (
     <div className="space-y-6">

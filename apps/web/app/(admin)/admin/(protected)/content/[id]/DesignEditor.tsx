@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BLOCK_DEFS, BLOCK_MAP, BREAKPOINTS, STYLE_FIELDS, TEMPLATES, cloneNode, findNode, findParent, insertNode, isContainerType, lintDesign, moveNode, parseDesignDoc, removeNode, renderDesign, updateNode, uid, type Breakpoint, type DesignDoc, type DesignNode } from '@sitekit/shared';
+import { TrackingFields } from '@/components/TrackingFields';
+import { BLOCK_DEFS, BLOCK_MAP, BREAKPOINTS, STYLE_FIELDS, TEMPLATES, cloneNode, normalizeTracking, findNode, findParent, insertNode, isContainerType, lintDesign, moveNode, parseDesignDoc, removeNode, renderDesign, updateNode, uid, type Breakpoint, type DesignDoc, type DesignNode } from '@sitekit/shared';
 
 type PropField = { key: string; label: string; kind: 'text' | 'textarea' | 'code' | 'number' | 'select' | 'bool' | 'image' | 'lines' | 'faq'; options?: string[]; min?: number; max?: number };
 const PROP_FIELDS: Record<string, PropField[]> = {
@@ -711,6 +712,10 @@ function PageSettings({ doc, onChange }: { doc: DesignDoc; onChange: (d: DesignD
         字型 font-family
         <input className={input} style={line} value={s.fontFamily ?? ''} placeholder="沿用網站字型" onChange={(e) => onChange({ ...doc, settings: { ...s, fontFamily: e.target.value || undefined } })} />
       </label>
+      <div className="pt-2">
+        <div className="mb-1 font-semibold">追蹤碼區塊（此頁專用；留空沿用「網站設定 → 追蹤」）</div>
+        <TrackingFields compact inherit value={normalizeTracking(s.tracking ?? {})} onChange={(t) => onChange({ ...doc, settings: { ...s, tracking: t } })} />
+      </div>
     </div>
   );
 }

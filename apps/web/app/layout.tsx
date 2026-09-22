@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
-import Script from 'next/script';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SiteNav } from '@/components/SiteNav';
+import { Tracking } from '@/components/Tracking';
+import { MainFrame } from '@/components/MainFrame';
 import { getSite } from '@/lib/site';
 import { SITE_URL } from '@/lib/api-public';
 import './globals.css';
@@ -25,14 +26,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={site.brand.locale} style={{ ['--accent' as string]: accent }}>
       <body className="min-h-screen antialiased">
         <SiteNav items={site.menus.header} siteName={site.brand.siteName} logoUrl={site.brand.logoUrl} />
-        <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+        <MainFrame>{children}</MainFrame>
         <SiteFooter site={site} items={site.menus.footer} />
-        {site.brand.seo.gaId ? (
-          <>
-            <Script src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(site.brand.seo.gaId)}`} strategy="afterInteractive" />
-            <Script id="ga" strategy="afterInteractive">{`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${site.brand.seo.gaId.replace(/[^A-Za-z0-9-]/g, '')}');`}</Script>
-          </>
-        ) : null}
+        <Tracking config={site.tracking} scope="site" />
       </body>
     </html>
   );

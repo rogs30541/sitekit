@@ -23,3 +23,9 @@ body {
 .prose a { text-decoration: underline; }
 .prose img { max-width: 100%; height: auto; border-radius: 0.5rem; margin: 0.75rem 0; }
 .prose hr { border: 0; border-top: 1px solid var(--line); margin: 1rem 0; }
+
+/* 後台：縮小邊界、放大內容（表格／表單文字由 text-xs 提升） */
+.sk-admin .text-xs { font-size: 0.8125rem; line-height: 1.35rem; }
+.sk-admin .text-\[10px\] { font-size: 0.7rem; }
+.sk-admin .text-\[11px\] { font-size: 0.75rem; }
+.sk-admin section.rounded-xl { padding: 1rem; }

@@ -21,10 +21,13 @@ export interface DesignNode {
   style?: Partial<Record<Breakpoint, DesignStyle>>;
   children?: DesignNode[];
 }
+import { normalizeTracking, type TrackingConfig } from './tracking';
+
 export interface DesignDoc {
   version: 1;
   root: DesignNode;
-  settings?: { maxWidth?: number; fontFamily?: string; accent?: string };
+  /** tracking＝頁面層級追蹤碼區塊（留空沿用網站設定；前台以 Tracking 元件注入，不進 body HTML） */
+  settings?: { maxWidth?: number; fontFamily?: string; accent?: string; tracking?: TrackingConfig };
 }
 
 export const uid = () => Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-3);
@@ -257,7 +260,7 @@ export function parseDesignDoc(input: unknown): DesignDoc {
     return { id, type: type === 'root' ? 'root' : type, props, style, ...(children ? { children } : isContainerType(type) ? { children: [] } : {}) };
   };
   const r = walk(root, 0);
-  return { version: 1, root: { ...r, id: 'root', type: 'root' }, settings: { maxWidth: Number(d.settings?.maxWidth) || 1200, ...(d.settings?.fontFamily ? { fontFamily: String(d.settings.fontFamily).slice(0, 120) } : {}), ...(d.settings?.accent ? { accent: String(d.settings.accent).slice(0, 40) } : {}) } };
+  return { version: 1, root: { ...r, id: 'root', type: 'root' }, settings: { maxWidth: Number(d.settings?.maxWidth) || 1200, ...(d.settings?.fontFamily ? { fontFamily: String(d.settings.fontFamily).slice(0, 120) } : {}), ...(d.settings?.accent ? { accent: String(d.settings.accent).slice(0, 40) } : {}), ...(d.settings?.tracking ? { tracking: normalizeTracking(d.settings.tracking) } : {}) } };
 }
 
 export interface LintIssue {
