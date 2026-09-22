@@ -15,11 +15,6 @@ export interface AiTemplate {
   costPoints: number;
   highCostPoints: number;
 }
-export interface CreditBalance {
-  stored: number;
-  reserved: number;
-  available: number;
-}
 interface AiJob {
   id: string;
   status: 'queued' | 'running' | 'succeeded' | 'failed' | 'canceled';
@@ -42,10 +37,21 @@ const line = { borderColor: 'var(--line)' } as const;
 /**
  * 工作站（對標 inShow generate）：上方模板庫（封面卡＋搜尋）→ 左「生成記錄」→ 右「生成配置」（生成／微調、標準／高品質、欄位、參考圖、必填提醒、範例參考）。
  */
-/** 後台產圖工作站：走 /api/admin/studio/jobs（不扣點、平台金鑰） */
+/** 後台產圖工作站（inShow 版面）：模板庫／生成記錄／生成配置；模型自動偵測後在此選擇，不顯示點數。 */
 export function ImageStudio({ templates }: { templates: AiTemplate[] }) {
-  const byok = true;
-  const initialCredits: CreditBalance = { stored: 0, reserved: 0, available: 0 };
+  const [models, setModels] = useState<{ id: string; label: string }[]>([]);
+  const [model, setModel] = useState('');
+  const [detect, setDetect] = useState<{ loading: boolean; error?: string; provider?: string }>({ loading: false });
+  const detectModels = async () => {
+    setDetect({ loading: true });
+    const j = await fetch('/api/admin/studio/models').then((r) => r.json()).catch(() => ({ models: [] }));
+    setModels(j.models ?? []);
+    setModel((cur) => (j.models?.some((m: { id: string }) => m.id === cur) ? cur : (j.default ?? '')));
+    setDetect({ loading: false, error: j.error, provider: j.provider });
+  };
+  useEffect(() => {
+    void detectModels();
+  }, []);
   const [tpl, setTpl] = useState<AiTemplate | null>(templates[0] ?? null);
   const [q, setQ] = useState('');
   const [mode, setMode] = useState<'generate' | 'refine'>('generate');
@@ -53,7 +59,6 @@ export function ImageStudio({ templates }: { templates: AiTemplate[] }) {
   const [prompt, setPrompt] = useState('');
   const [quality, setQuality] = useState<'standard' | 'high'>('standard');
   const [images, setImages] = useState<string[]>([]);
-  const [credits, setCredits] = useState(initialCredits);
   const [jobs, setJobs] = useState<AiJob[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -64,14 +69,12 @@ export function ImageStudio({ templates }: { templates: AiTemplate[] }) {
     const k = q.trim().toLowerCase();
     return k ? templates.filter((t) => `${t.name} ${t.category} ${t.description ?? ''} ${t.key}`.toLowerCase().includes(k)) : templates;
   }, [templates, q]);
-  const cost = byok ? 0 : tpl ? (quality === 'high' ? tpl.highCostPoints : tpl.costPoints) : quality === 'high' ? 15 : 5;
   const missing = (tpl?.inputFields ?? []).filter((f) => f.required && f.type !== 'image' && !inputs[f.key]?.trim()).map((f) => f.label);
   const needsImage = mode === 'refine' && !images.length;
 
   async function refresh() {
     const j = await fetch('/api/admin/studio/jobs?limit=60').then((r) => (r.ok ? r.json() : []));
     setJobs(j);
-    setCredits(initialCredits);
   }
   useEffect(() => {
     void refresh();
@@ -108,7 +111,7 @@ export function ImageStudio({ templates }: { templates: AiTemplate[] }) {
     if (needsImage) return setError('微調模式請先上傳參考圖');
     setBusy(true);
     setError('');
-    const r = await fetch('/api/admin/studio/jobs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ templateId: tpl?.id ?? null, prompt, inputs, quality, images }) });
+    const r = await fetch('/api/admin/studio/jobs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ templateId: tpl?.id ?? null, prompt, inputs, quality, images, model: model || undefined }) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) setError(typeof j.message === 'string' ? j.message : JSON.stringify(j.message ?? j));
     else {
@@ -150,9 +153,7 @@ export function ImageStudio({ templates }: { templates: AiTemplate[] }) {
                     {t.description?.split('（')[0]}
                   </div>
                   <div className="mt-1 flex items-center justify-between">
-                    <span className="rounded bg-neutral-100 px-1">
-                      標準 {t.costPoints}・印刷 {t.highCostPoints}
-                    </span>
+                    <span className="rounded bg-neutral-100 px-1">{t.defaultSize === '1024x1024' ? '1:1' : t.defaultSize === '1536x1024' ? '3:2' : '2:3'}</span>
                     <span className="underline">檢視</span>
                   </div>
                 </div>
@@ -179,13 +180,13 @@ export function ImageStudio({ templates }: { templates: AiTemplate[] }) {
                   {j.resultUrl ? <img src={j.resultUrl} alt="" className="mb-2 aspect-square w-full rounded object-cover" /> : <div className="mb-2 flex aspect-square w-full items-center justify-center rounded bg-neutral-100">{STATUS[j.status]}</div>}
                   <p className="font-semibold">{j.template?.name ?? '自由提示詞'}</p>
                   <p style={{ color: 'var(--muted)' }}>
-                    {STATUS[j.status]} · {j.quality === 'high' ? '印刷' : '標準'} · {j.byok ? 'BYOK' : `${j.costPoints} 點`} · {fmtDateTime(j.createdAt)}
+                    {STATUS[j.status]} · {j.quality === 'high' ? '高品質' : '標準'} · {j.size} · {fmtDateTime(j.createdAt)}
                   </p>
                   {j.error ? <p className="text-red-700">{j.error}</p> : null}
                   <div className="mt-1 flex gap-2">
                     {j.status === 'queued' ? (
                       <button onClick={() => fetch(`/api/admin/studio/jobs/${j.id}/cancel`, { method: 'POST' }).then(refresh)} className="rounded border px-2 py-0.5" style={line}>
-                        取消（不扣點）
+                        取消
                       </button>
                     ) : null}
                     {j.resultUrl ? (
@@ -238,7 +239,7 @@ export function ImageStudio({ templates }: { templates: AiTemplate[] }) {
               <h2 className="text-sm font-bold">生成配置</h2>
               <p style={{ color: 'var(--muted)' }}>{tpl ? tpl.name : '自由提示詞'}</p>
             </div>
-            <span className={`rounded px-2 py-0.5 ${byok ? 'bg-amber-100 text-amber-800' : 'bg-neutral-100'}`}>後台產圖・不扣點（平台金鑰）</span>
+            <span className="rounded bg-neutral-100 px-2 py-0.5">{detect.provider === 'openai' ? 'OpenAI' : detect.provider === 'mock' ? 'mock 佔位' : '…'}</span>
           </div>
           <div className="grid grid-cols-2 gap-1">
             <button type="button" onClick={() => setMode('generate')} className={`rounded px-2 py-1.5 ${mode === 'generate' ? 'bg-black text-white' : 'border'}`} style={mode === 'generate' ? undefined : line}>
@@ -248,14 +249,31 @@ export function ImageStudio({ templates }: { templates: AiTemplate[] }) {
               微調
             </button>
           </div>
+          <label className="block">
+            模型
+            {detect.loading ? <span style={{ color: 'var(--muted)' }}>（偵測可用模型中…）</span> : detect.error ? <span className="text-red-700">（{detect.error}）</span> : models.length ? <span className="text-green-700">（已偵測 {models.length} 個）</span> : null}
+            <span className="flex gap-1">
+              <select className={input} style={line} value={model} onChange={(e) => setModel(e.target.value)}>
+                {models.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.label}
+                  </option>
+                ))}
+                {!models.length ? <option value="">（沿用設定的預設模型）</option> : null}
+              </select>
+              <button type="button" onClick={() => void detectModels()} className="shrink-0 rounded border px-2" style={line} title="重新偵測">
+                ↻
+              </button>
+            </span>
+          </label>
           <div className="grid grid-cols-2 gap-1">
             <button type="button" onClick={() => setQuality('standard')} className={`rounded border p-2 text-left ${quality === 'standard' ? 'bg-black text-white' : ''}`} style={quality === 'standard' ? undefined : line}>
               <div className="font-semibold">標準</div>
-              <div className="opacity-80">{byok ? '不扣點' : `${tpl?.costPoints ?? 5} 點`}・螢幕觀看・快</div>
+              <div className="opacity-80">螢幕觀看・快</div>
             </button>
             <button type="button" onClick={() => setQuality('high')} className={`rounded border p-2 text-left ${quality === 'high' ? 'bg-black text-white' : ''}`} style={quality === 'high' ? undefined : line}>
               <div className="font-semibold">高品質・印刷</div>
-              <div className="opacity-80">{byok ? '不扣點' : `${tpl?.highCostPoints ?? 15} 點`}・可印刷・慢</div>
+              <div className="opacity-80">可印刷・慢</div>
             </button>
           </div>
           {(tpl?.inputFields ?? []).map((f) =>
@@ -309,16 +327,15 @@ export function ImageStudio({ templates }: { templates: AiTemplate[] }) {
           </div>
           {missing.length ? <p className="rounded bg-amber-50 px-2 py-1 text-amber-900">請填寫必填欄位：{missing.join('、')}</p> : null}
           {error ? <p className="text-red-700">{error}</p> : null}
-          <button type="submit" disabled={busy || (!byok && credits.available < cost)} className="w-full rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50">
-            {busy ? '送出中…' : `${mode === 'refine' ? '微調' : '生成'}（${byok ? '不扣點' : `${cost} 點`}）`}
+          <button type="submit" disabled={busy} className="w-full rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50">
+            {busy ? '送出中…' : mode === 'refine' ? '微調' : '生成'}
           </button>
-          {!byok && credits.available < cost ? <p className="text-red-700">可用點數不足（持有 {credits.stored}、保留中 {credits.reserved}）</p> : null}
           {tpl?.coverUrl ? (
             <button type="button" onClick={() => setShowExample((s) => !s)} className="w-full rounded border px-2 py-1" style={line}>
               {showExample ? '隱藏範例參考' : '範例參考'}
             </button>
           ) : null}
-          <p style={{ color: 'var(--muted)' }}>產圖供應商與金鑰在「設定」（ai.provider＝mock 時為佔位圖）。產出可用於商品封面、頁面設計與 Banner。</p>
+          <p style={{ color: 'var(--muted)' }}>產圖供應商與金鑰在「設定」（ai.provider＝mock 時為佔位圖）；模型清單依金鑰自動偵測。產出可用於商品封面、頁面設計與 Banner。</p>
         </form>
       </div>
     </div>

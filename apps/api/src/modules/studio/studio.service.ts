@@ -170,6 +170,22 @@ export class StudioService implements OnModuleInit {
     return job;
   }
 
+  /** 可用產圖模型：OpenAI /v1/models 過濾影像模型；mock 回佔位 */
+  async listImageModels(): Promise<{ provider: string; models: { id: string; label: string }[]; default: string; error?: string }> {
+    const ai = await this.settings.ai();
+    if (ai.provider !== 'openai') return { provider: ai.provider, models: [{ id: 'mock', label: 'mock 佔位圖（不呼叫模型）' }], default: 'mock' };
+    if (!ai.openaiKey) return { provider: 'openai', models: [], default: ai.imageModel, error: '尚未設定 OpenAI 金鑰' };
+    try {
+      const res = await fetch('https://api.openai.com/v1/models', { headers: { authorization: `Bearer ${ai.openaiKey}` }, signal: AbortSignal.timeout(15_000) });
+      const j = (await res.json()) as { data?: { id: string; created?: number }[]; error?: { message?: string } };
+      if (!res.ok) return { provider: 'openai', models: [], default: ai.imageModel, error: `OpenAI ${res.status}：${j.error?.message ?? ''}` };
+      const models = (j.data ?? []).filter((m) => /image|dall-e/i.test(m.id)).sort((a, b) => (b.created ?? 0) - (a.created ?? 0)).map((m) => ({ id: m.id, label: m.id }));
+      return { provider: 'openai', models, default: models.some((m) => m.id === ai.imageModel) ? ai.imageModel : (models[0]?.id ?? ai.imageModel) };
+    } catch (e) {
+      return { provider: 'openai', models: [], default: ai.imageModel, error: e instanceof Error ? e.message : String(e) };
+    }
+  }
+
   /** 後台產圖：掛在系統帳號、不扣點（byok=true 走平台金鑰）；jobs.userId 需要 User，故建立／取用固定系統會員 */
   private async systemUserId() {
     const email = 'admin-studio@system.local';
@@ -199,7 +215,8 @@ export class StudioService implements OnModuleInit {
     }
     const ai = await this.settings.ai();
     const userId = await this.systemUserId();
-    const job = await this.prisma.aiJob.create({ data: { userId, kind: 'image', templateId: template?.id ?? null, prompt: d.prompt, inputs: { ...(d.inputs ?? {}), ...(refUrls.length ? { __images: refUrls } : {}), __actor: actor } as Prisma.InputJsonValue, quality: d.quality, size: d.size ?? template?.defaultSize ?? '1024x1024', provider: ai.provider, byok: true, costPoints: 0 } });
+    const model = typeof (input as { model?: unknown })?.model === 'string' && /^[a-z0-9.\-_]{2,60}$/i.test(String((input as { model?: string }).model)) ? String((input as { model?: string }).model) : null;
+    const job = await this.prisma.aiJob.create({ data: { userId, kind: 'image', templateId: template?.id ?? null, prompt: d.prompt, inputs: { ...(d.inputs ?? {}), ...(refUrls.length ? { __images: refUrls } : {}), ...(model ? { __model: model } : {}), __actor: actor } as Prisma.InputJsonValue, quality: d.quality, size: d.size ?? template?.defaultSize ?? '1024x1024', provider: ai.provider, byok: true, costPoints: 0 } });
     this.enqueue(job.id);
     return job;
   }
@@ -252,7 +269,8 @@ export class StudioService implements OnModuleInit {
       const refUrls = Array.isArray(inputs.__images) ? (inputs.__images as string[]) : [];
       const prompt = composeTemplatePrompt(job.template?.systemPrompt ?? '', (job.template?.inputFields as { key: string; label: string; type?: string }[] | null) ?? [], inputs, job.prompt);
       const referenceImages = (await Promise.all(refUrls.map((u) => this.storage.fetchAsset(u)))).filter((x): x is { bytes: Buffer; mime: string } => !!x);
-      const result = await getProvider(job.provider ?? 'mock').generate({ prompt, size: job.size, quality: job.quality as 'standard' | 'high', apiKey: apiKey ?? undefined, model: ai.imageModel, referenceImages });
+      const jobModel = typeof inputs.__model === 'string' && inputs.__model !== 'mock' ? inputs.__model : undefined;
+      const result = await getProvider(job.provider ?? 'mock').generate({ prompt, size: job.size, quality: job.quality as 'standard' | 'high', apiKey: apiKey ?? undefined, model: jobModel ?? ai.imageModel, referenceImages });
       const file = `${job.id}.${result.ext}`;
       const put = await this.storage.put(`ai/${file}`, result.bytes, result.ext === 'png' ? 'image/png' : result.ext === 'svg' ? 'image/svg+xml' : result.ext === 'webp' ? 'image/webp' : 'image/jpeg');
       const resultUrl = put.driver === 's3' ? put.url : `/api/assets/ai/${file}`;

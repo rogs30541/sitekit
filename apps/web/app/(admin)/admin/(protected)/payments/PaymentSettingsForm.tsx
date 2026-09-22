@@ -49,6 +49,22 @@ export function PaymentSettingsForm({ config }: { config: PaymentConfig }) {
   function toggle(id: string) {
     setEnabled((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]));
   }
+  /** 清空該金流的商店參數並停用 */
+  async function clearProvider(id: string, label: string) {
+    if (!window.confirm(`清空「${label}」的所有商店參數並停用？`)) return;
+    setBusy(true);
+    const next = enabled.filter((x) => x !== id);
+    const settings: Record<string, string> = { 'payment.methods': next.join(','), 'payment.provider': next[0] ?? 'none' };
+    for (const f of FIELDS[id] ?? []) settings[f.key] = '';
+    if (TEST_KEY[id]) settings[TEST_KEY[id]] = 'true';
+    const r = await fetch('/api/admin/ai/act', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'update_settings', params: { settings } }) });
+    const j = await r.json().catch(() => ({}));
+    setEnabled(next);
+    setValues((v) => Object.fromEntries(Object.entries(v).filter(([k]) => !k.startsWith(`${id}.`))));
+    setOut(j.ok ? `已清空 ${label} 設定` : JSON.stringify(j));
+    setBusy(false);
+    router.refresh();
+  }
 
   /** 走 AI API 路徑（cookie session）呼叫既有 update_settings；只送有填值的欄位。 */
   async function save() {
@@ -86,6 +102,11 @@ export function PaymentSettingsForm({ config }: { config: PaymentConfig }) {
               <span className="font-mono text-xs" style={{ color: 'var(--muted)' }}>
                 {p.merchantId}
               </span>
+            ) : null}
+            {p.configured ? (
+              <button type="button" onClick={() => clearProvider(p.id, p.label)} disabled={busy} className="rounded border px-2 py-0.5 text-xs text-red-700" style={{ borderColor: 'var(--line)' }}>
+                清除設定
+              </button>
             ) : null}
             {TEST_KEY[p.id] ? (
               <label className="ml-auto flex items-center gap-1 text-xs">

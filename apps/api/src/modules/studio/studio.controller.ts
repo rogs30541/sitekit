@@ -96,6 +96,12 @@ export class AdminStudioController {
     return this.studio.listAll(Number(limit) || 100);
   }
 
+  /** 可用產圖模型（依 ai.provider／金鑰自動偵測） */
+  @Get('models')
+  models() {
+    return this.studio.listImageModels();
+  }
+
   /** 後台產圖（不扣點、平台金鑰） */
   @Post('jobs')
   createJob(@Body() body: unknown, @Req() req: AuthedRequest) {
