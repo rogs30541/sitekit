@@ -205,6 +205,8 @@ model Product {
   /// 庫存：null＝不追蹤（課程／點數包）；實體商品下單即扣、取消／失敗／退款回補（交易鎖不超賣）
   stock        Int?
   sortOrder    Int           @default(0)
+  /// 商品分類（自由字串；前台可依分類篩選）
+  category     String?
   course       Course?
   items        OrderItem[]
   entitlements Entitlement[]

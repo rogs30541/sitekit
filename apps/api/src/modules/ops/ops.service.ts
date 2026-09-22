@@ -19,6 +19,7 @@ import { SiteService } from '../content/site.controller';
 import { LogisticsService } from '../logistics/logistics.service';
 import { InvoiceService } from '../invoice/invoice.service';
 import { DesignService } from '../content/design.service';
+import { getProvider } from '../studio/providers';
 
 const SECRET_KEY = /secret|key|token|password|hashiv|hash_iv|signing/i;
 const SECRET_PARAM = /^(password|apiKey)$/i;
@@ -143,6 +144,84 @@ export class OpsService {
       }
       case 'sales_report':
         return this.reports.sales(p);
+      case 'list_products': {
+        const rows = await this.catalog.listProductsAdmin();
+        const q = String(p.q ?? '').trim().toLowerCase();
+        const limit = Math.min(200, Math.max(1, Number(p.limit) || 100));
+        return rows
+          .filter((r) => (!p.type || r.type === p.type) && (!p.category || r.category === p.category) && (p.isActive === undefined || r.isActive === (p.isActive === true || p.isActive === 'true')) && (!q || `${r.sku} ${r.name} ${r.description ?? ''} ${r.category ?? ''}`.toLowerCase().includes(q)))
+          .slice(0, limit)
+          .map((r) => ({ id: r.id, sku: r.sku, type: r.type, name: r.name, price: r.price, stock: r.stock, isActive: r.isActive, category: r.category, coverUrl: r.coverUrl, sold: r._count.items, courseSlug: r.course?.slug ?? null, description: r.description?.slice(0, 200) ?? null }));
+      }
+      case 'upsert_product': {
+        const sku = String(p.sku ?? '').trim();
+        if (!sku) throw new Error('sku is required');
+        const existing = await this.prisma.product.findUnique({ where: { sku } });
+        const fields: Record<string, unknown> = {};
+        for (const k of ['type', 'name', 'description', 'coverUrl', 'isActive', 'category'] as const) if (p[k] !== undefined) fields[k] = p[k];
+        for (const k of ['price', 'stock', 'sortOrder'] as const) if (p[k] !== undefined && p[k] !== null) fields[k] = Math.round(Number(p[k]));
+        if (p.stock === null) fields.stock = null;
+        if (existing) {
+          const u = await this.catalog.updateProduct(existing.id, fields);
+          return { id: u.id, sku: u.sku, name: u.name, price: u.price, isActive: u.isActive, category: u.category, coverUrl: u.coverUrl, stock: u.stock, created: false };
+        }
+        const c = await this.catalog.createProduct({ type: 'physical', ...fields, sku });
+        return { id: c.id, sku: c.sku, name: c.name, price: c.price, isActive: c.isActive, category: c.category, coverUrl: c.coverUrl, stock: c.stock, created: true };
+      }
+      case 'list_orders': {
+        const rows = await this.orders.listAll(p.status ? String(p.status) : undefined, p.shipping ? String(p.shipping) : undefined);
+        const from = p.from ? new Date(String(p.from)) : null;
+        const to = p.to ? new Date(String(p.to)) : null;
+        if (to && String(p.to).length <= 10) to.setHours(23, 59, 59, 999);
+        const q = String(p.q ?? '').trim().toLowerCase();
+        const limit = Math.min(200, Math.max(1, Number(p.limit) || 50));
+        return rows
+          .filter((o) => (!from || o.createdAt >= from) && (!to || o.createdAt <= to) && (!q || `${o.merchantOrderNo} ${o.user?.email ?? ''}`.toLowerCase().includes(q)))
+          .slice(0, limit)
+          .map((o) => ({ orderNo: o.merchantOrderNo, status: o.status, amount: o.amount, provider: o.provider, shippingStatus: o.shippingStatus, shippingMethod: o.shippingMethod, carrier: o.carrier, trackingNo: o.trackingNo, email: o.user?.email ?? null, items: o.items.map((i) => `${i.name}×${i.qty}`).join(', '), createdAt: o.createdAt, paidAt: o.paidAt ?? null }));
+      }
+      case 'get_order':
+        return this.orders.findByIdOrNo(String(p.orderNo ?? p.id ?? ''));
+      case 'list_courses': {
+        const rows = await this.catalog.listAllCourses();
+        return (rows as unknown as { id: string; slug: string; summary: string | null; isPublished: boolean; product: { sku: string; name: string; price: number; coverUrl: string | null; isActive: boolean }; _count?: { chapters: number } }[]).map((c) => ({ id: c.id, slug: c.slug, name: c.product.name, sku: c.product.sku, price: c.product.price, isPublished: c.isPublished, isActive: c.product.isActive, coverUrl: c.product.coverUrl, chapters: c._count?.chapters ?? null, summary: c.summary }));
+      }
+      case 'upsert_course': {
+        const slug = String(p.slug ?? '').trim();
+        if (!slug) throw new Error('slug is required');
+        const existing = await this.prisma.course.findUnique({ where: { slug }, include: { product: true } });
+        const prod = (p.product && typeof p.product === 'object' ? { ...(p.product as Record<string, unknown>) } : {}) as Record<string, unknown>;
+        for (const k of ['name', 'price', 'description', 'coverUrl', 'sku', 'isActive'] as const) if (p[k] !== undefined && prod[k] === undefined) prod[k] = p[k];
+        if (prod.price !== undefined) prod.price = Math.round(Number(prod.price));
+        const course = { summary: p.summary, isPublished: p.isPublished === undefined ? undefined : p.isPublished === true || p.isPublished === 'true', accessMode: p.accessMode, accessDays: p.accessDays };
+        const clean = Object.fromEntries(Object.entries(course).filter(([, v]) => v !== undefined));
+        if (existing) {
+          const u = await this.catalog.updateCourse(existing.id, { ...clean, ...(Object.keys(prod).length ? { product: prod } : {}) });
+          return { id: u.id, slug: u.slug, name: u.product.name, price: u.product.price, isPublished: u.isPublished, created: false };
+        }
+        if (!prod.name || prod.price === undefined) throw new Error('建立課程需要 name 與 price');
+        const c = await this.catalog.createCourse({ slug, ...clean, product: { sku: prod.sku ?? `COURSE-${slug.toUpperCase().replace(/[^A-Z0-9]+/g, '-').slice(0, 40)}`, ...prod } });
+        return { id: c.id, slug: c.slug, name: c.product.name, price: c.product.price, isPublished: c.isPublished, created: true };
+      }
+      case 'add_chapter': {
+        const slug = String(p.courseSlug ?? p.slug ?? '').trim();
+        const course = await this.prisma.course.findFirst({ where: { OR: [{ slug }, { id: slug }] } });
+        if (!course) throw new Error('course not found');
+        const ch = await this.catalog.addChapter(course.id, { title: String(p.title ?? '未命名章節'), ...(p.body !== undefined ? { body: String(p.body) } : {}), ...(p.videoProvider ? { videoProvider: p.videoProvider } : {}), ...(p.videoProviderId !== undefined ? { videoProviderId: p.videoProviderId ? String(p.videoProviderId) : null } : {}), ...(p.isPreview !== undefined ? { isPreview: !!p.isPreview } : {}), ...(p.isPublished !== undefined ? { isPublished: !!p.isPublished } : {}), ...(p.parentId ? { parentId: String(p.parentId) } : {}), ...(p.order !== undefined ? { order: Number(p.order) } : {}) });
+        return { id: ch.id, courseSlug: course.slug, title: ch.title, order: ch.order, parentId: ch.parentId };
+      }
+      case 'generate_image': {
+        const prompt = String(p.prompt ?? '').trim();
+        if (!prompt) throw new Error('prompt is required');
+        const ai = await this.settings.ai();
+        const size = ['1024x1024', '1536x1024', '1024x1536'].includes(String(p.size)) ? String(p.size) : '1024x1024';
+        const quality = p.quality === 'high' ? 'high' : 'standard';
+        const provider = getProvider(ai.provider);
+        const img = await provider.generate({ prompt, size, quality, apiKey: ai.openaiKey || undefined, model: ai.imageModel });
+        const purpose = ['product', 'banner', 'illustration'].includes(String(p.purpose)) ? String(p.purpose) : 'illustration';
+        const put = await this.storage.put(`ai/${purpose}/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}.${img.ext}`, img.bytes, img.mime);
+        return { url: put.url, provider: provider.name, size, quality, purpose, bytes: img.bytes.length, costTwd: img.costTwd ?? null, note: provider.name === 'mock' ? 'mock 供應商（佔位圖）；到系統設定把 ai.provider 改為 openai 並填 openai.apiKey 才是真產圖' : undefined };
+      }
       case 'update_shipping': {
         const orderNo = String(p.orderNo ?? p.merchantOrderNo ?? p.orderId ?? '');
         if (!orderNo) throw new Error('orderNo is required');

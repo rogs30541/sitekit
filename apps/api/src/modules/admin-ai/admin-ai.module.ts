@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { OpsModule } from '../ops/ops.module';
+import { SettingsModule } from '../settings/settings.module';
 import { AdminAiController } from './admin-ai.controller';
+import { CommandService } from './command.service';
 
-@Module({ imports: [OpsModule], controllers: [AdminAiController] })
+@Module({ imports: [OpsModule, SettingsModule], controllers: [AdminAiController], providers: [CommandService] })
 export class AdminAiModule {}

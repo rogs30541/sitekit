@@ -28,6 +28,16 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 **P3 產品化（完成）**：點數帳本（保留再結算、失敗釋放）、AI Provider 抽象層（mock／OpenAI、平台金鑰或 BYOK）、程序內任務佇列（可換 BullMQ）、`/studio` AI 創作工作站、`/admin/studio` 模板管理與點數調整、MCP／AI API 的 `adjust_credits`。
 
+## P10 AI 工作站指令台（2026-09-22，v0.9.0）
+
+- **定位**：AI 工作站＝後台全站工作總控，只在後台（`/admin/studio`），前台不顯示。用自然語言操作七大工作項目：前端頁面編輯、後端電商處理、電商報表分析、商品製圖、商品上架／分類、線上課程上架、BANNER 設計；**系統功能（部署／遷移／設定／管理員／稽核／儲存）不開放**（`COMMAND_EXCLUDED_ACTIONS`）。
+- **防呆同一哲學**（`modules/admin-ai/command.service.ts`）：模型透過工具呼叫 OPS 動作；**唯讀動作即時執行**並把結果回給模型；**寫入動作不執行，列成「待確認清單」**（HMAC token，30 分鐘、限下指令者本人）→ 管理員在指令台按「確認執行」才跑（`POST /api/admin/ai/command/confirm`），失敗即停後續。頁面一律走草稿→預覽→確認發佈（系統提示明訂）。
+- **供應商**：`ai.commandProvider` anthropic（Messages API tool use，預設 `claude-sonnet-5`）／openai（chat.completions tools，預設 `gpt-4.1`）／mock（本機規則：列出／上架／下架商品、產圖 Banner、訂單、報表、建立課程、建立頁面；測試與示範用，不花錢）；金鑰 `anthropic.apiKey`／`openai.apiKey`（指令台「設定」可填，只存伺服器）。
+- **新 OPS／MCP 動作**（`sitekit_*` 同名）：`list_products`（後台視角＋分類篩選）、`upsert_product`（sku 冪等：上架／下架／改價／分類／封面／庫存）、`list_orders`（狀態／物流／日期／關鍵字）、`get_order`、`list_courses`、`upsert_course`（slug 冪等；建立即建商品）、`add_chapter`、`generate_image`（走 `ai.provider` 圖像供應商 mock|openai，存到 StorageService 回公開 url；可再設為商品封面或放進頁面 image 區塊）。
+- **商品分類**：`products.category`（migration `20260922120000_product_category`）；前台 `GET /api/catalog/products?category=`。
+- **指令台 UI**（`studio/CommandConsole.tsx`）：左側七大工作項目＋範例指令一鍵填入、可操作動作清單（讀／寫標示）；對話區顯示回覆、已查詢結果（表格／圖片／連結）、待確認卡片（動作＋參數可展開、確認執行／取消）、執行結果摘要；供應商狀態與設定面板；對話存 sessionStorage。原「AI 產圖模板／任務管理」收在頁面下方進階區。
+- 本機 E2E：`local-p14-e2e.mjs` 28 項全過（mock 供應商：上架商品待確認→確認→分類篩選；唯讀即時；多步下架；Banner 產圖（mock svg 可下載）；課程＋三章節；頁面只存草稿不上線；訂單／報表；系統功能拒絕；token 竄改 400）。
+
 ## P9 網站 CMS 與頁面設計器（2026-09-22，v0.8.0）
 
 - **後台五大分類選單**（`components/AdminNav.tsx`）：網站（頁面設計／文章／網站架構／網站設定）、電商（商品／訂單／折扣碼／報表／金流／物流／發票）、課程、AI 工作站、系統功能（總覽／儲存與通知／管理員）；點擊或滑入展開，所在分類高亮。AI 工作站只在後台，前台預設導覽與網站架構「系統路徑」已移除 `/studio`。

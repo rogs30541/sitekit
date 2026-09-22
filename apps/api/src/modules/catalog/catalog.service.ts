@@ -12,6 +12,7 @@ const productInput = z.object({
   isActive: z.boolean().optional(),
   stock: z.number().int().min(0).nullable().optional(),
   sortOrder: z.number().int().optional(),
+  category: z.string().trim().max(60).nullable().optional(),
 });
 const videoRef = z.object({ provider: z.enum(['youtube', 'bunny']), id: z.string().trim().max(120) }).nullable().optional();
 const courseInput = z.object({
@@ -52,11 +53,11 @@ export class CatalogService {
   constructor(private readonly prisma: PrismaService) {}
 
   // ---- 公開 ----
-  listProducts(type?: string) {
+  listProducts(type?: string, category?: string) {
     return this.prisma.product.findMany({
-      where: { isActive: true, ...(type ? { type: type as 'physical' | 'course' | 'credit_pack' } : {}) },
+      where: { isActive: true, ...(type ? { type: type as 'physical' | 'course' | 'credit_pack' } : {}), ...(category ? { category } : {}) },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-      select: { id: true, type: true, sku: true, name: true, description: true, coverUrl: true, price: true, stock: true, course: { select: { slug: true } } },
+      select: { id: true, type: true, sku: true, name: true, description: true, coverUrl: true, price: true, stock: true, category: true, course: { select: { slug: true } } },
     });
   }
 

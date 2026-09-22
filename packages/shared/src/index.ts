@@ -125,6 +125,10 @@ export const SETTING_KEYS = {
   aiProvider: 'ai.provider',
   openaiApiKey: 'openai.apiKey',
   aiImageModel: 'ai.imageModel',
+  /** AI 指令台（後台總控）：mock|anthropic|openai；模型；Anthropic 金鑰 */
+  aiCommandProvider: 'ai.commandProvider',
+  aiCommandModel: 'ai.commandModel',
+  anthropicApiKey: 'anthropic.apiKey',
 } as const;
 
 /**
@@ -171,6 +175,14 @@ export const OPS_ACTIONS = {
   delete_admin: { desc: '刪除管理員（idOrEmail；不可刪最後一位 superadmin）', mutating: true },
   send_test_notification: { desc: '寄一封測試信（to 可選，預設 mail.adminTo）並推一則 LINE 給管理員，回各通道結果', mutating: true },
   storage_status: { desc: '物件儲存狀態（driver local|s3、R2 是否設定完成）與最近通知紀錄', mutating: false },
+  list_products: { desc: '列出商品（後台視角，含下架／庫存／分類；q 關鍵字、type physical|course|credit_pack、category、isActive、limit）', mutating: false },
+  upsert_product: { desc: '以 sku 建立或更新商品（name、price 整數、type、description、coverUrl、stock、isActive 上架/下架、category 分類、sortOrder）', mutating: true },
+  list_orders: { desc: '列出訂單（status pending|paid|failed|refunded|canceled、shipping、from/to 日期、q 訂單編號或 Email、limit）', mutating: false },
+  get_order: { desc: '讀取單一訂單完整資料（orderNo 或 id）', mutating: false },
+  list_courses: { desc: '列出課程（含未發布；slug、商品、章節數）', mutating: false },
+  upsert_course: { desc: '以 slug 建立或更新線上課程（product{sku,name,price,description,coverUrl}、summary、isPublished、accessMode）', mutating: true },
+  add_chapter: { desc: '為課程新增章節（courseSlug、title、body、videoProvider youtube|bunny、videoProviderId、isPreview、parentId）', mutating: true },
+  generate_image: { desc: 'AI 產圖（prompt、size 1024x1024|1536x1024|1024x1536、quality standard|high、purpose product|banner|illustration）→ 存到儲存空間回公開 url；會產生費用', mutating: true },
   import_products: { desc: '商品 CSV 匯入（sku,name,price,type,description,cover_url,stock,active；相容 Shopify 商品 CSV；dryRun 預設 true）', mutating: true },
 } as const;
 
@@ -221,3 +233,17 @@ export interface OpsResult {
 }
 
 export * from './design';
+
+/** AI 指令台排除的「系統功能」動作（只在系統功能選單人工操作，不開放自然語言指令） */
+export const COMMAND_EXCLUDED_ACTIONS: OpsAction[] = ['status', 'deploy', 'migrate', 'get_settings', 'update_settings', 'import_content', 'adjust_credits', 'audit', 'create_admin', 'list_admins', 'update_admin', 'delete_admin', 'send_test_notification', 'storage_status'];
+
+/** 指令台七大工作項目（快捷任務；範例指令會填入輸入框） */
+export const COMMAND_TASKS: { key: string; label: string; desc: string; examples: string[] }[] = [
+  { key: 'page', label: '前端頁面編輯', desc: '建立／修改官網頁面草稿、產生沙盒預覽、經確認發佈', examples: ['幫我建立「關於我們」頁面草稿：一段品牌故事＋三個特色卡片＋聯絡方式，做好給我預覽連結', '把 about 頁的標題改成「我們是誰」，存草稿並給我預覽'] },
+  { key: 'orders', label: '後端電商處理', desc: '訂單查詢、出貨、物流單、發票、折扣碼、庫存', examples: ['列出今天已付款但未出貨的訂單', '訂單 SK... 標記已出貨，黑貓 單號 1234567890，並開立發票'] },
+  { key: 'report', label: '電商報表分析', desc: '銷售報表、對帳、趨勢摘要', examples: ['幫我看這個月的銷售報表，按天分組，告訴我最好的三天和原因', '比較上個月和這個月的營收與訂單數'] },
+  { key: 'image', label: '商品製圖', desc: 'AI 產生商品情境圖／主圖並設定到商品', examples: ['幫 SKU DEMO-MUG 產生一張白底簡約的商品主圖，1024x1024，並設成商品封面'] },
+  { key: 'product', label: '商品上架／分類', desc: '新增商品、改價、上下架、分類整理', examples: ['上架商品：SKU AI-TEE、名稱「AI 創客 T 恤」、價格 590、分類 服飾、庫存 50', '把所有分類是「服飾」的商品下架'] },
+  { key: 'course', label: '線上課程上架', desc: '建立課程、章節、發布', examples: ['建立課程 slug ai-basics「AI 入門」，價格 1990，摘要一句話，先不發布，並新增三個章節：認識 AI、提示詞入門、實作練習'] },
+  { key: 'banner', label: 'BANNER 設計', desc: 'AI 產生橫幅圖並放進頁面／首頁區塊草稿', examples: ['做一張秋季課程優惠的 Banner（1536x1024，暖色系），放進首頁草稿最上方的 Hero 區塊，給我預覽'] },
+];

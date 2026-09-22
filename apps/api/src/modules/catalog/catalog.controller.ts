@@ -8,8 +8,8 @@ export class CatalogController {
   constructor(private readonly catalog: CatalogService) {}
 
   @Get('products')
-  products(@Query('type') type?: string) {
-    return this.catalog.listProducts(type);
+  products(@Query('type') type?: string, @Query('category') category?: string) {
+    return this.catalog.listProducts(type, category);
   }
 
   @Get('courses')
