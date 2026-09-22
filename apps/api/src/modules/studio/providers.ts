@@ -72,6 +72,38 @@ export class OpenAiImageProvider implements ImageProvider {
   }
 }
 
+/**
+ * Gemini 產圖：gemini-*-image 系列走 generateContent（responseModalities IMAGE，可帶參考圖 inline_data）；imagen-* 走 :predict。
+ */
+export class GeminiImageProvider implements ImageProvider {
+  readonly name = 'gemini';
+  async generate(req: ImageRequest): Promise<ImageResult> {
+    if (!req.apiKey) throw new Error('Gemini API key is not configured');
+    const model = req.model && req.model !== 'mock' ? req.model : 'gemini-2.5-flash-image';
+    const [w, h] = req.size.split('x').map(Number);
+    const aspect = w === h ? '1:1' : w > h ? '3:2' : '2:3';
+    if (/^imagen/i.test(model)) {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:predict?key=${encodeURIComponent(req.apiKey)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ instances: [{ prompt: req.prompt }], parameters: { sampleCount: 1, aspectRatio: aspect, ...(req.quality === 'high' ? { imageSize: '2K' } : {}) } }), signal: AbortSignal.timeout(120_000) });
+      const data = (await res.json()) as { predictions?: { bytesBase64Encoded?: string; mimeType?: string }[]; error?: { message?: string } };
+      if (!res.ok) throw new Error(`gemini ${res.status}: ${data.error?.message ?? 'request failed'}`);
+      const p = data.predictions?.[0];
+      if (!p?.bytesBase64Encoded) throw new Error('gemini returned no image');
+      const mime = p.mimeType ?? 'image/png';
+      return { bytes: Buffer.from(p.bytesBase64Encoded, 'base64'), mime, ext: mime.includes('jpeg') ? 'jpg' : 'png', costTwd: null };
+    }
+    const parts: unknown[] = [{ text: `${req.prompt}\n\nOutput a single image. Aspect ratio ${aspect}.` }];
+    for (const r of (req.referenceImages ?? []).slice(0, 4)) parts.push({ inline_data: { mime_type: r.mime, data: r.bytes.toString('base64') } });
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(req.apiKey)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { responseModalities: ['IMAGE', 'TEXT'], ...(aspect !== '1:1' ? { imageConfig: { aspectRatio: aspect } } : {}) } }), signal: AbortSignal.timeout(120_000) });
+    const data = (await res.json()) as { candidates?: { content?: { parts?: { inlineData?: { mimeType?: string; data?: string }; inline_data?: { mime_type?: string; data?: string }; text?: string }[] } }[]; error?: { message?: string } };
+    if (!res.ok) throw new Error(`gemini ${res.status}: ${data.error?.message ?? 'request failed'}`);
+    const part = data.candidates?.[0]?.content?.parts?.find((x) => x.inlineData?.data || x.inline_data?.data);
+    const b64 = part?.inlineData?.data ?? part?.inline_data?.data;
+    if (!b64) throw new Error(`gemini returned no image${data.candidates?.[0]?.content?.parts?.[0]?.text ? `：${data.candidates[0].content.parts[0].text.slice(0, 120)}` : ''}`);
+    const mime = part?.inlineData?.mimeType ?? part?.inline_data?.mime_type ?? 'image/png';
+    return { bytes: Buffer.from(b64, 'base64'), mime, ext: mime.includes('jpeg') ? 'jpg' : mime.includes('webp') ? 'webp' : 'png', costTwd: null };
+  }
+}
+
 export function getProvider(name: string): ImageProvider {
-  return name === 'openai' ? new OpenAiImageProvider() : new MockImageProvider();
+  return name === 'openai' ? new OpenAiImageProvider() : name === 'gemini' ? new GeminiImageProvider() : new MockImageProvider();
 }

@@ -11,11 +11,12 @@ interface Task {
   examples: string[];
 }
 export interface CommandConfig {
-  provider: 'mock' | 'anthropic' | 'openai';
+  provider: 'mock' | 'anthropic' | 'openai' | 'gemini';
   model: string;
   ready: boolean;
   anthropicConfigured: boolean;
   openaiConfigured: boolean;
+  geminiConfigured?: boolean;
   tasks: Task[];
   actions: { action: string; desc: string; mutating: boolean }[];
 }
@@ -104,10 +105,11 @@ export function CommandConsole({ config: initial }: { config: CommandConfig }) {
   function cancel(idx: number) {
     setTurns((t) => t.map((x, i) => (i === idx && x.role === 'assistant' ? { ...x, canceled: true, token: undefined } : x)));
   }
-  async function saveSettings(s: { provider: string; model: string; anthropicKey: string; openaiKey: string }) {
+  async function saveSettings(s: { provider: string; model: string; anthropicKey: string; openaiKey: string; geminiKey: string }) {
     const settings: Record<string, string> = { 'ai.commandProvider': s.provider, 'ai.commandModel': s.model };
     if (s.anthropicKey.trim()) settings['anthropic.apiKey'] = s.anthropicKey.trim();
     if (s.openaiKey.trim()) settings['openai.apiKey'] = s.openaiKey.trim();
+    if (s.geminiKey.trim()) settings['gemini.apiKey'] = s.geminiKey.trim();
     await fetch('/api/admin/ai/act', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'update_settings', params: { settings } }) });
     const c = await fetch('/api/admin/ai/command/config').then((r) => r.json());
     setConfig(c);
@@ -348,8 +350,8 @@ function ResultCard({ r, label }: { r: Exec; label: string }) {
   );
 }
 
-function Settings({ config, onSave, onClose }: { config: CommandConfig; onSave: (s: { provider: string; model: string; anthropicKey: string; openaiKey: string }) => Promise<void>; onClose: () => void }) {
-  const [s, setS] = useState({ provider: config.provider, model: config.model === 'rules' ? '' : config.model, anthropicKey: '', openaiKey: '' });
+function Settings({ config, onSave, onClose }: { config: CommandConfig; onSave: (s: { provider: string; model: string; anthropicKey: string; openaiKey: string; geminiKey: string }) => Promise<void>; onClose: () => void }) {
+  const [s, setS] = useState({ provider: config.provider, model: config.model === 'rules' ? '' : config.model, anthropicKey: '', openaiKey: '', geminiKey: '' });
   const [busy, setBusy] = useState(false);
   const [models, setModels] = useState<{ id: string; label: string }[]>([]);
   const [detect, setDetect] = useState<{ loading: boolean; error?: string; def?: string }>({ loading: false });
@@ -360,7 +362,7 @@ function Settings({ config, onSave, onClose }: { config: CommandConfig; onSave: 
       return;
     }
     setDetect({ loading: true });
-    const r = await fetch('/api/admin/ai/command/models', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ provider, apiKey: key ?? (provider === 'anthropic' ? s.anthropicKey : s.openaiKey) }) });
+    const r = await fetch('/api/admin/ai/command/models', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ provider, apiKey: key ?? (provider === 'anthropic' ? s.anthropicKey : provider === 'gemini' ? s.geminiKey : s.openaiKey) }) });
     const j = await r.json().catch(() => ({ models: [] }));
     setModels(j.models ?? []);
     setDetect({ loading: false, error: j.error, def: j.default });
@@ -376,8 +378,9 @@ function Settings({ config, onSave, onClose }: { config: CommandConfig; onSave: 
         <label className="block">
           供應商
           <select className={input} style={line} value={s.provider} onChange={(e) => setS({ ...s, provider: e.target.value as CommandConfig['provider'] })}>
-            <option value="anthropic">Anthropic（Claude，建議）</option>
+            <option value="anthropic">Anthropic（Claude，建議；只做文字／非圖像作業）</option>
             <option value="openai">OpenAI</option>
+            <option value="gemini">Google Gemini</option>
             <option value="mock">mock 規則模式（測試，不花錢）</option>
           </select>
         </label>
@@ -394,7 +397,7 @@ function Settings({ config, onSave, onClose }: { config: CommandConfig; onSave: 
               ))}
             </select>
           ) : (
-            <input className={input} style={line} value={s.model} onChange={(e) => setS({ ...s, model: e.target.value })} placeholder={s.provider === 'openai' ? 'gpt-4.1' : 'claude-sonnet-5'} disabled={s.provider === 'mock'} />
+            <input className={input} style={line} value={s.model} onChange={(e) => setS({ ...s, model: e.target.value })} placeholder={s.provider === 'openai' ? 'gpt-4.1' : s.provider === 'gemini' ? 'gemini-2.5-pro' : 'claude-sonnet-5'} disabled={s.provider === 'mock'} />
           )}
         </label>
         <label className="block">
@@ -402,7 +405,11 @@ function Settings({ config, onSave, onClose }: { config: CommandConfig; onSave: 
           <input className={input} style={line} type="password" autoComplete="off" value={s.anthropicKey} onChange={(e) => setS({ ...s, anthropicKey: e.target.value })} onBlur={() => s.provider === 'anthropic' && s.anthropicKey && void detectModels('anthropic', s.anthropicKey)} />
         </label>
         <label className="block">
-          OpenAI API Key {config.openaiConfigured ? <span className="text-green-700">（已設定，留空不變）</span> : null}（也供 AI 產圖使用）
+          Gemini API Key {config.geminiConfigured ? <span className="text-green-700">（已設定，留空不變）</span> : null}（也供 API 產圖使用）
+          <input className={input} style={line} type="password" autoComplete="off" value={s.geminiKey} onChange={(e) => setS({ ...s, geminiKey: e.target.value })} onBlur={() => s.provider === 'gemini' && s.geminiKey && void detectModels('gemini', s.geminiKey)} />
+        </label>
+        <label className="block">
+          OpenAI API Key {config.openaiConfigured ? <span className="text-green-700">（已設定，留空不變）</span> : null}（也供 API 產圖使用）
           <input className={input} style={line} type="password" autoComplete="off" value={s.openaiKey} onChange={(e) => setS({ ...s, openaiKey: e.target.value })} onBlur={() => s.provider === 'openai' && s.openaiKey && void detectModels('openai', s.openaiKey)} />
         </label>
       </div>
@@ -424,7 +431,7 @@ function Settings({ config, onSave, onClose }: { config: CommandConfig; onSave: 
         <button onClick={onClose} className="rounded border px-3 py-1" style={line}>
           關閉
         </button>
-        <span style={{ color: 'var(--muted)' }}>金鑰只存在伺服器設定，不會回傳前端。產圖供應商另在 ai.provider（mock|openai）。</span>
+        <span style={{ color: 'var(--muted)' }}>金鑰只存在伺服器設定，不會回傳前端。API 產圖只支援 OpenAI 與 Gemini（依金鑰自動偵測模型）；Claude 只做文字／非圖像作業。</span>
       </div>
     </div>
   );

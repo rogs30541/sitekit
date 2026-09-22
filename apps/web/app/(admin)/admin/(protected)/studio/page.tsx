@@ -7,7 +7,7 @@ import { StudioTabs } from './StudioTabs';
 
 export const dynamic = 'force-dynamic';
 
-const FALLBACK: CommandConfig = { provider: 'mock', model: 'rules', ready: true, anthropicConfigured: false, openaiConfigured: false, tasks: [], actions: [] };
+const FALLBACK: CommandConfig = { provider: 'mock', model: 'rules', ready: true, anthropicConfigured: false, openaiConfigured: false, geminiConfigured: false, tasks: [], actions: [] };
 
 /** AI 工作站＝後台全站工作總控：指令台／產圖（inShow 版面）／模板與任務管理；前台不提供工作站。 */
 export default async function AdminStudioPage() {

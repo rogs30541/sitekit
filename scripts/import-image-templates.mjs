@@ -20,6 +20,8 @@ const opt = (k, d) => {
 const API = opt('--api', process.env.API ?? 'http://localhost:4000');
 const TOKEN = opt('--token', process.env.OPS_TOKEN ?? '');
 const DRY = args.includes('--dry');
+/** --static-covers <siteUrl>：封面改指向 web 的 /templates/<key>.jpg（隨程式部署、不怕儲存空間清空） */
+const STATIC = opt('--static-covers', '');
 if (!folder || !existsSync(folder)) {
   console.error('用法：node scripts/import-image-templates.mjs "<資料夾>" [--api URL] [--token OPS_TOKEN] [--dry]');
   process.exit(1);
@@ -146,7 +148,7 @@ for (const t of templates) {
   const r = await fetch(`${API}/api/ops/run`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: `Bearer ${TOKEN}` },
-    body: JSON.stringify({ action: 'upsert_image_template', params: { key: t.key, name: `${t.code} ${t.name}`, category: t.category, description: t.description, systemPrompt: t.systemPrompt, inputFields: t.inputFields, defaultSize: t.defaultSize, costPoints: 5, highCostPoints: 15, isActive: true, sortOrder: t.sortOrder, coverBase64: t.coverBase64, coverMime: 'image/jpeg' } }),
+    body: JSON.stringify({ action: 'upsert_image_template', params: { key: t.key, name: `${t.code} ${t.name}`, category: t.category, description: t.description, systemPrompt: t.systemPrompt, inputFields: t.inputFields, defaultSize: t.defaultSize, costPoints: 0, highCostPoints: 0, isActive: true, sortOrder: t.sortOrder, ...(STATIC ? { coverUrl: `${STATIC.replace(/\/$/, '')}/templates/${t.key}.jpg` } : { coverBase64: t.coverBase64, coverMime: 'image/jpeg' }) } }),
   });
   const j = await r.json().catch(() => ({}));
   if (r.ok && j.ok) {

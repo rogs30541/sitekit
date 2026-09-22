@@ -82,24 +82,32 @@ export class CommandService {
   ) {}
 
   async config() {
-    const [prov, model, anthropicKey, openaiKey] = await Promise.all([
+    const [prov, model, anthropicKey, openaiKey, geminiKey] = await Promise.all([
       this.settings.get(SETTING_KEYS.aiCommandProvider, 'AI_COMMAND_PROVIDER'),
       this.settings.get(SETTING_KEYS.aiCommandModel, 'AI_COMMAND_MODEL'),
       this.settings.get(SETTING_KEYS.anthropicApiKey, 'ANTHROPIC_API_KEY'),
       this.settings.get(SETTING_KEYS.openaiApiKey, 'OPENAI_API_KEY'),
+      this.settings.get(SETTING_KEYS.geminiApiKey, 'GEMINI_API_KEY'),
     ]);
-    const provider = (prov || (anthropicKey ? 'anthropic' : openaiKey ? 'openai' : 'mock')) as 'mock' | 'anthropic' | 'openai';
-    const key = provider === 'anthropic' ? anthropicKey : provider === 'openai' ? openaiKey : '';
-    return { provider, model: model || (provider === 'anthropic' ? 'claude-sonnet-5' : provider === 'openai' ? 'gpt-4.1' : 'rules'), ready: provider === 'mock' || !!key, key, anthropicConfigured: !!anthropicKey, openaiConfigured: !!openaiKey, tasks: COMMAND_TASKS, actions: this.actions().map((a) => ({ action: a, desc: OPS_ACTIONS[a].desc, mutating: OPS_ACTIONS[a].mutating })) };
+    const provider = (prov || (anthropicKey ? 'anthropic' : openaiKey ? 'openai' : geminiKey ? 'gemini' : 'mock')) as 'mock' | 'anthropic' | 'openai' | 'gemini';
+    const key = provider === 'anthropic' ? anthropicKey : provider === 'openai' ? openaiKey : provider === 'gemini' ? geminiKey : '';
+    return { provider, model: model || (provider === 'anthropic' ? 'claude-sonnet-5' : provider === 'openai' ? 'gpt-4.1' : provider === 'gemini' ? 'gemini-2.5-pro' : 'rules'), ready: provider === 'mock' || !!key, key, anthropicConfigured: !!anthropicKey, openaiConfigured: !!openaiKey, geminiConfigured: !!geminiKey, tasks: COMMAND_TASKS, actions: this.actions().map((a) => ({ action: a, desc: OPS_ACTIONS[a].desc, mutating: OPS_ACTIONS[a].mutating })) };
   }
 
   /** 自動偵測供應商可用模型（用已存或傳入的金鑰；OpenAI 只列聊天／推理模型） */
   async listModels(provider: string, apiKey?: string): Promise<{ provider: string; models: { id: string; label: string }[]; default: string; error?: string }> {
-    const key = apiKey?.trim() || (provider === 'anthropic' ? await this.settings.get(SETTING_KEYS.anthropicApiKey, 'ANTHROPIC_API_KEY') : provider === 'openai' ? await this.settings.get(SETTING_KEYS.openaiApiKey, 'OPENAI_API_KEY') : '');
+    const key = apiKey?.trim() || (provider === 'anthropic' ? await this.settings.get(SETTING_KEYS.anthropicApiKey, 'ANTHROPIC_API_KEY') : provider === 'openai' ? await this.settings.get(SETTING_KEYS.openaiApiKey, 'OPENAI_API_KEY') : provider === 'gemini' ? await this.settings.get(SETTING_KEYS.geminiApiKey, 'GEMINI_API_KEY') : '');
     if (provider === 'mock') return { provider, models: [{ id: 'rules', label: '規則模式（不呼叫模型）' }], default: 'rules' };
-    const fallback = provider === 'anthropic' ? 'claude-sonnet-5' : 'gpt-4.1';
+    const fallback = provider === 'anthropic' ? 'claude-sonnet-5' : provider === 'gemini' ? 'gemini-2.5-pro' : 'gpt-4.1';
     if (!key) return { provider, models: [], default: fallback, error: '尚未設定金鑰' };
     try {
+      if (provider === 'gemini') {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=${encodeURIComponent(key)}`, { signal: AbortSignal.timeout(15_000) });
+        const j = (await res.json()) as { models?: { name: string; displayName?: string; supportedGenerationMethods?: string[] }[]; error?: { message?: string } };
+        if (!res.ok) return { provider, models: [], default: fallback, error: `Gemini ${res.status}：${j.error?.message ?? ''}` };
+        const models = (j.models ?? []).filter((m) => (m.supportedGenerationMethods ?? []).includes('generateContent') && /gemini/i.test(m.name) && !/image|embedding|tts|audio|live/i.test(m.name)).map((m) => ({ id: m.name.replace(/^models\//, ''), label: m.displayName ? `${m.displayName}（${m.name.replace(/^models\//, '')}）` : m.name.replace(/^models\//, '') }));
+        return { provider, models, default: models.find((m) => /2\.5-pro/.test(m.id))?.id ?? models[0]?.id ?? fallback };
+      }
       if (provider === 'anthropic') {
         const res = await fetch('https://api.anthropic.com/v1/models?limit=100', { headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' }, signal: AbortSignal.timeout(15_000) });
         const j = (await res.json()) as { data?: { id: string; display_name?: string; created_at?: string }[]; error?: { message?: string } };
@@ -149,6 +157,7 @@ export class CommandService {
     let reply = '';
     if (cfg.provider === 'mock') reply = await this.mock(message, exec);
     else if (cfg.provider === 'anthropic') reply = await this.anthropic(cfg, history, message, exec);
+    else if (cfg.provider === 'gemini') reply = await this.gemini(cfg, history, message, exec);
     else reply = await this.openai(cfg, history, message, exec);
     const token = pending.length ? this.sign(pending, actor) : undefined;
     return { reply: reply || (pending.length ? '我準備執行以下動作，請確認。' : '（沒有回覆）'), executed, pending, token, provider: cfg.provider, model: cfg.model };
@@ -215,6 +224,38 @@ export class CommandService {
       const results: Block[] = [];
       for (const u of uses) results.push({ type: 'tool_result', tool_use_id: u.id, content: JSON.stringify(await exec(u.name, u.input ?? {})).slice(0, 60_000) });
       messages.push({ role: 'user', content: results });
+    }
+    return reply;
+  }
+
+  /* ---------- Gemini generateContent（function calling） ---------- */
+  private async gemini(cfg: { key: string; model: string }, history: ChatTurn[], message: string, exec: (n: string, p: Record<string, unknown>) => Promise<unknown>) {
+    type Part = { text?: string; functionCall?: { name: string; args?: Record<string, unknown> }; functionResponse?: { name: string; response: Record<string, unknown> } };
+    const contents: { role: 'user' | 'model'; parts: Part[] }[] = [...history.map((h) => ({ role: (h.role === 'assistant' ? 'model' : 'user') as 'user' | 'model', parts: [{ text: h.text }] })), { role: 'user', parts: [{ text: message }] }];
+    const tools = [{ functionDeclarations: this.tools().map((t) => ({ name: t.name, description: t.description.slice(0, 1000), parameters: { type: 'OBJECT', properties: { params_json: { type: 'STRING', description: '參數以 JSON 字串傳入（依工具說明的參數名）' } } } })) }];
+    let reply = '';
+    for (let step = 0; step < 8; step++) {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cfg.model)}:generateContent?key=${encodeURIComponent(cfg.key)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ systemInstruction: { parts: [{ text: SYSTEM_PROMPT + '\n工具參數請放在 params_json（JSON 字串）。' }] }, contents, tools }), signal: AbortSignal.timeout(120_000) });
+      const j = (await res.json()) as { candidates?: { content?: { parts?: Part[] } }[]; error?: { message?: string } };
+      if (!res.ok) throw new BadRequestException(`Gemini ${res.status}：${j.error?.message ?? 'request failed'}`);
+      const parts = j.candidates?.[0]?.content?.parts ?? [];
+      reply = parts.filter((p) => p.text).map((p) => p.text).join('\n').trim() || reply;
+      const calls = parts.filter((p) => p.functionCall);
+      if (!calls.length) break;
+      contents.push({ role: 'model', parts });
+      const responses: Part[] = [];
+      for (const c of calls) {
+        let params: Record<string, unknown> = {};
+        const raw = c.functionCall!.args?.params_json;
+        try {
+          params = typeof raw === 'string' ? JSON.parse(raw) : ((c.functionCall!.args as Record<string, unknown>) ?? {});
+        } catch {
+          params = {};
+        }
+        const r = await exec(c.functionCall!.name, params);
+        responses.push({ functionResponse: { name: c.functionCall!.name, response: { result: JSON.stringify(r).slice(0, 60_000) } } });
+      }
+      contents.push({ role: 'user', parts: responses });
     }
     return reply;
   }

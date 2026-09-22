@@ -286,13 +286,15 @@ export class OpsService {
         const ai = await this.settings.ai();
         const size = ['1024x1024', '1536x1024', '1024x1536'].includes(String(p.size)) ? String(p.size) : (template?.defaultSize ?? '1024x1024');
         const quality = p.quality === 'high' ? 'high' : 'standard';
-        const provider = getProvider(ai.provider);
+        const provName = ['openai', 'gemini', 'mock'].includes(String(p.provider)) ? String(p.provider) : ai.provider;
+        if (provName !== 'mock' && !ai.keyFor(provName)) throw new Error(`尚未設定 ${provName === 'gemini' ? 'Gemini' : 'OpenAI'} 金鑰（產圖只支援 OpenAI／Gemini）`);
+        const provider = getProvider(provName);
         const refUrls = Array.isArray(p.referenceImages) ? (p.referenceImages as unknown[]).map(String).filter((u) => /^https?:\/\//.test(u)).slice(0, 4) : [];
         const referenceImages = (await Promise.all(refUrls.map((u) => this.storage.fetchAsset(u)))).filter((x): x is { bytes: Buffer; mime: string } => !!x);
-        const img = await provider.generate({ prompt, size, quality, apiKey: ai.openaiKey || undefined, model: ai.imageModel, referenceImages });
+        const img = await provider.generate({ prompt, size, quality, apiKey: ai.keyFor(provName) || undefined, model: p.model ? String(p.model) : provName === ai.provider ? ai.imageModel : undefined, referenceImages });
         const purpose = ['product', 'banner', 'illustration'].includes(String(p.purpose)) ? String(p.purpose) : 'illustration';
         const put = await this.storage.put(`ai/${purpose}/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}.${img.ext}`, img.bytes, img.mime);
-        return { url: put.url, provider: provider.name, size, quality, purpose, template: template?.key ?? null, referenceImages: referenceImages.length, bytes: img.bytes.length, costTwd: img.costTwd ?? null, note: provider.name === 'mock' ? 'mock 供應商（佔位圖）；到系統設定把 ai.provider 改為 openai 並填 openai.apiKey 才是真產圖' : undefined };
+        return { url: put.url, provider: provider.name, size, quality, purpose, template: template?.key ?? null, referenceImages: referenceImages.length, bytes: img.bytes.length, costTwd: img.costTwd ?? null, note: provider.name === 'mock' ? 'mock 供應商（佔位圖）；填 openai.apiKey 或 gemini.apiKey 才是真產圖（Claude 不產圖）' : undefined };
       }
       case 'update_shipping': {
         const orderNo = String(p.orderNo ?? p.merchantOrderNo ?? p.orderId ?? '');

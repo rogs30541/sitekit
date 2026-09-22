@@ -99,14 +99,17 @@ export class SettingsService {
     return { enabled: enabled === 'true', merchantId, hashKey, hashIv, apiUrl, configured: !!(merchantId && hashKey && hashIv) };
   }
 
-  /** AI 供應商：mock（本機）／openai；平台金鑰 openai.apiKey（機密）或 env OPENAI_API_KEY */
+  /** 產圖供應商：mock（本機）／openai／gemini（Claude 不產圖）；金鑰 openai.apiKey／gemini.apiKey 或 env */
   async ai() {
-    const [provider, openaiKey, imageModel] = await Promise.all([
-      this.get(SETTING_KEYS.aiProvider, 'AI_PROVIDER', 'mock'),
+    const [providerRaw, openaiKey, geminiKey, imageModel] = await Promise.all([
+      this.get(SETTING_KEYS.aiProvider, 'AI_PROVIDER', ''),
       this.get(SETTING_KEYS.openaiApiKey, 'OPENAI_API_KEY'),
-      this.get(SETTING_KEYS.aiImageModel, 'AI_IMAGE_MODEL', 'gpt-image-1'),
+      this.get(SETTING_KEYS.geminiApiKey, 'GEMINI_API_KEY'),
+      this.get(SETTING_KEYS.aiImageModel, 'AI_IMAGE_MODEL', ''),
     ]);
-    return { provider, openaiKey, imageModel, platformKeyConfigured: !!openaiKey };
+    const provider = providerRaw || (openaiKey ? 'openai' : geminiKey ? 'gemini' : 'mock');
+    const model = imageModel || (provider === 'gemini' ? 'gemini-2.5-flash-image' : 'gpt-image-1');
+    return { provider, openaiKey, geminiKey, imageModel: model, platformKeyConfigured: provider === 'gemini' ? !!geminiKey : !!openaiKey, keyFor: (p: string) => (p === 'gemini' ? geminiKey : p === 'openai' ? openaiKey : '') };
   }
 
   async bunny() {

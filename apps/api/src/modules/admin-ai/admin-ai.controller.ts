@@ -27,7 +27,7 @@ export class AdminAiController {
   @Get('command/config')
   async commandConfig() {
     const c = await this.command.config();
-    return { provider: c.provider, model: c.model, ready: c.ready, anthropicConfigured: c.anthropicConfigured, openaiConfigured: c.openaiConfigured, tasks: c.tasks, actions: c.actions };
+    return { provider: c.provider, model: c.model, ready: c.ready, anthropicConfigured: c.anthropicConfigured, openaiConfigured: c.openaiConfigured, geminiConfigured: c.geminiConfigured, tasks: c.tasks, actions: c.actions };
   }
 
   /** 自動偵測供應商可用模型（可先傳 apiKey 測試，不必先儲存） */

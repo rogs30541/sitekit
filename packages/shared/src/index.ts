@@ -137,6 +137,8 @@ export const SETTING_KEYS = {
   aiProvider: 'ai.provider',
   openaiApiKey: 'openai.apiKey',
   aiImageModel: 'ai.imageModel',
+  /** Gemini（文字指令台＋產圖） */
+  geminiApiKey: 'gemini.apiKey',
   /** AI 指令台（後台總控）：mock|anthropic|openai；模型；Anthropic 金鑰 */
   aiCommandProvider: 'ai.commandProvider',
   aiCommandModel: 'ai.commandModel',
@@ -196,7 +198,7 @@ export const OPS_ACTIONS = {
   list_courses: { desc: '列出課程（含未發布；slug、商品、章節數）', mutating: false },
   upsert_course: { desc: '以 slug 建立或更新線上課程（product{sku,name,price,description,coverUrl}、summary、isPublished、accessMode）', mutating: true },
   add_chapter: { desc: '為課程新增章節（courseSlug、title、body、videoProvider youtube|bunny、videoProviderId、isPreview、parentId）', mutating: true },
-  generate_image: { desc: 'AI 產圖（prompt；或 templateKey＋inputs{欄位key:值} 套用產圖模板；referenceImages[] 參考圖網址≤4；size 1024x1024|1536x1024|1024x1536、quality standard|high、purpose product|banner|illustration）→ 存到儲存空間回公開 url；會產生費用', mutating: true },
+  generate_image: { desc: 'AI 產圖（provider openai|gemini，Claude 不產圖；model 可指定；prompt；或 templateKey＋inputs{欄位key:值} 套用產圖模板；referenceImages[] 參考圖網址≤4；size 1024x1024|1536x1024|1024x1536、quality standard|high、purpose product|banner|illustration）→ 存到儲存空間回公開 url；會產生費用', mutating: true },
   get_tracking: { desc: '讀取網站層級追蹤設定（GTM／GA4／Meta Pixel／TikTok／LINE Tag／Google Ads／自訂 Head・Body 碼／購物車事件 JS）', mutating: false },
   set_tracking: { desc: '設定網站層級追蹤碼（套用到所有頁面；ga4、gtm、fbPixel、tiktok、lineTag、googleAdsId、googleAdsLabel、head、bodyTop、bodyBottom、events{pageView,viewContent,addToCart,initiateCheckout,purchase}）', mutating: true },
   list_sales_pages: { desc: '列出一頁式銷售頁（slug、標題、狀態、版本、是否有未發佈草稿）', mutating: false },

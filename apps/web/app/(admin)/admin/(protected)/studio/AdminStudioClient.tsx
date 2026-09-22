@@ -34,14 +34,12 @@ export interface AdminJob {
 const input = 'w-full rounded border px-2 py-1 text-xs';
 const EMPTY = { key: '', name: '', category: 'general', description: '', systemPrompt: '', inputFields: '[{ "key": "product_name", "label": "商品名稱", "type": "text", "required": true }, { "key": "reference_images", "label": "商品圖／服務圖", "type": "image" }]', defaultSize: '1024x1024', costPoints: 5, highCostPoints: 15, isActive: true, sortOrder: 100 };
 
-/** 模板 CRUD（systemPrompt 只在這裡看得到）、點數調整、任務與成本列表。 */
+/** 模板 CRUD（systemPrompt 只在這裡看得到）與任務列表。 */
 export function AdminStudioClient({ templates, jobs }: { templates: AdminTemplate[]; jobs: AdminJob[] }) {
   const router = useRouter();
   const [editing, setEditing] = useState<string | 'new' | null>(null);
   const [f, setF] = useState(EMPTY);
   const [msg, setMsg] = useState('');
-  const [credit, setCredit] = useState({ email: '', amount: 10, reason: '客服補點' });
-  const [creditMsg, setCreditMsg] = useState('');
 
   function open(t?: AdminTemplate) {
     setEditing(t ? t.id : 'new');
@@ -69,13 +67,6 @@ export function AdminStudioClient({ templates, jobs }: { templates: AdminTemplat
     await fetch(`/api/admin/studio/templates/${id}`, { method: 'DELETE' });
     router.refresh();
   }
-  async function adjust() {
-    setCreditMsg('');
-    const r = await fetch('/api/admin/credits/adjust', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: credit.email, amount: Number(credit.amount), reason: credit.reason }) });
-    const j = await r.json().catch(() => ({}));
-    setCreditMsg(r.ok ? `完成：${j.email} 可用 ${j.available} 點` : (j.message ?? `HTTP ${r.status}`));
-    router.refresh();
-  }
 
   return (
     <div className="space-y-6 text-xs">
@@ -92,7 +83,6 @@ export function AdminStudioClient({ templates, jobs }: { templates: AdminTemplat
               <th className="py-1">key</th>
               <th className="py-1">名稱</th>
               <th className="py-1">分類</th>
-              <th className="py-1">標準／印刷點數</th>
               <th className="py-1">狀態</th>
               <th className="py-1"></th>
             </tr>
@@ -103,9 +93,6 @@ export function AdminStudioClient({ templates, jobs }: { templates: AdminTemplat
                 <td className="py-1 font-mono">{t.key}</td>
                 <td className="py-1">{t.name}</td>
                 <td className="py-1">{t.category}</td>
-                <td className="py-1">
-                  {t.costPoints}／{t.highCostPoints}
-                </td>
                 <td className="py-1">{t.isActive ? '啟用' : '停用'}</td>
                 <td className="py-1">
                   <button onClick={() => open(t)} className="mr-2 underline">
@@ -154,14 +141,6 @@ export function AdminStudioClient({ templates, jobs }: { templates: AdminTemplat
               <textarea className={`${input} font-mono`} style={{ borderColor: 'var(--line)' }} rows={5} value={f.inputFields} onChange={(e) => setF({ ...f, inputFields: e.target.value })} />
             </label>
             <label>
-              標準點數
-              <input className={input} style={{ borderColor: 'var(--line)' }} type="number" min={0} value={f.costPoints} onChange={(e) => setF({ ...f, costPoints: Number(e.target.value) })} />
-            </label>
-            <label>
-              印刷點數
-              <input className={input} style={{ borderColor: 'var(--line)' }} type="number" min={0} value={f.highCostPoints} onChange={(e) => setF({ ...f, highCostPoints: Number(e.target.value) })} />
-            </label>
-            <label>
               排序
               <input className={input} style={{ borderColor: 'var(--line)' }} type="number" value={f.sortOrder} onChange={(e) => setF({ ...f, sortOrder: Number(e.target.value) })} />
             </label>
@@ -180,18 +159,6 @@ export function AdminStudioClient({ templates, jobs }: { templates: AdminTemplat
           </div>
         ) : null}
       </div>
-      <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
-        <p className="mb-2 text-sm font-semibold">點數調整（客服補點、活動贈點、沖正）</p>
-        <div className="flex flex-wrap items-center gap-2">
-          <input className="min-w-56 rounded border px-2 py-1" style={{ borderColor: 'var(--line)' }} placeholder="用戶 Email" value={credit.email} onChange={(e) => setCredit({ ...credit, email: e.target.value })} />
-          <input className="w-24 rounded border px-2 py-1" style={{ borderColor: 'var(--line)' }} type="number" value={credit.amount} onChange={(e) => setCredit({ ...credit, amount: Number(e.target.value) })} />
-          <input className="min-w-48 rounded border px-2 py-1" style={{ borderColor: 'var(--line)' }} placeholder="原因" value={credit.reason} onChange={(e) => setCredit({ ...credit, reason: e.target.value })} />
-          <button onClick={adjust} className="rounded bg-black px-3 py-1 text-white">
-            調整
-          </button>
-          <span style={{ color: 'var(--muted)' }}>{creditMsg}</span>
-        </div>
-      </div>
       <div>
         <p className="mb-2 text-sm font-semibold">最近任務</p>
         <table className="w-full text-left">
@@ -201,7 +168,6 @@ export function AdminStudioClient({ templates, jobs }: { templates: AdminTemplat
               <th className="py-1">用戶</th>
               <th className="py-1">模板</th>
               <th className="py-1">供應商</th>
-              <th className="py-1">點數</th>
               <th className="py-1">狀態</th>
             </tr>
           </thead>
@@ -213,9 +179,7 @@ export function AdminStudioClient({ templates, jobs }: { templates: AdminTemplat
                 <td className="py-1">{j.template?.name ?? '自由提示詞'}</td>
                 <td className="py-1">
                   {j.provider}
-                  {j.byok ? '（BYOK）' : ''}
                 </td>
-                <td className="py-1">{j.costPoints}</td>
                 <td className="py-1">
                   {j.status}
                   {j.error ? <span className="text-red-700"> {j.error}</span> : null}

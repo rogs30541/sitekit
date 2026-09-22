@@ -41,13 +41,14 @@ const line = { borderColor: 'var(--line)' } as const;
 export function ImageStudio({ templates }: { templates: AiTemplate[] }) {
   const [models, setModels] = useState<{ id: string; label: string }[]>([]);
   const [model, setModel] = useState('');
-  const [detect, setDetect] = useState<{ loading: boolean; error?: string; provider?: string }>({ loading: false });
+  const [detect, setDetect] = useState<{ loading: boolean; error?: string; providers?: string[] }>({ loading: false });
   const detectModels = async () => {
     setDetect({ loading: true });
     const j = await fetch('/api/admin/studio/models').then((r) => r.json()).catch(() => ({ models: [] }));
     setModels(j.models ?? []);
     setModel((cur) => (j.models?.some((m: { id: string }) => m.id === cur) ? cur : (j.default ?? '')));
-    setDetect({ loading: false, error: j.error, provider: j.provider });
+    const errs = Object.values((j.errors ?? {}) as Record<string, string>);
+    setDetect({ loading: false, error: errs.length ? errs.join('；') : undefined, providers: j.providers ?? [] });
   };
   useEffect(() => {
     void detectModels();
@@ -239,7 +240,7 @@ export function ImageStudio({ templates }: { templates: AiTemplate[] }) {
               <h2 className="text-sm font-bold">生成配置</h2>
               <p style={{ color: 'var(--muted)' }}>{tpl ? tpl.name : '自由提示詞'}</p>
             </div>
-            <span className="rounded bg-neutral-100 px-2 py-0.5">API 產圖・{detect.provider === 'openai' ? 'OpenAI' : detect.provider === 'mock' ? 'mock 佔位' : '…'}</span>
+            <span className="rounded bg-neutral-100 px-2 py-0.5">API 產圖・{(detect.providers ?? []).map((p) => (p === 'openai' ? 'OpenAI' : p === 'gemini' ? 'Gemini' : 'mock 佔位')).join('＋') || '…'}</span>
           </div>
           <div className="grid grid-cols-2 gap-1">
             <button type="button" onClick={() => setMode('generate')} className={`rounded px-2 py-1.5 ${mode === 'generate' ? 'bg-black text-white' : 'border'}`} style={mode === 'generate' ? undefined : line}>
@@ -335,7 +336,7 @@ export function ImageStudio({ templates }: { templates: AiTemplate[] }) {
               {showExample ? '隱藏範例參考' : '範例參考'}
             </button>
           ) : null}
-          <p style={{ color: 'var(--muted)' }}>產圖供應商與金鑰在「設定」（ai.provider＝mock 時為佔位圖）；模型清單依金鑰自動偵測。產出可用於商品封面、頁面設計與 Banner。</p>
+          <p style={{ color: 'var(--muted)' }}>API 產圖只支援 OpenAI 與 Gemini（Claude 不產圖）；到「指令台 → 設定」填金鑰後，模型清單自動偵測。產出可用於商品封面、頁面設計與 Banner。</p>
         </form>
       </div>
     </div>
