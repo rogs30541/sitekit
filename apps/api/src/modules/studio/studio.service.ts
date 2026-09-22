@@ -170,6 +170,51 @@ export class StudioService implements OnModuleInit {
     return job;
   }
 
+  /** 後台產圖：掛在系統帳號、不扣點（byok=true 走平台金鑰）；jobs.userId 需要 User，故建立／取用固定系統會員 */
+  private async systemUserId() {
+    const email = 'admin-studio@system.local';
+    const u = await this.prisma.user.findUnique({ where: { email } });
+    if (u) return u.id;
+    const c = await this.prisma.user.create({ data: { email, displayName: '後台工作站', passwordHash: null, role: 'admin' } });
+    return c.id;
+  }
+  async createAdminJob(input: unknown, actor: string) {
+    const d = parse(createJobInput, input);
+    const template = d.templateId ? await this.prisma.aiTemplate.findFirst({ where: { id: d.templateId, isActive: true } }) : null;
+    if (d.templateId && !template) throw new NotFoundException('template not found');
+    if (!template && !d.prompt) throw new BadRequestException('prompt is required');
+    for (const f of ((template?.inputFields as { key: string; label: string; type?: string; required?: boolean }[]) ?? [])) if (f.type !== 'image' && f.required && !d.inputs?.[f.key]?.trim()) throw new BadRequestException(`請填寫「${f.label}」`);
+    const refUrls: string[] = [];
+    for (const [i, img] of (d.images ?? []).entries()) {
+      if (/^https?:\/\//.test(img)) {
+        refUrls.push(img);
+        continue;
+      }
+      const m = img.match(/^data:(image\/[a-z+]+);base64,(.+)$/i);
+      if (!m) throw new BadRequestException('參考圖格式錯誤');
+      const bytes = Buffer.from(m[2], 'base64');
+      if (bytes.length > 10 * 1024 * 1024) throw new BadRequestException('參考圖每張上限 10MB');
+      const put = await this.storage.put(`ai/ref/${Date.now().toString(36)}-${i}-${Math.random().toString(36).slice(2, 7)}.${m[1].includes('png') ? 'png' : m[1].includes('webp') ? 'webp' : 'jpg'}`, bytes, m[1]);
+      refUrls.push(put.url);
+    }
+    const ai = await this.settings.ai();
+    const userId = await this.systemUserId();
+    const job = await this.prisma.aiJob.create({ data: { userId, kind: 'image', templateId: template?.id ?? null, prompt: d.prompt, inputs: { ...(d.inputs ?? {}), ...(refUrls.length ? { __images: refUrls } : {}), __actor: actor } as Prisma.InputJsonValue, quality: d.quality, size: d.size ?? template?.defaultSize ?? '1024x1024', provider: ai.provider, byok: true, costPoints: 0 } });
+    this.enqueue(job.id);
+    return job;
+  }
+  async adminJob(id: string) {
+    const j = await this.prisma.aiJob.findUnique({ where: { id }, include: { template: { select: { name: true } } } });
+    if (!j) throw new NotFoundException('job not found');
+    return j;
+  }
+  async cancelAdmin(id: string) {
+    const j = await this.prisma.aiJob.findUnique({ where: { id } });
+    if (!j) throw new NotFoundException('job not found');
+    if (j.status !== 'queued') throw new BadRequestException('只能取消排隊中的任務');
+    return this.prisma.aiJob.update({ where: { id }, data: { status: 'canceled', finishedAt: new Date() } });
+  }
+
   listMine(userId: string) {
     return this.prisma.aiJob.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 50, include: { template: { select: { name: true } } } });
   }

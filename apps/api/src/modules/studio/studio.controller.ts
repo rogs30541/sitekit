@@ -95,5 +95,21 @@ export class AdminStudioController {
   jobs(@Query('limit') limit = '100') {
     return this.studio.listAll(Number(limit) || 100);
   }
+
+  /** 後台產圖（不扣點、平台金鑰） */
+  @Post('jobs')
+  createJob(@Body() body: unknown, @Req() req: AuthedRequest) {
+    return this.studio.createAdminJob(body, req.session!.user.email);
+  }
+
+  @Get('jobs/:id')
+  job(@Param('id') id: string) {
+    return this.studio.adminJob(id);
+  }
+
+  @Post('jobs/:id/cancel')
+  cancelJob(@Param('id') id: string) {
+    return this.studio.cancelAdmin(id);
+  }
 }
 

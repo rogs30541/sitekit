@@ -52,7 +52,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
       { href: '/admin/course-reports', label: '課程報表' },
     ],
   },
-  { key: 'ai', label: 'AI 工作站', items: [{ href: '/admin/studio', label: 'AI 工作站' }] },
+  { key: 'ai', label: 'AI 工作站', items: [{ href: '/admin/studio', label: 'AI 工作站', desc: '指令台／產圖／模板與任務管理（前台無工作站）' }] },
   {
     key: 'system',
     label: '系統功能',

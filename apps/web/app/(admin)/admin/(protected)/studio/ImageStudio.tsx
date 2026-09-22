@@ -1,7 +1,6 @@
 'use client';
 
 import { fmtDateTime } from '@/lib/api-public';
-import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 export interface AiTemplate {
@@ -43,7 +42,10 @@ const line = { borderColor: 'var(--line)' } as const;
 /**
  * 工作站（對標 inShow generate）：上方模板庫（封面卡＋搜尋）→ 左「生成記錄」→ 右「生成配置」（生成／微調、標準／高品質、欄位、參考圖、必填提醒、範例參考）。
  */
-export function StudioClient({ templates, credits: initialCredits, byok }: { templates: AiTemplate[]; credits: CreditBalance; byok: boolean }) {
+/** 後台產圖工作站：走 /api/admin/studio/jobs（不扣點、平台金鑰） */
+export function ImageStudio({ templates }: { templates: AiTemplate[] }) {
+  const byok = true;
+  const initialCredits: CreditBalance = { stored: 0, reserved: 0, available: 0 };
   const [tpl, setTpl] = useState<AiTemplate | null>(templates[0] ?? null);
   const [q, setQ] = useState('');
   const [mode, setMode] = useState<'generate' | 'refine'>('generate');
@@ -67,9 +69,9 @@ export function StudioClient({ templates, credits: initialCredits, byok }: { tem
   const needsImage = mode === 'refine' && !images.length;
 
   async function refresh() {
-    const [j, c] = await Promise.all([fetch('/api/studio/jobs').then((r) => (r.ok ? r.json() : [])), fetch('/api/credits/me').then((r) => (r.ok ? r.json() : null))]);
+    const j = await fetch('/api/admin/studio/jobs?limit=60').then((r) => (r.ok ? r.json() : []));
     setJobs(j);
-    if (c) setCredits(c);
+    setCredits(initialCredits);
   }
   useEffect(() => {
     void refresh();
@@ -106,7 +108,7 @@ export function StudioClient({ templates, credits: initialCredits, byok }: { tem
     if (needsImage) return setError('微調模式請先上傳參考圖');
     setBusy(true);
     setError('');
-    const r = await fetch('/api/studio/jobs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ templateId: tpl?.id ?? null, prompt, inputs, quality, images }) });
+    const r = await fetch('/api/admin/studio/jobs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ templateId: tpl?.id ?? null, prompt, inputs, quality, images }) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) setError(typeof j.message === 'string' ? j.message : JSON.stringify(j.message ?? j));
     else {
@@ -182,7 +184,7 @@ export function StudioClient({ templates, credits: initialCredits, byok }: { tem
                   {j.error ? <p className="text-red-700">{j.error}</p> : null}
                   <div className="mt-1 flex gap-2">
                     {j.status === 'queued' ? (
-                      <button onClick={() => fetch(`/api/studio/jobs/${j.id}/cancel`, { method: 'POST' }).then(refresh)} className="rounded border px-2 py-0.5" style={line}>
+                      <button onClick={() => fetch(`/api/admin/studio/jobs/${j.id}/cancel`, { method: 'POST' }).then(refresh)} className="rounded border px-2 py-0.5" style={line}>
                         取消（不扣點）
                       </button>
                     ) : null}
@@ -236,7 +238,7 @@ export function StudioClient({ templates, credits: initialCredits, byok }: { tem
               <h2 className="text-sm font-bold">生成配置</h2>
               <p style={{ color: 'var(--muted)' }}>{tpl ? tpl.name : '自由提示詞'}</p>
             </div>
-            <span className={`rounded px-2 py-0.5 ${byok ? 'bg-amber-100 text-amber-800' : 'bg-neutral-100'}`}>{byok ? 'BYOK・不扣點' : `可用 ${credits.available} 點`}</span>
+            <span className={`rounded px-2 py-0.5 ${byok ? 'bg-amber-100 text-amber-800' : 'bg-neutral-100'}`}>後台產圖・不扣點（平台金鑰）</span>
           </div>
           <div className="grid grid-cols-2 gap-1">
             <button type="button" onClick={() => setMode('generate')} className={`rounded px-2 py-1.5 ${mode === 'generate' ? 'bg-black text-white' : 'border'}`} style={mode === 'generate' ? undefined : line}>
@@ -316,11 +318,7 @@ export function StudioClient({ templates, credits: initialCredits, byok }: { tem
               {showExample ? '隱藏範例參考' : '範例參考'}
             </button>
           ) : null}
-          <p style={{ color: 'var(--muted)' }}>
-            <Link href="/member" className="underline">
-              點數明細與自帶金鑰（BYOK）
-            </Link>
-          </p>
+          <p style={{ color: 'var(--muted)' }}>產圖供應商與金鑰在「設定」（ai.provider＝mock 時為佔位圖）。產出可用於商品封面、頁面設計與 Banner。</p>
         </form>
       </div>
     </div>

@@ -63,9 +63,6 @@ export default async function MemberPage() {
         </dl>
         <div className="mt-4 flex gap-2">
           <LogoutButton />
-          <Link href="/studio" className="rounded border px-3 py-1 text-xs" style={{ borderColor: 'var(--line)' }}>
-            AI 工作站
-          </Link>
         </div>
         <ProfileForm displayName={u.displayName ?? ''} />
       </Section>
