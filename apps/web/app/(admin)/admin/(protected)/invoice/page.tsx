@@ -12,7 +12,7 @@ export default async function AdminInvoicePage() {
     <Section title="電子發票設定">
       <p className="mb-3 text-xs" style={{ color: 'var(--muted)' }}>
         <Link href="/admin" className="underline">
-          回總覽
+          回後台首頁
         </Link>
         {' · 結帳時買家可選：個人（Email 載具）／手機條碼／自然人憑證／公司統編／捐贈；付款成功自動開立（或改為人工在訂單頁開立），退款自動作廢。也可由 MCP issue_invoice／invalidate_invoice／list_invoices 操作。'}
       </p>

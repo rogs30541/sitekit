@@ -12,7 +12,7 @@ export default async function AdminPaymentsPage() {
     <Section title="金流設定" group="(admin)">
       <p className="mb-3 text-xs" style={{ color: 'var(--muted)' }}>
         <Link href="/admin" className="underline">
-          回總覽
+          回後台首頁
         </Link>
         {' · '}
         <Link href="/admin/orders" className="underline">

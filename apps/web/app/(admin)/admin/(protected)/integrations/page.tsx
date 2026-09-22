@@ -12,7 +12,7 @@ export default async function AdminIntegrationsPage() {
     <Section title="儲存與通知" group="(admin)">
       <p className="mb-3 text-xs" style={{ color: 'var(--muted)' }}>
         <Link href="/admin" className="underline">
-          回總覽
+          回後台首頁
         </Link>
         {' · 同樣可由 MCP 的 sitekit_update_settings／sitekit_send_test_notification 操作'}
       </p>

@@ -30,7 +30,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
         </Link>
         {' · '}
         <Link href="/admin" className="underline">
-          回總覽
+          回後台首頁
         </Link>
       </p>
       <table className="w-full text-left text-xs">

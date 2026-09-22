@@ -19,7 +19,7 @@ export default async function AdminCoursesPage() {
     <Section title="課程管理" group="(admin)">
       <p className="mb-3 text-xs">
         <Link href="/admin" className="underline">
-          回總覽
+          回後台首頁
         </Link>
       </p>
       <table className="w-full text-left text-xs">

@@ -14,7 +14,7 @@ export default async function AdminSitePage() {
       <Section title="網站設定">
         <p className="mb-3 text-xs" style={{ color: 'var(--muted)' }}>
           <Link href="/admin" className="underline">
-            回總覽
+            回後台首頁
           </Link>
           {' · 選單請到 '}
           <Link href="/admin/menu" className="underline">

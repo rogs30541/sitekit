@@ -56,7 +56,7 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
           下載對帳檔 CSV
         </a>
         <Link href="/admin" className="underline">
-          回總覽
+          回後台首頁
         </Link>
       </form>
       {s ? (

@@ -41,7 +41,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     key: 'system',
     label: '系統功能',
     items: [
-      { href: '/admin', label: '總覽' },
+      { href: '/admin/system', label: '系統設定', desc: '總覽數字／AI API 路徑／維運稽核' },
       { href: '/admin/integrations', label: '儲存與通知' },
       { href: '/admin/accounts', label: '管理員' },
     ],
@@ -50,8 +50,8 @@ export const ADMIN_NAV: AdminNavGroup[] = [
 
 const groupOf = (pathname: string, search: string) => {
   const full = pathname + search;
-  for (const g of ADMIN_NAV) for (const i of g.items) if (i.href !== '/admin' && full.startsWith(i.href.split('?')[0]) && (!i.href.includes('?') || full.includes(i.href.split('?')[1]))) return g.key;
-  return pathname === '/admin' ? 'system' : '';
+  for (const g of ADMIN_NAV) for (const i of g.items) if (full.startsWith(i.href.split('?')[0]) && (!i.href.includes('?') || full.includes(i.href.split('?')[1]))) return g.key;
+  return '';
 };
 
 export function AdminNav() {
@@ -87,7 +87,7 @@ export function AdminNav() {
           {open === g.key ? (
             <div onMouseLeave={() => setOpen(null)} className="absolute left-0 z-30 mt-1 min-w-52 rounded-lg border p-1.5 shadow-lg" style={{ borderColor: 'var(--line)', background: 'var(--card)' }}>
               {g.items.map((i) => {
-                const cur = (pathname + search).startsWith(i.href.split('?')[0]) && (!i.href.includes('?') || search.includes(i.href.split('?')[1])) && (i.href !== '/admin' || pathname === '/admin');
+                const cur = (pathname + search).startsWith(i.href.split('?')[0]) && (!i.href.includes('?') || search.includes(i.href.split('?')[1]));
                 return (
                   <Link key={i.href} href={i.href} className={`block rounded px-2 py-1.5 text-xs hover:bg-neutral-100 ${cur ? 'font-bold' : ''}`}>
                     {i.label}

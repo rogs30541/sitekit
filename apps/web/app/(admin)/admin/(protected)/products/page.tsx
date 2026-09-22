@@ -11,7 +11,7 @@ export default async function AdminProductsPage() {
     <Section title="商品管理" group="(admin)">
       <p className="mb-3 text-xs" style={{ color: 'var(--muted)' }}>
         <Link href="/admin" className="underline">
-          回總覽
+          回後台首頁
         </Link>
         {' · 課程請到 '}
         <Link href="/admin/courses" className="underline">

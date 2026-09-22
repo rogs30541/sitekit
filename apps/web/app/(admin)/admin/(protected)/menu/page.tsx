@@ -14,7 +14,7 @@ export default async function AdminMenuPage({ searchParams }: { searchParams: Pr
     <Section title={location === 'footer' ? '頁尾選單' : '網站架構與主選單'}>
       <p className="mb-3 text-xs" style={{ color: 'var(--muted)' }}>
         <Link href="/admin" className="underline">
-          回總覽
+          回後台首頁
         </Link>
         {' · '}
         <Link href="/admin/menu" className={`underline ${location === 'header' ? 'font-bold' : ''}`}>

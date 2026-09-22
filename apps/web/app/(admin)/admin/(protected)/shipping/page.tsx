@@ -12,7 +12,7 @@ export default async function AdminShippingPage() {
     <Section title="物流設定">
       <p className="mb-3 text-xs" style={{ color: 'var(--muted)' }}>
         <Link href="/admin" className="underline">
-          回總覽
+          回後台首頁
         </Link>
         {' · 超商取貨與宅配走綠界物流（C2C 店到店／黑貓／宅配通）；狀態通知網址：<site.url>/api/logistics/ecpay/notify、門市選擇回傳：/api/logistics/ecpay/map-reply。也可由 MCP update_settings 設定。'}
       </p>

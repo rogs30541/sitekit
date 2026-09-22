@@ -40,7 +40,7 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 ## P9 網站 CMS 與頁面設計器（2026-09-22，v0.8.0）
 
-- **後台五大分類選單**（`components/AdminNav.tsx`）：網站（頁面設計／文章／網站架構／網站設定）、電商（商品／訂單／折扣碼／報表／金流／物流／發票）、課程、AI 工作站、系統功能（總覽／儲存與通知／管理員）；點擊或滑入展開，所在分類高亮。AI 工作站只在後台，前台預設導覽與網站架構「系統路徑」已移除 `/studio`。
+- **後台五大分類選單**（`components/AdminNav.tsx`）：網站（頁面設計／文章／網站架構／網站設定）、電商（商品／訂單／折扣碼／報表／金流／物流／發票）、課程、AI 工作站、系統功能（系統設定＝原總覽數字＋AI API 路徑＋維運稽核，`/admin/system`／儲存與通知／管理員）；`/admin` 首頁改為五大分類入口；點擊或滑入展開，所在分類高亮。AI 工作站只在後台，前台預設導覽與網站架構「系統路徑」已移除 `/studio`。
 - **防呆發佈流程（所有內容一體適用，含 OPS／MCP）**：
   1. **一律先存草稿**：`ContentDraft`（每個內容一份）。後台工作台自動儲存（1.5 秒），API `PUT /api/admin/content/:id/draft`；OPS `upsert_content` 也只寫草稿（`status` 只接受 draft|archived）。線上 `Content` 完全不動。
   2. **沙盒預覽與測試**：`POST /api/admin/content/:id/preview-token` → `/preview/<id>?token=`（HMAC，2 小時有效，可交給測試者，不需登入，noindex），頂部黃色橫幅標示草稿與線上版本；發佈前檢測 `lintDesign`（error：圖片無網址／嵌入網址無效／按鈕無文字／HTML 含 script／頁面空白 → 阻擋；warn：空文字、無 alt、按鈕無連結 → 提示）。

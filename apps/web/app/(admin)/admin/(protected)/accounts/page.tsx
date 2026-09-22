@@ -13,7 +13,7 @@ export default async function AdminAccountsPage() {
     <Section title="管理員帳號" group="(admin)">
       <p className="mb-3 text-xs" style={{ color: 'var(--muted)' }}>
         <Link href="/admin" className="underline">
-          回總覽
+          回後台首頁
         </Link>
         {' · 後台帳號與前台會員分離；也可由 MCP create_admin／update_admin／delete_admin 操作'}
       </p>
