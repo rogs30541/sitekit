@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { uploadImage, UPLOAD_LIMIT_LABEL } from '@/lib/upload-image';
 import type { HomeSection } from '@/lib/site';
 
 export interface SiteAdmin {
@@ -30,6 +31,32 @@ export function SiteSettingsForm({ fields }: { fields: SiteAdmin['fields'] }) {
             {f.label}
             {f.key === 'brand.footerText' || f.key === 'brand.description' ? (
               <textarea className="w-full rounded border px-2 py-1 text-sm" style={{ borderColor: 'var(--line)' }} rows={2} placeholder={f.placeholder} value={values[f.key] ?? ''} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />
+            ) : f.key === 'brand.logoUrl' ? (
+              <span className="flex flex-wrap items-center gap-2">
+                <input className="min-w-0 flex-1 rounded border px-2 py-1 text-sm" style={{ borderColor: 'var(--line)' }} type="text" placeholder={f.placeholder || '貼上圖片網址，或按右側上傳'} value={values[f.key] ?? ''} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />
+                <label className="cursor-pointer rounded border px-2 py-1" style={{ borderColor: 'var(--line)' }}>
+                  上傳圖片（≤{UPLOAD_LIMIT_LABEL}）
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = '';
+                      if (!file) return;
+                      setMsg('上傳中…');
+                      try {
+                        const url = await uploadImage(file);
+                        setValues((v) => ({ ...v, [f.key]: url }));
+                        setMsg('Logo 已上傳，記得按「儲存」。');
+                      } catch (err) {
+                        setMsg(err instanceof Error ? err.message : '上傳失敗');
+                      }
+                    }}
+                  />
+                </label>
+                {values[f.key] ? <img src={values[f.key]} alt="" className="h-8 max-w-[8rem] object-contain" /> : null}
+              </span>
             ) : (
               <input className="w-full rounded border px-2 py-1 text-sm" style={{ borderColor: 'var(--line)' }} type={f.key === 'brand.primaryColor' ? 'text' : 'text'} placeholder={f.placeholder} value={values[f.key] ?? ''} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />
             )}

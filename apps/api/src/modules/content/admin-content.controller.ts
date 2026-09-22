@@ -17,6 +17,8 @@ const contentInput = z.object({
   status: z.enum(['draft', 'published', 'archived']).optional(),
   publishedAt: z.string().datetime().nullable().optional(),
 });
+/** 後台圖片上傳上限（Logo／封面／編輯器圖片）；前端 lib/upload-image.ts 同值先擋 */
+export const UPLOAD_MAX_BYTES = 1024 * 1024;
 const uploadInput = z.object({ filename: z.string().max(200).optional(), contentType: z.string().regex(/^image\//), dataBase64: z.string().min(1) });
 
 /** 後台內容編輯器 API：官網頁面（type=page）與文章（type=post）的 CRUD；source=admin。 */
@@ -86,12 +88,12 @@ export class AdminContentController {
     return { deleted: c.slug };
   }
 
-  /** 編輯器圖片上傳（JSON base64，≤5MB）：存到 StorageService（local／R2），回公開網址。 */
+  /** 編輯器圖片上傳（JSON base64，≤1MB；使用者 2026-09-23 指定）：存到 StorageService（local／R2），回公開網址。 */
   @Post('upload')
   async upload(@Body() body: unknown) {
     const d = uploadInput.parse(body);
     const bytes = Buffer.from(d.dataBase64.replace(/^data:[^;]+;base64,/, ''), 'base64');
-    if (!bytes.length || bytes.length > 5 * 1024 * 1024) throw new BadRequestException('image must be 1 byte – 5MB');
+    if (!bytes.length || bytes.length > UPLOAD_MAX_BYTES) throw new BadRequestException(`圖片需 1MB 以內（目前 ${(bytes.length / 1024 / 1024).toFixed(2)} MB）`);
     const key = `uploads/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.${extFromMime(d.contentType)}`;
     return this.storage.put(key, bytes, d.contentType);
   }

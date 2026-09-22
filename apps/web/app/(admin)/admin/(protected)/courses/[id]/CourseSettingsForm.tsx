@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { VideoUrlField, type ResolvedVideo } from './VideoUrlField';
+import { checkUploadSize } from '@/lib/upload-image';
 
 export interface AdminCourse {
   id: string;
@@ -30,6 +31,7 @@ const toLocalInput = (iso: string | null | undefined) => (iso ? new Date(new Dat
 const fromLocal = (v: string) => (v ? new Date(v).toISOString() : null);
 
 async function uploadImage(file: File): Promise<string> {
+  checkUploadSize(file);
   const dataBase64 = await new Promise<string>((res, rej) => {
     const fr = new FileReader();
     fr.onload = () => res(String(fr.result));

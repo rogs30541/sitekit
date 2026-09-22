@@ -37,6 +37,14 @@ const line = { borderColor: 'var(--line)' } as const;
 /**
  * 工作站（對標 inShow generate）：上方模板庫（封面卡＋搜尋）→ 左「生成記錄」→ 右「生成配置」（生成／微調、標準／高品質、欄位、參考圖、必填提醒、範例參考）。
  */
+type GalleryView = 'row' | 'two' | 'three' | 'list';
+const GALLERY_VIEWS: { key: GalleryView; label: string; hint: string }[] = [
+  { key: 'row', label: '單列', hint: '一列橫向捲動' },
+  { key: 'two', label: '兩列', hint: '兩欄卡片' },
+  { key: 'three', label: '三列', hint: '三欄卡片' },
+  { key: 'list', label: '清單', hint: '縮圖＋文字清單' },
+];
+
 /** API 產圖工作站（inShow 版面）：模板庫／生成記錄／生成配置；模型自動偵測後在此選擇，不顯示點數。 */
 export function ImageStudio({ templates }: { templates: AiTemplate[] }) {
   const [models, setModels] = useState<{ id: string; label: string }[]>([]);
@@ -65,6 +73,20 @@ export function ImageStudio({ templates }: { templates: AiTemplate[] }) {
   const [error, setError] = useState('');
   const [showExample, setShowExample] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(true);
+  /** 模板庫預覽版型（使用者 2026-09-23 指定四種）；記在 localStorage 只是個人偏好 */
+  const [view, setView] = useState<GalleryView>('row');
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem('sk.studio.galleryView') as GalleryView | null;
+      if (v && GALLERY_VIEWS.some((x) => x.key === v)) setView(v);
+    } catch {}
+  }, []);
+  const changeView = (v: GalleryView) => {
+    setView(v);
+    try {
+      localStorage.setItem('sk.studio.galleryView', v);
+    } catch {}
+  };
 
   const filtered = useMemo(() => {
     const k = q.trim().toLowerCase();
@@ -138,28 +160,58 @@ export function ImageStudio({ templates }: { templates: AiTemplate[] }) {
           <button type="button" onClick={() => pick(null)} className={`rounded border px-2 py-1 text-xs ${!tpl ? 'bg-black text-white' : ''}`} style={line}>
             自由提示詞
           </button>
-          <button type="button" onClick={() => setGalleryOpen((o) => !o)} className="ml-auto rounded border px-2 py-1 text-xs" style={line}>
-            {galleryOpen ? '收合' : '展開'}
-          </button>
+          <span className="ml-auto flex items-center gap-1 text-xs">
+            {GALLERY_VIEWS.map((v) => (
+              <button key={v.key} type="button" onClick={() => changeView(v.key)} className={`rounded border px-2 py-1 ${view === v.key ? 'bg-black text-white' : ''}`} style={view === v.key ? undefined : line} title={v.hint}>
+                {v.label}
+              </button>
+            ))}
+            <button type="button" onClick={() => setGalleryOpen((o) => !o)} className="rounded border px-2 py-1" style={line}>
+              {galleryOpen ? '收合' : '展開'}
+            </button>
+          </span>
         </div>
         {galleryOpen ? (
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            {filtered.map((t) => (
-              <article key={t.id} className={`w-40 shrink-0 cursor-pointer rounded-lg border ${tpl?.id === t.id ? 'ring-2 ring-black' : ''}`} style={line} onClick={() => pick(t)}>
-                {t.coverUrl ? <img src={t.coverUrl} alt="" className="aspect-[3/4] w-full rounded-t-lg object-cover" /> : <div className="aspect-[3/4] w-full rounded-t-lg bg-neutral-100" />}
-                <div className="p-2 text-xs">
-                  <div style={{ color: 'var(--muted)' }}>{t.category}</div>
-                  <div className="font-semibold">{t.name.replace(/^[A-E]\d{2} /, '')}</div>
-                  <div className="line-clamp-2" style={{ color: 'var(--muted)' }}>
-                    {t.description?.split('（')[0]}
+          <div className={view === 'row' ? 'flex gap-3 overflow-x-auto pb-2' : view === 'two' ? 'grid grid-cols-2 gap-3' : view === 'three' ? 'grid grid-cols-2 gap-3 sm:grid-cols-3' : 'flex flex-col gap-2'}>
+            {filtered.map((t) => {
+              const ratio = t.defaultSize === '1024x1024' ? '1:1' : t.defaultSize === '1536x1024' ? '3:2' : '2:3';
+              const title = t.name.replace(/^[A-E]\d{2} /, '');
+              const desc = t.description?.split('（')[0];
+              const selected = tpl?.id === t.id ? 'ring-2 ring-black' : '';
+              if (view === 'list')
+                return (
+                  <article key={t.id} className={`flex cursor-pointer items-center gap-3 rounded-lg border p-2 text-xs ${selected}`} style={line} onClick={() => pick(t)}>
+                    {t.coverUrl ? <img src={t.coverUrl} alt="" className="h-16 w-12 shrink-0 rounded object-cover" /> : <div className="h-16 w-12 shrink-0 rounded bg-neutral-100" />}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-semibold">{title}</span>
+                        <span style={{ color: 'var(--muted)' }}>{t.category}</span>
+                        <span className="rounded bg-neutral-100 px-1">{ratio}</span>
+                      </div>
+                      <div className="truncate" style={{ color: 'var(--muted)' }}>
+                        {desc}
+                      </div>
+                    </div>
+                    <span className="shrink-0 underline">檢視</span>
+                  </article>
+                );
+              return (
+                <article key={t.id} className={`cursor-pointer rounded-lg border ${view === 'row' ? 'w-40 shrink-0' : 'w-full'} ${selected}`} style={line} onClick={() => pick(t)}>
+                  {t.coverUrl ? <img src={t.coverUrl} alt="" className="aspect-[3/4] w-full rounded-t-lg object-cover" /> : <div className="aspect-[3/4] w-full rounded-t-lg bg-neutral-100" />}
+                  <div className="p-2 text-xs">
+                    <div style={{ color: 'var(--muted)' }}>{t.category}</div>
+                    <div className="font-semibold">{title}</div>
+                    <div className="line-clamp-2" style={{ color: 'var(--muted)' }}>
+                      {desc}
+                    </div>
+                    <div className="mt-1 flex items-center justify-between">
+                      <span className="rounded bg-neutral-100 px-1">{ratio}</span>
+                      <span className="underline">檢視</span>
+                    </div>
                   </div>
-                  <div className="mt-1 flex items-center justify-between">
-                    <span className="rounded bg-neutral-100 px-1">{t.defaultSize === '1024x1024' ? '1:1' : t.defaultSize === '1536x1024' ? '3:2' : '2:3'}</span>
-                    <span className="underline">檢視</span>
-                  </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
             {!filtered.length ? <p className="text-xs" style={{ color: 'var(--muted)' }}>沒有符合的模板。</p> : null}
           </div>
         ) : null}

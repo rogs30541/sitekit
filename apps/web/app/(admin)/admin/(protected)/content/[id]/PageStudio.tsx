@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BLOCK_MAP, designFromHtml, emptyDesign, renderDesignDocument, type DesignDoc, type LintIssue } from '@sitekit/shared';
 import { DesignEditor } from './DesignEditor';
+import { checkUploadSize } from '@/lib/upload-image';
 
 export interface DraftPayload {
   content: { id: string; type: string; title: string; slug: string; status: 'draft' | 'published' | 'archived'; version: number; hasDesign: boolean; publishedAt: string | null; updatedAt: string; url: string };
@@ -39,6 +40,7 @@ const TOOLS: { label: string; cmd: string; arg?: string; title: string }[] = [
 ];
 
 async function uploadImage(file: File): Promise<string> {
+  checkUploadSize(file);
   const dataBase64 = await new Promise<string>((res, rej) => {
     const fr = new FileReader();
     fr.onload = () => res(String(fr.result));

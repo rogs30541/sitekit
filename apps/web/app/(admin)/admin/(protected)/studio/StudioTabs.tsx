@@ -4,11 +4,10 @@ import { useState } from 'react';
 
 const TABS = [
   { key: 'command', label: '指令台' },
-  { key: 'images', label: 'API 產圖' },
   { key: 'manage', label: '模板與任務管理' },
 ] as const;
 
-export function StudioTabs({ command, images, manage }: { command: React.ReactNode; images: React.ReactNode; manage: React.ReactNode }) {
+export function StudioTabs({ command, manage }: { command: React.ReactNode; manage: React.ReactNode }) {
   const [tab, setTab] = useState<(typeof TABS)[number]['key']>('command');
   return (
     <div className="space-y-3">
@@ -20,7 +19,6 @@ export function StudioTabs({ command, images, manage }: { command: React.ReactNo
         ))}
       </div>
       <div className={tab === 'command' ? '' : 'hidden'}>{command}</div>
-      <div className={tab === 'images' ? '' : 'hidden'}>{images}</div>
       <div className={tab === 'manage' ? '' : 'hidden'}>{manage}</div>
     </div>
   );

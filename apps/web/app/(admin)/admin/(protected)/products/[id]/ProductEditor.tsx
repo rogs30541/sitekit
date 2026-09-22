@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { checkUploadSize } from '@/lib/upload-image';
 
 export interface Variant {
   id?: string;
@@ -37,6 +38,7 @@ const input = 'w-full rounded border px-2 py-1 text-sm';
 const line = { borderColor: 'var(--line)' } as const;
 
 async function uploadImage(file: File): Promise<string> {
+  checkUploadSize(file);
   const dataBase64 = await new Promise<string>((res, rej) => {
     const fr = new FileReader();
     fr.onload = () => res(String(fr.result));
