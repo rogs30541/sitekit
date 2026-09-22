@@ -56,6 +56,7 @@ export class PaymentsService {
     }
     const methods = await this.methods();
     if (!methods.length) throw new BadRequestException('payment provider is not configured');
+    if (order.shippingMethod?.startsWith('NWP_') && (wanted ?? methods[0].id) !== 'newebpay') throw new BadRequestException('藍新超商取貨的訂單需以藍新金流付款');
     const provider = (wanted && methods.some((m) => m.id === wanted) ? wanted : methods[0].id) as Exclude<PaymentProvider, 'none'>;
     if (wanted && wanted !== provider) throw new BadRequestException(`payment method ${wanted} is not available`);
 

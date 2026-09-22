@@ -6,10 +6,11 @@ import { INVOICE_STATUS_LABELS, INVOICE_TYPE_LABELS } from '@sitekit/shared';
 import { fmtDateTime, twd } from '@/lib/api-public';
 
 export interface InvoiceConfig {
-  provider: 'none' | 'ezpay' | 'ecpay';
+  provider: 'none' | 'ezpay' | 'ecpay' | 'amego';
   timing: 'paid' | 'manual';
   ezpay: { ready: boolean; merchantId: string; testMode: boolean };
   ecpay: { ready: boolean; merchantId: string; testMode: boolean };
+  amego: { ready: boolean; taxId: string; testMode: boolean };
 }
 export interface InvoiceRow {
   id: string;
@@ -31,6 +32,7 @@ export function InvoiceSettingsForm({ cfg, rows }: { cfg: InvoiceConfig; rows: I
   const [ecTest, setEcTest] = useState(cfg.ecpay.testMode);
   const [ez, setEz] = useState({ merchantId: '', hashKey: '', hashIv: '' });
   const [ec, setEc] = useState({ merchantId: '', hashKey: '', hashIv: '' });
+  const [am, setAm] = useState({ taxId: '', appKey: '' });
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -43,11 +45,14 @@ export function InvoiceSettingsForm({ cfg, rows }: { cfg: InvoiceConfig; rows: I
     if (ec.merchantId.trim()) settings['ecpayInvoice.merchantId'] = ec.merchantId.trim();
     if (ec.hashKey.trim()) settings['ecpayInvoice.hashKey'] = ec.hashKey.trim();
     if (ec.hashIv.trim()) settings['ecpayInvoice.hashIv'] = ec.hashIv.trim();
+    if (am.taxId.trim()) settings['amego.taxId'] = am.taxId.trim();
+    if (am.appKey.trim()) settings['amego.appKey'] = am.appKey.trim();
     const r = await fetch('/api/admin/ai/act', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'update_settings', params: { settings } }) });
     const j = await r.json().catch(() => ({}));
     setMsg(j.ok ? '已儲存發票設定。' : `失敗：${j.error ?? r.status}`);
     setEz({ merchantId: '', hashKey: '', hashIv: '' });
     setEc({ merchantId: '', hashKey: '', hashIv: '' });
+    setAm({ taxId: '', appKey: '' });
     setBusy(false);
     router.refresh();
   }
@@ -82,6 +87,7 @@ export function InvoiceSettingsForm({ cfg, rows }: { cfg: InvoiceConfig; rows: I
           <option value="none">不開立</option>
           <option value="ezpay">藍新 ezPay 電子發票</option>
           <option value="ecpay">綠界電子發票</option>
+          <option value="amego">光貿電子發票加值中心</option>
         </select>
         <span className="font-semibold">開立時機</span>
         <select value={timing} onChange={(e) => setTiming(e.target.value as 'paid' | 'manual')} className="rounded border px-2 py-1" style={{ borderColor: 'var(--line)' }}>
@@ -110,6 +116,26 @@ export function InvoiceSettingsForm({ cfg, rows }: { cfg: InvoiceConfig; rows: I
           </label>
         </div>
         <Creds v={ec} set={setEc} ready={cfg.ecpay.ready} />
+      </div>
+      <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="font-semibold">光貿電子發票（Amego）</span>
+          <span className={`rounded px-2 py-0.5 text-xs ${cfg.amego.ready ? 'bg-green-100 text-green-800' : 'bg-neutral-100'}`}>{cfg.amego.ready ? (cfg.amego.testMode ? '已設定（測試公司）' : '已設定') : '未設定'}</span>
+          {cfg.amego.taxId ? <span className="font-mono text-xs">{cfg.amego.taxId}</span> : null}
+          <span className="ml-auto text-xs" style={{ color: 'var(--muted)' }}>
+            測試與正式同一 API 網址；填測試公司統編與 App Key 即為測試
+          </span>
+        </div>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          <label className="block text-xs">
+            公司統一編號
+            <input className={input} style={{ borderColor: 'var(--line)' }} autoComplete="off" value={am.taxId} onChange={(e) => setAm({ ...am, taxId: e.target.value.replace(/\D/g, '').slice(0, 8) })} placeholder={cfg.amego.taxId || '8 碼'} />
+          </label>
+          <label className="block text-xs">
+            App Key（光貿後台 → 基本資料 → 公司資料 → API 資訊）
+            <input className={input} style={{ borderColor: 'var(--line)' }} type="password" autoComplete="off" value={am.appKey} onChange={(e) => setAm({ ...am, appKey: e.target.value })} placeholder={cfg.amego.ready ? '（已設定，留空不變）' : ''} />
+          </label>
+        </div>
       </div>
       <div className="flex items-center gap-3">
         <button onClick={save} disabled={busy} className="rounded bg-black px-4 py-2 text-white disabled:opacity-50">
@@ -144,7 +170,7 @@ export function InvoiceSettingsForm({ cfg, rows }: { cfg: InvoiceConfig; rows: I
                 </td>
                 <td className="py-1">{twd(r.amount)}</td>
                 <td className="py-1">
-                  {INVOICE_STATUS_LABELS[r.status] ?? r.status}（{r.provider === 'ezpay' ? 'ezPay' : '綠界'}）
+                  {INVOICE_STATUS_LABELS[r.status] ?? r.status}（{r.provider === 'ezpay' ? 'ezPay' : r.provider === 'amego' ? '光貿' : '綠界'}）
                 </td>
                 <td className="py-1">{fmtDateTime(r.createdAt)}</td>
                 <td className="py-1">

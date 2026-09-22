@@ -129,6 +129,12 @@ export function CartClient() {
   }, [lines, applied, authed, shipMethod, storeToken]);
 
   const current = shipMethods.find((m) => m.id === shipMethod);
+  // 藍新超商取貨：寄貨單需同訂單編號的藍新金流交易 → 只能用藍新付款
+  const nwpShip = shipMethod.startsWith('NWP_');
+  const payMethods = nwpShip ? methods.filter((m) => m.id === 'newebpay') : methods;
+  useEffect(() => {
+    if (payMethods.length && !payMethods.some((m) => m.id === method)) setMethod(payMethods[0].id);
+  }, [payMethods, method]);
   const needsShipping = quote?.needsShipping ?? lines.some((l) => products[l.productId]?.type === 'physical');
 
   async function pickStore() {
@@ -348,9 +354,11 @@ export function CartClient() {
             </div>
           </dl>
         ) : null}
-        {methods.length > 1 ? (
+        {nwpShip && !payMethods.length ? <p className="text-sm text-red-600">藍新超商取貨需啟用藍新金流付款</p> : null}
+        {nwpShip && payMethods.length ? <p className="text-xs" style={{ color: 'var(--muted)' }}>藍新超商取貨僅能以藍新金流付款</p> : null}
+        {payMethods.length > 1 ? (
           <select value={method} onChange={(e) => setMethod(e.target.value)} className={input} style={{ borderColor: 'var(--line)' }} aria-label="付款方式">
-            {methods.map((m) => (
+            {payMethods.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.label}
                 {m.testMode ? '（測試）' : ''}
@@ -358,7 +366,7 @@ export function CartClient() {
             ))}
           </select>
         ) : null}
-        <button onClick={submit} disabled={busy || !quote || authed !== true || (needsShipping && current?.kind === 'cvs' && !store)} className="w-full rounded bg-black px-4 py-2 text-white disabled:opacity-50">
+        <button onClick={submit} disabled={busy || !quote || authed !== true || (needsShipping && current?.kind === 'cvs' && !store) || (nwpShip && !payMethods.length)} className="w-full rounded bg-black px-4 py-2 text-white disabled:opacity-50">
           {busy ? '前往付款…' : '結帳'}
         </button>
         {error ? <p className="text-xs text-red-700">{error}</p> : null}

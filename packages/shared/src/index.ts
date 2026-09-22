@@ -116,6 +116,8 @@ export const SETTING_KEYS = {
   ecpayInvoiceHashKey: 'ecpayInvoice.hashKey',
   ecpayInvoiceHashIv: 'ecpayInvoice.hashIv',
   ecpayInvoiceTestMode: 'ecpayInvoice.testMode',
+  amegoTaxId: 'amego.taxId',
+  amegoAppKey: 'amego.appKey',
   googleClientId: 'google.clientId',
   googleClientSecret: 'google.clientSecret',
   lineLoginChannelId: 'line.loginChannelId',
@@ -171,7 +173,7 @@ export const SHIPPING_LABELS: Record<ShippingStatus, string> = { pending: '待�
 export const COUPON_TYPES = ['percent', 'fixed'] as const;
 
 /** 配送方式（綠界物流子類型＋自行配送） */
-export const LOGISTICS_METHOD_LABELS = { manual: '自行配送／宅配', UNIMARTC2C: '7-ELEVEN 超商取貨', FAMIC2C: '全家超商取貨', HILIFEC2C: '萊爾富超商取貨', OKMARTC2C: 'OK 超商取貨', TCAT: '黑貓宅急便', ECAN: '宅配通' } as const;
+export const LOGISTICS_METHOD_LABELS = { manual: '自行配送／宅配', UNIMARTC2C: '7-ELEVEN 超商取貨（綠界）', FAMIC2C: '全家超商取貨（綠界）', HILIFEC2C: '萊爾富超商取貨（綠界）', OKMARTC2C: 'OK 超商取貨（綠界）', TCAT: '黑貓宅急便（綠界）', ECAN: '宅配通（綠界）', NWP_UNIMART: '7-ELEVEN 超商取貨（藍新）', NWP_FAMILY: '全家超商取貨（藍新）', NWP_HILIFE: '萊爾富超商取貨（藍新）', NWP_OK: 'OK 超商取貨（藍新）' } as const;
 export type LogisticsMethodId = keyof typeof LOGISTICS_METHOD_LABELS;
 /** 發票類型 */
 export const INVOICE_TYPE_LABELS: Record<string, string> = { personal: '個人（Email／會員載具）', mobile: '手機條碼載具', citizen: '自然人憑證', company: '公司統編（三聯式）', donate: '捐贈' };
@@ -182,7 +184,7 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = { pending: '待�
 export const REFUND_STATUS_LABELS: Record<string, string> = { requested: '申請中', rejected: '已駁回', done: '已退款' };
 export const ROLE_LABELS: Record<Role, string> = { user: '會員', admin: '管理員', superadmin: '超級管理員' };
 export const PAYMENT_TYPE_LABELS: Record<string, string> = { CREDIT: '信用卡', VACC: 'ATM 轉帳', CVS: '超商代碼', BARCODE: '超商條碼', WEBATM: 'WebATM', LINEPAY: 'LINE Pay', Credit_CreditCard: '信用卡', ATM: 'ATM 轉帳', CARD: '信用卡', ACCT: '支付連帳戶', AFTEE: '先享後付' };
-export const PROVIDER_LABELS: Record<string, string> = { ...PAYMENT_METHOD_LABELS, free: '免費', manual: '人工核帳', unknown: '未知' };
+export const PROVIDER_LABELS: Record<string, string> = { ...PAYMENT_METHOD_LABELS, free: '免費', manual: '人工核帳', unknown: '未知', amego: '光貿', ezpay: 'ezPay', ecpay: '綠界' };
 export const QUESTION_STATUS_LABELS: Record<string, string> = { open: '待回覆', answered: '已回覆', hidden: '已隱藏' };
 export const CONTENT_STATUS_LABELS: Record<string, string> = { draft: '草稿', published: '已發布', archived: '封存' };
 export const CONTENT_SOURCE_LABELS: Record<string, string> = { admin: '後台編輯', wordpress: 'WordPress 搬運', csv: 'CSV 匯入', seed: '示範資料' };

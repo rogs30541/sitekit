@@ -36,6 +36,11 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 - **電子發票**（`/admin/invoice`）：供應商＝不開立／藍新 ezPay（測試 cinv）／綠界電子發票（測試 einvoice-stage，AES-128-CBC JSON API）；開立時機＝付款成功自動或人工；結帳可選個人（Email 載具）／手機條碼／自然人憑證／公司統編＋抬頭（三聯式 B2B）／捐贈愛心碼，格式伺服器驗證；訂單頁開立／作廢、發票紀錄列表；退款自動作廢；MCP `issue_invoice`／`invalidate_invoice`／`list_invoices`。
 - 驗證：綠界物流簽章、回呼、地圖 token、託運單表單與 ezPay 請求格式（測試環境實際回應「取得商店申請資格失敗」＝請求格式正確、需真實商店）皆以本機 E2E 覆蓋；綠界發票僅驗加解密往返，**待各家測試商店參數實測**。
 
+### v0.7.1（2026-09-22）藍新物流＋光貿電子發票
+- **藍新物流**（物流服務 NDNSv1.0.0，店到店 C2C）：物流商可選「綠界／藍新／綠界＋藍新」；藍新沿用金流商店參數（`newebpay.*`，不另填）；配送方式新增 `NWP_UNIMART`／`NWP_FAMILY`／`NWP_HILIFE`／`NWP_OK`（7-ELEVEN／全家／萊爾富／OK 藍新超商取貨）。門市地圖 `storeMap`（前景表單，`UID_`＋`EncryptData_`＋`HashData_`）→ `POST /api/logistics/newebpay/map-reply` 驗 HashData 解密 → 同一套門市簽章 token 回購物車；建立寄貨單 `createShipment`（TradeType 3 取貨不付款）＋`getShipmentNo` 取寄件代碼；`printLabel` 列印；貨態通知 `POST /api/logistics/newebpay/notify`（RetId 對映 pending／shipped／delivered／returned）。**限制**：藍新寄貨單必須對應同訂單編號的藍新金流交易 → 藍新超商取貨的訂單只能以藍新付款（結帳頁自動只留藍新、API 亦擋）。
+- **光貿電子發票（Amego）**：`invoice.provider=amego`，設定 `amego.taxId`／`amego.appKey`（測試與正式同網址 `invoice-api.amego.tw`；用測試公司統編 `12345678`＋文件公開 App Key 即為測試）；簽章 `md5(data+time+AppKey)`；開立 `/json/f0401`（B2C 載具 3J0002 手機／CQ0001 自然人／amego 會員 Email、捐贈 NPOBAN、統編三聯式含 5% 稅額拆算）、作廢 `/json/f0501`。**已對光貿測試環境實測開立＋作廢成功**（本機 E2E `LIVE_AMEGO=1`）。
+- 本機 E2E：`local-p12-e2e.mjs` 29 項全過（藍新物流表單／map-reply／貨態通知／付款限制；光貿設定／簽章／實測開立作廢）。
+
 ## P7 品牌外觀與首頁版面（2026-09-21，v0.6.0）
 
 - **網站設定**（`/admin/site`）：品牌名稱／網站名稱／描述／標語／Logo／主色／聯絡 Email、電話、地址／社群連結／頁尾文字／OG 分享圖／GA 評估 ID 全部走 settings（`brand.*`、`seo.*`，MCP `update_settings` 可改）；前台 root layout 讀 `GET /api/content/site`（品牌＋主選單＋頁尾選單＋首頁區塊，ISR 60 秒），標題／描述／OG／favicon／GA／主色（`--accent`）自動套用；`BRAND` 常數只剩後備。

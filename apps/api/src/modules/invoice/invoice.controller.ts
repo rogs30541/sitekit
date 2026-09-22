@@ -14,7 +14,7 @@ export class AdminInvoiceController {
   @Get('config')
   async config() {
     const c = await this.invoice.config();
-    return { provider: c.provider, timing: c.timing, ezpay: { ready: c.ezpay.ready, merchantId: c.ezpay.merchantId, testMode: c.ezpay.testMode }, ecpay: { ready: c.ecpay.ready, merchantId: c.ecpay.merchantId, testMode: c.ecpay.testMode } };
+    return { provider: c.provider, timing: c.timing, ezpay: { ready: c.ezpay.ready, merchantId: c.ezpay.merchantId, testMode: c.ezpay.testMode }, ecpay: { ready: c.ecpay.ready, merchantId: c.ecpay.merchantId, testMode: c.ecpay.testMode }, amego: { ready: c.amego.ready, taxId: c.amego.taxId, testMode: c.amego.testMode } };
   }
 
   @Get()

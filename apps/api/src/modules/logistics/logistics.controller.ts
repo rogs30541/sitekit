@@ -33,6 +33,19 @@ export class LogisticsController {
     return s ?? { error: 'invalid' };
   }
 
+  /** 藍新門市地圖選完 POST 回來 → 303 回購物車 */
+  @Post('newebpay/map-reply')
+  async nwpMapReply(@Body() body: Record<string, unknown>, @Res() res: Response) {
+    res.redirect(303, await this.logistics.nwpMapReply(body ?? {}));
+  }
+
+  /** 藍新貨態即時通知 */
+  @Post('newebpay/notify')
+  @HttpCode(200)
+  nwpNotify(@Body() body: Record<string, unknown>) {
+    return this.logistics.nwpNotify(body ?? {});
+  }
+
   /** 綠界物流狀態通知 */
   @Post('ecpay/notify')
   @HttpCode(200)
@@ -49,7 +62,7 @@ export class AdminLogisticsController {
   @Get('config')
   async config() {
     const c = await this.logistics.config();
-    return { provider: c.provider, ecpayReady: c.ecpayReady, merchantId: c.merchantId, testMode: c.testMode, methods: c.methods, sender: c.sender, manualFee: c.manualFee, freeOver: c.freeOver, fees: c.fees };
+    return { provider: c.provider, ecpayReady: c.ecpayReady, newebpayReady: c.nwp.ready, newebpayMerchantId: c.nwp.merchantId, merchantId: c.merchantId, testMode: c.testMode, methods: c.methods, sender: c.sender, manualFee: c.manualFee, freeOver: c.freeOver, fees: c.fees };
   }
 
   @Post('orders/:idOrNo/create')

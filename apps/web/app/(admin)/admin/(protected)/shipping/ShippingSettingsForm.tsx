@@ -7,6 +7,8 @@ import { LOGISTICS_METHOD_LABELS } from '@sitekit/shared';
 export interface LogisticsConfig {
   provider: string;
   ecpayReady: boolean;
+  newebpayReady: boolean;
+  newebpayMerchantId: string;
   merchantId: string;
   testMode: boolean;
   methods: string[];
@@ -20,7 +22,7 @@ const METHODS = Object.keys(LOGISTICS_METHOD_LABELS) as (keyof typeof LOGISTICS_
 
 export function ShippingSettingsForm({ cfg }: { cfg: LogisticsConfig }) {
   const router = useRouter();
-  const [provider, setProvider] = useState(cfg.provider === 'ecpay' ? 'ecpay' : 'none');
+  const [provider, setProvider] = useState(['ecpay', 'newebpay', 'both'].includes(cfg.provider) ? cfg.provider : 'none');
   const [testMode, setTestMode] = useState(cfg.testMode);
   const [methods, setMethods] = useState<string[]>(cfg.methods);
   const [fees, setFees] = useState<Record<string, string>>(Object.fromEntries(METHODS.map((m) => [m, String(cfg.fees[m] ?? (m === 'manual' ? cfg.manualFee : ''))])));
@@ -64,7 +66,10 @@ export function ShippingSettingsForm({ cfg }: { cfg: LogisticsConfig }) {
           <select value={provider} onChange={(e) => setProvider(e.target.value)} className="rounded border px-2 py-1" style={{ borderColor: 'var(--line)' }}>
             <option value="none">不串接（自行配送）</option>
             <option value="ecpay">綠界物流</option>
+            <option value="newebpay">藍新物流（沿用金流商店參數）</option>
+            <option value="both">綠界＋藍新</option>
           </select>
+          <span className={`rounded px-2 py-0.5 text-xs ${cfg.newebpayReady ? 'bg-green-100 text-green-800' : 'bg-neutral-100'}`}>{cfg.newebpayReady ? `藍新已設定 ${cfg.newebpayMerchantId}` : '藍新未設定（到「金流」填藍新商店參數）'}</span>
           <span className={`rounded px-2 py-0.5 text-xs ${cfg.ecpayReady ? 'bg-green-100 text-green-800' : 'bg-neutral-100'}`}>{cfg.ecpayReady ? '綠界已設定' : '綠界未設定'}</span>
           {cfg.merchantId ? <span className="font-mono text-xs">{cfg.merchantId}</span> : null}
           <label className="ml-auto flex items-center gap-1 text-xs">
@@ -95,7 +100,8 @@ export function ShippingSettingsForm({ cfg }: { cfg: LogisticsConfig }) {
                 <td className="py-1">
                   <label className="flex items-center gap-2">
                     <input type="checkbox" checked={methods.includes(m)} onChange={() => toggle(m)} /> {LOGISTICS_METHOD_LABELS[m]}
-                    {m !== 'manual' && provider !== 'ecpay' ? <span style={{ color: 'var(--muted)' }}>（需綠界物流）</span> : null}
+                    {m.startsWith('NWP_') && provider !== 'newebpay' && provider !== 'both' ? <span style={{ color: 'var(--muted)' }}>（需啟用藍新物流；買家須以藍新金流付款）</span> : null}
+                    {m !== 'manual' && !m.startsWith('NWP_') && provider !== 'ecpay' && provider !== 'both' ? <span style={{ color: 'var(--muted)' }}>（需綠界物流）</span> : null}
                   </label>
                 </td>
                 <td className="py-1">
