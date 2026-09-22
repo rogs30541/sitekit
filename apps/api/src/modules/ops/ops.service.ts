@@ -22,6 +22,7 @@ import { DesignService } from '../content/design.service';
 import { getProvider } from '../studio/providers';
 import { composeTemplatePrompt, StudioService } from '../studio/studio.service';
 import { SalesService } from '../sales/sales.service';
+import { MembersService } from '../admin/members.service';
 
 const SECRET_KEY = /secret|key|token|password|hashiv|hash_iv|signing/i;
 const SECRET_PARAM = /^(password|apiKey)$/i;
@@ -51,6 +52,7 @@ export class OpsService {
     private readonly design: DesignService,
     private readonly studio: StudioService,
     private readonly sales: SalesService,
+    private readonly members: MembersService,
   ) {}
 
   listActions() {
@@ -411,6 +413,12 @@ export class OpsService {
         return this.design.exportDesign(String(p.idOrSlug ?? p.slug ?? p.id ?? ''));
       case 'create_admin':
         return this.admins.create(p);
+      case 'list_members':
+        return this.members.list({ q: p.q ? String(p.q) : undefined, tag: p.tag ? String(p.tag) : undefined, limit: p.limit ? Number(p.limit) : undefined });
+      case 'delete_member': {
+        if (Array.isArray(p.ids)) return this.members.removeMany(p.ids.map(String), actor);
+        return this.members.remove(String(p.idOrEmail ?? p.email ?? p.id ?? ''), actor);
+      }
       case 'list_admins':
         return this.admins.list();
       case 'update_admin': {

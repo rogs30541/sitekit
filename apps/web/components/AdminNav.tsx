@@ -10,7 +10,7 @@ export interface AdminNavGroup {
   items: { href: string; label: string; desc?: string }[];
 }
 
-/** 後台五大分類選單：網站／電商／課程／AI 工作站／系統功能（點擊展開；目前頁面所在分類高亮） */
+/** 後台大分類選單：網站／帳務／電商／課程／會員資料庫／AI 工作站／系統功能（點擊展開；目前頁面所在分類高亮） */
 export const ADMIN_NAV: AdminNavGroup[] = [
   {
     key: 'site',
@@ -52,6 +52,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
       { href: '/admin/course-reports', label: '課程報表' },
     ],
   },
+  { key: 'members', label: '會員資料庫', items: [{ href: '/admin/members', label: '會員資料庫', desc: '前台會員名單；電商客戶／課程學員自動標籤；可刪減' }] },
   { key: 'ai', label: 'AI 工作站', items: [{ href: '/admin/studio', label: 'AI 工作站', desc: '指令台／產圖／模板與任務管理（前台無工作站）' }] },
   {
     key: 'system',

@@ -184,6 +184,8 @@ export const OPS_ACTIONS = {
   import_page_design: { desc: '匯入設計文件 JSON（design doc 或 blocks 陣列）建立／更新頁面草稿；不會自動發佈', mutating: true },
   export_page_design: { desc: '匯出頁面設計文件 JSON（草稿優先，否則線上版）', mutating: false },
   create_admin: { desc: '建立後台管理員（email、password ≥8、role admin|superadmin；後台帳號與前台會員分離）', mutating: true },
+  list_members: { desc: '會員資料庫：列出前台會員（q 關鍵字、tag shop|course|both|none、limit）；每筆含 tags（shop＝電商客戶、course＝課程學員，兩者皆有＝兩個標籤）、電商訂單數、課程數', mutating: false },
+  delete_member: { desc: '刪除會員（idOrEmail 或 ids 陣列）；有訂單／點數紀錄者改為匿名化停用（保留訂單），無交易者直接刪除', mutating: true },
   list_admins: { desc: '列出後台管理員', mutating: false },
   update_admin: { desc: '修改管理員（idOrEmail；password／displayName／role／status active|suspended）', mutating: true },
   delete_admin: { desc: '刪除管理員（idOrEmail；不可刪最後一位 superadmin）', mutating: true },
@@ -229,6 +231,9 @@ export const INVOICE_STATUS_LABELS: Record<string, string> = { issued: '已開�
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = { pending: '待付款', paid: '已付款', failed: '付款失敗', refunded: '已退款', canceled: '已取消' };
 export const REFUND_STATUS_LABELS: Record<string, string> = { requested: '申請中', rejected: '已駁回', done: '已退款' };
 export const ROLE_LABELS: Record<Role, string> = { user: '會員', admin: '管理員', superadmin: '超級管理員' };
+/** 會員資料庫標籤：依實際交易自動標記（可同時具有兩種） */
+export type MemberTag = 'shop' | 'course';
+export const MEMBER_TAG_LABELS: Record<MemberTag, string> = { shop: '電商客戶', course: '課程學員' };
 export const PAYMENT_TYPE_LABELS: Record<string, string> = { CREDIT: '信用卡', VACC: 'ATM 轉帳', CVS: '超商代碼', BARCODE: '超商條碼', WEBATM: 'WebATM', LINEPAY: 'LINE Pay', Credit_CreditCard: '信用卡', ATM: 'ATM 轉帳', CARD: '信用卡', ACCT: '支付連帳戶', AFTEE: '先享後付' };
 export const PROVIDER_LABELS: Record<string, string> = { ...PAYMENT_METHOD_LABELS, free: '免費', manual: '人工核帳', unknown: '未知', amego: '光貿', ezpay: 'ezPay', ecpay: '綠界' };
 export const QUESTION_STATUS_LABELS: Record<string, string> = { open: '待回覆', answered: '已回覆', hidden: '已隱藏' };

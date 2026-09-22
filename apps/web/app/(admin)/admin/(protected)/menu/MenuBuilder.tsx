@@ -120,11 +120,14 @@ export function MenuBuilder({ initial, pages, location = 'header' }: { initial: 
   const dropHandlers = (targetKey: string | null, where: 'before' | 'after' | 'child' | 'end') => ({
     onDragOver: (e: React.DragEvent) => {
       e.preventDefault();
-      setOver({ key: targetKey, where });
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'move';
+      if (over?.key !== targetKey || over.where !== where) setOver({ key: targetKey, where });
     },
     onDragLeave: () => setOver(null),
     onDrop: (e: React.DragEvent) => {
       e.preventDefault();
+      e.stopPropagation();
       setOver(null);
       if (drag) place(drag, targetKey, where);
       setDrag(null);
@@ -164,12 +167,76 @@ export function MenuBuilder({ initial, pages, location = 'header' }: { initial: 
   }
 
   const isOver = (key: string | null, where: string) => over?.key === key && over.where === where;
-  const Row = ({ n, depth }: { n: Node; depth: number }) => (
-    <li>
+  /** 同層上下移動（拖曳之外的鍵盤／點按替代） */
+  const move = (key: string, dir: -1 | 1) =>
+    setTree((t) => {
+      const swap = (list: Node[]) => {
+        const i = list.findIndex((n) => n.key === key);
+        if (i < 0 || i + dir < 0 || i + dir >= list.length) return null;
+        const out = [...list];
+        [out[i], out[i + dir]] = [out[i + dir], out[i]];
+        return out;
+      };
+      const top = swap(t);
+      if (top) return top;
+      return t.map((n) => {
+        const kids = swap(n.children);
+        return kids ? { ...n, children: kids } : n;
+      });
+    });
+  /** 整列都是放置區：依滑鼠在列的上／下半決定插到前或後（主選單列的右側 1/4 且拖入者無子項＝成為子選單） */
+  const rowDrop = (n: Node, depth: number) => ({
+    onDragOver: (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const r = e.currentTarget.getBoundingClientRect();
+      const where: 'before' | 'after' | 'child' = depth === 0 && e.clientX > r.left + r.width * 0.75 && !n.children.length && !(drag?.type === 'node' && drag.key === n.key) ? 'child' : e.clientY < r.top + r.height / 2 ? 'before' : 'after';
+      if (over?.key !== n.key || over.where !== where) setOver({ key: n.key, where });
+    },
+    onDragLeave: (e: React.DragEvent<HTMLDivElement>) => {
+      if (!e.currentTarget.contains(e.relatedTarget as globalThis.Node | null)) setOver(null);
+    },
+    onDrop: (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      const w = over?.key === n.key ? over.where : 'after';
+      setOver(null);
+      if (drag) place(drag, n.key, w);
+      setDrag(null);
+    },
+  });
+  // 注意：列以函式呼叫（renderRow）而非內嵌元件渲染——內嵌元件每次 setState 都會重建型別導致整列 remount，拖曳中來源被卸載＝拖曳立即中斷（曾造成「拖不動」）。
+  const renderRow = (n: Node, depth: number): React.ReactNode => (
+    <li key={n.key}>
       <div className={`h-1 rounded ${isOver(n.key, 'before') ? 'bg-black' : ''}`} {...dropHandlers(n.key, 'before')} />
-      <div className={`flex flex-wrap items-center gap-1 rounded border px-2 py-1 text-xs ${drag?.type === 'node' && drag.key === n.key ? 'opacity-40' : ''}`} style={{ borderColor: 'var(--line)', marginLeft: depth * 24, background: 'var(--card)' }}>
-        <span draggable onDragStart={() => setDrag({ type: 'node', key: n.key })} onDragEnd={() => setDrag(null)} className="cursor-grab select-none text-base leading-none" title="拖曳排序" style={{ color: 'var(--muted)' }}>
+      <div
+        className={`flex flex-wrap items-center gap-1 rounded border px-2 py-1 text-xs ${drag?.type === 'node' && drag.key === n.key ? 'opacity-40' : ''} ${isOver(n.key, 'child') ? 'ring-2 ring-black' : ''}`}
+        style={{ borderColor: 'var(--line)', marginLeft: depth * 24, background: 'var(--card)', boxShadow: isOver(n.key, 'before') ? 'inset 0 3px 0 #000' : isOver(n.key, 'after') ? 'inset 0 -3px 0 #000' : undefined }}
+        {...rowDrop(n, depth)}
+      >
+        <span
+          draggable
+          onDragStart={(e) => {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', n.key);
+            setDrag({ type: 'node', key: n.key });
+          }}
+          onDragEnd={() => {
+            setDrag(null);
+            setOver(null);
+          }}
+          className="cursor-grab select-none text-base leading-none"
+          title="拖曳排序（整列可放置：上半＝放前面、下半＝放後面、主選單列右側＝成為子選單）"
+          style={{ color: 'var(--muted)' }}
+        >
           ⋮⋮
+        </span>
+        <span className="flex flex-col leading-none">
+          <button type="button" onClick={() => move(n.key, -1)} className="px-0.5 text-[10px]" title="上移" style={{ color: 'var(--muted)' }}>
+            ▲
+          </button>
+          <button type="button" onClick={() => move(n.key, 1)} className="px-0.5 text-[10px]" title="下移" style={{ color: 'var(--muted)' }}>
+            ▼
+          </button>
         </span>
         <input value={n.label} onChange={(e) => update(n.key, { label: e.target.value })} className="w-32 rounded border px-1 py-0.5" style={{ borderColor: 'var(--line)' }} />
         <span style={{ color: 'var(--muted)' }}>{n.kind === 'page' ? `頁面：${pages.find((p) => p.id === n.contentId)?.title ?? '（已刪除）'}` : n.kind === 'route' ? `路徑：${n.href}` : '外部連結'}</span>
@@ -193,19 +260,24 @@ export function MenuBuilder({ initial, pages, location = 'header' }: { initial: 
           </button>
         )}
       </div>
-      {n.children.length ? (
-        <ul className="mt-1 space-y-1">
-          {n.children.map((c) => (
-            <Row key={c.key} n={c} depth={depth + 1} />
-          ))}
-        </ul>
-      ) : null}
+      {n.children.length ? <ul className="mt-1 space-y-1">{n.children.map((c) => renderRow(c, depth + 1))}</ul> : null}
       <div className={`h-1 rounded ${isOver(n.key, 'after') ? 'bg-black' : ''}`} {...dropHandlers(n.key, 'after')} />
     </li>
   );
 
   const Source = ({ node, label, hint, disabled }: { node: Omit<Node, 'key' | 'children'>; label: string; hint?: string; disabled?: boolean }) => (
-    <li className={`flex items-center gap-2 rounded border px-2 py-1 text-xs ${disabled ? 'opacity-40' : ''}`} style={{ borderColor: 'var(--line)' }} draggable={!disabled} onDragStart={() => !disabled && setDrag({ type: 'new', node })} onDragEnd={() => setDrag(null)}>
+    <li
+      className={`flex items-center gap-2 rounded border px-2 py-1 text-xs ${disabled ? 'opacity-40' : ''}`}
+      style={{ borderColor: 'var(--line)' }}
+      draggable={!disabled}
+      onDragStart={(e) => {
+        if (disabled) return;
+        e.dataTransfer.effectAllowed = 'copyMove';
+        e.dataTransfer.setData('text/plain', label);
+        setDrag({ type: 'new', node });
+      }}
+      onDragEnd={() => setDrag(null)}
+    >
       <span className="cursor-grab" style={{ color: 'var(--muted)' }}>
         ⋮⋮
       </span>
@@ -268,9 +340,7 @@ export function MenuBuilder({ initial, pages, location = 'header' }: { initial: 
       <div>
         <p className="mb-1 text-sm font-semibold">網站架構樹（前台導覽）</p>
         <ul className="space-y-1 rounded-lg border p-3" style={{ borderColor: 'var(--line)', minHeight: '12rem' }}>
-          {tree.map((n) => (
-            <Row key={n.key} n={n} depth={0} />
-          ))}
+          {tree.map((n) => renderRow(n, 0))}
           <li className={`rounded border border-dashed p-2 text-center text-xs ${isOver(null, 'end') ? 'bg-neutral-100' : ''}`} style={{ borderColor: 'var(--line)', color: 'var(--muted)' }} {...dropHandlers(null, 'end')}>
             {tree.length ? '拖到這裡加到最後' : '把左側項目拖進來，或按「加入」；留空則前台用預設導覽'}
           </li>

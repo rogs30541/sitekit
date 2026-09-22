@@ -10,7 +10,7 @@ export default function RegisterPage() {
   return (
     <Section title="註冊" group="(account)">
       <p className="mb-3 text-xs" style={{ color: 'var(--muted)' }}>
-        第一位註冊者會自動成為超級管理員。
+        註冊成為本站會員（購買商品、課程與會員中心）。前台會員與後台管理員完全分離，前台註冊不會取得任何管理權限。
       </p>
       <Suspense>
         <AuthForm mode="register" />
