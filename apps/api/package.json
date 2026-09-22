@@ -1,6 +1,6 @@
 {
   "name": "@sitekit/api",
-  "version": "0.16.3",
+  "version": "0.16.4",
   "private": true,
   "main": "dist/main.js",
   "scripts": {

@@ -146,7 +146,7 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 ## P5 營運化＋後台分離（2026-09-21，v0.4.0）
 
-- **後台圖片上傳上限 1MB＋Logo 可直接上傳＋模板庫版型切換**（v0.16.3）：`/api/admin/content/upload` 上限由 5MB 改 1MB（`UPLOAD_MAX_BYTES`），前端 `lib/upload-image.ts` 先擋並提示目前大小；網站設定「Logo 圖片網址」旁加「上傳圖片（≤1MB）」按鈕（上傳後填入網址、顯示縮圖）；AI 工作站模板庫可切換單列（橫向捲動）／兩列／三列／清單，偏好記在瀏覽器；**「API 產圖」分頁移除，產圖工作站整合進指令台的「商品製圖」工作項目**（點該項目右欄即為模板庫／生成記錄／生成配置，對話指令收進下方可展開區）。
+- **後台圖片上傳上限 1MB＋Logo 可直接上傳＋模板庫版型切換**（v0.16.3）：`/api/admin/content/upload` 上限由 5MB 改 1MB（`UPLOAD_MAX_BYTES`），前端 `lib/upload-image.ts` 先擋並提示目前大小；網站設定「Logo 圖片網址」旁加「上傳圖片（≤1MB）」按鈕（上傳後填入網址、顯示縮圖）；AI 工作站模板庫可切換單行（橫向捲動）／兩行／三行／清單（純文字、不預覽圖片；v0.16.4），偏好記在瀏覽器；**「API 產圖」分頁移除，產圖工作站整合進指令台的「商品製圖」工作項目**（點該項目右欄即為模板庫／生成記錄／生成配置，對話指令收進下方可展開區）。
 - **前台註冊只填 Email＋密碼**（v0.16.2）：註冊表單移除顯示名稱欄位（後端 displayName 仍為選填、預設取 Email 前綴），姓名／電話／地址等資料在購買課程或下單時再收集。
 - **會員資料庫**（v0.16.0，後台大選單「會員資料庫」`/admin/members`）：前台會員名單＋自動標籤——有已付款電商（scope shop）訂單＝**電商客戶**、有已付款課程訂單或課程 entitlement＝**課程學員**，兩者皆有同時顯示兩個標籤；搜尋／標籤篩選（全部／電商客戶／課程學員／兩者皆有／尚無交易）；單筆與勾選批次刪除：有訂單／點數／任務紀錄者匿名化停用（email 改 `deleted+<id>@deleted.local`、清密碼與登入方式、撤銷課程權限、保留訂單），無交易者直接刪除；系統帳號 admin-studio@system.local 不列入也不可刪。API `GET /api/admin/members?q=&tag=&limit=`、`DELETE /api/admin/members/:id`、`POST /api/admin/members/delete {ids}`；OPS／MCP `list_members`／`delete_member`。
 - **日期格式 hydration 修正**（v0.16.1）：`fmtDateTime`／`fmtDate` 改以 `Intl.DateTimeFormat.formatToParts` 自組 `YYYY/MM/DD HH:mm`——Node 的 ICU 在日期與時間之間輸出 U+2009 thin space、Chrome 輸出一般空白，肉眼相同但 React hydration 失敗（會員資料庫實測）。

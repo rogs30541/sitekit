@@ -39,10 +39,10 @@ const line = { borderColor: 'var(--line)' } as const;
  */
 type GalleryView = 'row' | 'two' | 'three' | 'list';
 const GALLERY_VIEWS: { key: GalleryView; label: string; hint: string }[] = [
-  { key: 'row', label: '單列', hint: '一列橫向捲動' },
-  { key: 'two', label: '兩列', hint: '兩欄卡片' },
-  { key: 'three', label: '三列', hint: '三欄卡片' },
-  { key: 'list', label: '清單', hint: '縮圖＋文字清單' },
+  { key: 'row', label: '單行', hint: '一行橫向捲動' },
+  { key: 'two', label: '兩行', hint: '兩欄卡片' },
+  { key: 'three', label: '三行', hint: '三欄卡片' },
+  { key: 'list', label: '清單', hint: '純文字清單，不預覽圖片' },
 ];
 
 /** API 產圖工作站（inShow 版面）：模板庫／生成記錄／生成配置；模型自動偵測後在此選擇，不顯示點數。 */
@@ -180,8 +180,7 @@ export function ImageStudio({ templates }: { templates: AiTemplate[] }) {
               const selected = tpl?.id === t.id ? 'ring-2 ring-black' : '';
               if (view === 'list')
                 return (
-                  <article key={t.id} className={`flex cursor-pointer items-center gap-3 rounded-lg border p-2 text-xs ${selected}`} style={line} onClick={() => pick(t)}>
-                    {t.coverUrl ? <img src={t.coverUrl} alt="" className="h-16 w-12 shrink-0 rounded object-cover" /> : <div className="h-16 w-12 shrink-0 rounded bg-neutral-100" />}
+                  <article key={t.id} className={`flex cursor-pointer items-center gap-3 rounded-lg border px-2 py-1 text-xs ${selected}`} style={line} onClick={() => pick(t)}>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-semibold">{title}</span>
