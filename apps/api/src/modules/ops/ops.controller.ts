@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { OperatorTokenGuard } from '../../common/guards';
-import { OpsService } from './ops.service';
+import { OpsService } from '@sitekit/core';
 
 /** MCP 路徑：/api/ops/*，只認 Bearer OPS_TOKEN。 */
 @Controller('ops')

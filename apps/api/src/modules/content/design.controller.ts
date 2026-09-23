@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { AdminSessionGuard, type AuthedRequest } from '../../common/guards';
-import { DesignService } from './design.service';
+import { DesignService } from '@sitekit/core';
 
 /** 後台：草稿／沙盒預覽／發佈確認／版本／JSON 匯入匯出（皆走 DesignService，OPS 與 MCP 同一套） */
 @Controller('admin/content')

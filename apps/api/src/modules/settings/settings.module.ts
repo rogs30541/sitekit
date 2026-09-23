@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
-import { SettingsService } from './settings.service';
-import { RevalidateController, RevalidateService } from './revalidate.service';
+import { SettingsService } from '@sitekit/core';
+import { RevalidateService } from '@sitekit/core';
+import { RevalidateController } from './revalidate.controller';
 
 /** 全域：設定讀取＋發佈即清快取（settings.invalidate() 時一併通知 web） */
 @Global()

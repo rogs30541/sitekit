@@ -3,8 +3,8 @@ import type { Request } from 'express';
 import type { User } from '@prisma/client';
 import { ADMIN_ROLES } from '@sitekit/shared';
 import { env } from '../config/env';
-import { ADMIN_COOKIE, AdminAuthService } from '../modules/admin-auth/admin-auth.service';
-import { SESSION_COOKIE, SessionService, type ResolvedSession } from '../modules/auth/session.service';
+import { ADMIN_COOKIE, AdminAuthService } from '@sitekit/core';
+import { SESSION_COOKIE, SessionService, type ResolvedSession } from '@sitekit/core';
 
 type CookieRequest = Request & { cookies?: Record<string, string> };
 export interface AuthedRequest extends Request {

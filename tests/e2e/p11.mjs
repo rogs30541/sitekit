@@ -2,7 +2,7 @@
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 import { fileURLToPath } from 'node:url';
-const dist = fileURLToPath(new URL('../../apps/api/dist/modules/', import.meta.url));
+const dist = fileURLToPath(new URL('../../packages/core/dist/modules/', import.meta.url));
 const B = process.env.API ?? 'http://localhost:4000';
 const RUN = Date.now().toString(36).slice(-4).toLowerCase();
 let fails = 0;

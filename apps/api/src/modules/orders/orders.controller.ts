@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Header, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AdminSessionGuard, UserSessionGuard, type AuthedRequest } from '../../common/guards';
-import { CouponsService } from './coupons.service';
-import { OrdersService } from './orders.service';
-import { ReportsService } from './reports.service';
+import { CouponsService } from '@sitekit/core';
+import { OrdersService } from '@sitekit/core';
+import { ReportsService } from '@sitekit/core';
 
 @Controller('orders')
 @UseGuards(UserSessionGuard)

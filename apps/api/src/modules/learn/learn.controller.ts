@@ -1,14 +1,9 @@
 import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, Post, Req, UseGuards } from '@nestjs/common';
-import { createHash } from 'node:crypto';
 import { UserSessionGuard, type AuthedRequest } from '../../common/guards';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CatalogService } from '../catalog/catalog.service';
-import { SettingsService } from '../settings/settings.service';
-
-/** Bunny Stream Token Authentication：SHA256(signingKey + videoId + expires)（移植自度哥 payment.ts）。 */
-export function bunnySign(signingKey: string, videoId: string, expires: number) {
-  return createHash('sha256').update(`${signingKey}${videoId}${expires}`).digest('hex');
-}
+import { CatalogService } from '@sitekit/core';
+import { bunnySign } from '@sitekit/core';
+import { SettingsService } from '@sitekit/core';
 
 /**
  * 登入後的學習 API：授權（含觀看期限）在後端檢查，播放設定只在通過後回傳。

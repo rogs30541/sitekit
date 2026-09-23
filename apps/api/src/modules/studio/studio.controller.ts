@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { AdminSessionGuard, UserSessionGuard, type AuthedRequest } from '../../common/guards';
-import { StudioService } from './studio.service';
+import { StudioService } from '@sitekit/core';
 
 /** 公開：模板清單（不含 systemPrompt、不含成本／毛利）。 */
 @Controller('studio')

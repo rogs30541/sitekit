@@ -2,7 +2,7 @@ import { Body, Controller, Delete, ForbiddenException, Get, NotFoundException, P
 import { z } from 'zod';
 import { AdminSessionGuard, UserSessionGuard, type AuthedRequest } from '../../common/guards';
 import { PrismaService } from '../../prisma/prisma.service';
-import { NotifyService } from '../notify/notify.service';
+import { NotifyService } from '@sitekit/core';
 
 const questionInput = z.object({ chapterId: z.string().nullable().optional(), body: z.string().trim().min(2).max(2000) });
 const answerInput = z.object({ answer: z.string().trim().max(5000).nullable().optional(), isPublic: z.boolean().optional(), status: z.enum(['open', 'answered', 'hidden']).optional() });

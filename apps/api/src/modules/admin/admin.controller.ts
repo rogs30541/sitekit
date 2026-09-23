@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AdminSessionGuard, type AuthedRequest } from '../../common/guards';
 import { PrismaService } from '../../prisma/prisma.service';
-import { MembersService } from './members.service';
+import { MembersService } from '@sitekit/core';
 
 /** 後台工作站讀取用 API（管理員 session）。 */
 @Controller('admin')

@@ -1,7 +1,7 @@
 import { BadRequestException, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AdminSessionGuard, type AuthedRequest } from '../../common/guards';
 import { PrismaService } from '../../prisma/prisma.service';
-import { InvoiceService } from './invoice.service';
+import { InvoiceService } from '@sitekit/core';
 
 @Controller('admin/invoices')
 @UseGuards(AdminSessionGuard)

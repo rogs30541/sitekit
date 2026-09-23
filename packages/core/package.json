@@ -1,0 +1,23 @@
+{
+  "name": "@sitekit/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SiteKit 業務核心（純 TypeScript，不依賴 NestJS／Hono）：三個殼共用",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.0.0",
+    "@sitekit/shared": "*",
+    "bcryptjs": "^3.0.3",
+    "reflect-metadata": "^0.2.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}

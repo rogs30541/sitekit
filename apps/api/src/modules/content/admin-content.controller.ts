@@ -2,8 +2,8 @@ import { BadRequestException, Body, Controller, Delete, Get, NotFoundException, 
 import { z } from 'zod';
 import { AdminSessionGuard } from '../../common/guards';
 import { PrismaService } from '../../prisma/prisma.service';
-import { sanitizeHtml, slugify } from '../migration/normalize';
-import { extFromMime, StorageService } from '../storage/storage.service';
+import { sanitizeHtml, slugify } from '@sitekit/core';
+import { extFromMime, StorageService } from '@sitekit/core';
 
 const contentInput = z.object({
   type: z.enum(['post', 'page']).default('post'),

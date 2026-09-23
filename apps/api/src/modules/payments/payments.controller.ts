@@ -2,8 +2,8 @@ import { Body, Controller, Get, HttpCode, Param, Post, Query, Req, Res, UseGuard
 import type { Response } from 'express';
 import { PAYMENT_METHOD_LABELS, PAYMENT_PROVIDERS } from '@sitekit/shared';
 import { AdminSessionGuard, UserSessionGuard, type AuthedRequest } from '../../common/guards';
-import { SettingsService } from '../settings/settings.service';
-import { PaymentsService } from './payments.service';
+import { SettingsService } from '@sitekit/core';
+import { PaymentsService } from '@sitekit/core';
 
 @Controller('payments')
 export class PaymentsController {

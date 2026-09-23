@@ -5,9 +5,9 @@ import { z } from 'zod';
 import { isProd } from '../../config/env';
 import { UserSessionGuard, type AuthedRequest } from '../../common/guards';
 import { PrismaService } from '../../prisma/prisma.service';
-import { NotifyService } from '../notify/notify.service';
-import { SettingsService } from '../settings/settings.service';
-import { toPublic } from './auth.service';
+import { NotifyService } from '@sitekit/core';
+import { SettingsService } from '@sitekit/core';
+import { toPublic } from '@sitekit/core';
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 const RESET_TTL_MS = 3600_000;

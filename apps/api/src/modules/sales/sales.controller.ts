@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { AdminSessionGuard, type AuthedRequest } from '../../common/guards';
-import { SalesService } from './sales.service';
+import { SalesService } from '@sitekit/core';
 
 /** 後台：一頁式銷售頁（草稿／預覽／確認發佈／版本） */
 @Controller('admin/sales')

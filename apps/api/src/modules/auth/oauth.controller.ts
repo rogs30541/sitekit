@@ -4,9 +4,9 @@ import type { Request, Response } from 'express';
 import { SETTING_KEYS } from '@sitekit/shared';
 import { isProd } from '../../config/env';
 import { PrismaService } from '../../prisma/prisma.service';
-import { NotifyService } from '../notify/notify.service';
-import { SettingsService } from '../settings/settings.service';
-import { SESSION_COOKIE, SessionService } from './session.service';
+import { NotifyService } from '@sitekit/core';
+import { SettingsService } from '@sitekit/core';
+import { SESSION_COOKIE, SessionService } from '@sitekit/core';
 
 type CookieRequest = Request & { cookies?: Record<string, string> };
 const STATE_COOKIE = 'sk_oauth';

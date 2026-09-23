@@ -2,7 +2,7 @@
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 import { fileURLToPath } from 'node:url';
-const dist = fileURLToPath(new URL('../../apps/api/dist/modules/', import.meta.url));
+const dist = fileURLToPath(new URL('../../packages/core/dist/modules/', import.meta.url));
 const B = process.env.API ?? 'http://localhost:4000';
 const LIVE_AMEGO = process.env.LIVE_AMEGO === '1'; // 真打光貿測試環境（公開測試統編／App Key）
 let fails = 0;

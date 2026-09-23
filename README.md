@@ -170,13 +170,24 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 ## 目錄
 
 ```
-apps/web          Next.js 15 App Router：(marketing)(shop)(learn)(studio)(account)(admin) 六個路由分組
-apps/api          NestJS 11：auth / settings / content / migration / catalog / orders / payments / invoice / learn / ops / admin-ai / admin / health
-packages/shared   共用型別、品牌設定、功能旗標、設定鍵名、Ops 動作清單（OPS_ACTIONS 單一真相源）
-mcp/              MCP stdio server（訂閱制工具接入點）
-scripts/          dev-db.mjs（免 Docker 的本機 PostgreSQL）
-docs/             架構說明、全新網站規劃（藍圖）
+packages/shared   共用型別、品牌設定、設定鍵名、OPS_ACTIONS（單一真相源）、設計文件／銷售頁／追蹤碼 schema
+packages/core     ★ v0.18.0（M1）業務核心：所有 service／金流物流發票 adapter／AI 供應商／匯入連接器，純 TypeScript、零 NestJS 依賴
+                  compat.ts＝HttpError 家族＋no-op Injectable＋Logger；env.ts＝configureCore() 注入；三個殼共用
+apps/api          NestJS 11 薄殼：只剩 controller／module／guard／filter；服務全部 `import from '@sitekit/core'`
+apps/web          Next.js 15 App Router：(marketing)(shop)(learn)(account)(admin) 路由分組
+mcp/              MCP stdio server（打任一殼的 /api/ops）
+tests/e2e/        端到端護欄（只打 HTTP，與殼無關）
+scripts/          dev-db.mjs（免 Docker 的本機 PostgreSQL）、import-image-templates.mjs
+docs/             架構說明、雙平台部署架構（一核心三殼路線）
 ```
+
+### core 與殼的契約（M1）
+
+- core 的 class 仍寫 `@Injectable()`，但來自 `packages/core/src/compat.ts`：只寫 `__injectable__` 中繼資料並讓 TS 產生 `design:paramtypes`，**Nest 可直接把 core class 放進 `providers`**；Hono／單體殼則手動 `new`。
+- core 的建構子只認 `PrismaClient`（不是 Nest 的 PrismaService）；api 的 `PrismaModule` 把同一實例也註冊在 `PrismaClient` token。
+- core 丟 `HttpError`（`BadRequestException` 等同名子類）；api 用 `HttpErrorFilter` 轉成與 Nest 相同的 `{ message, error, statusCode }`。
+- core 讀環境值只經 `env` getter（`configureCore()` 注入，Node 殼退回 `process.env`）；`isProd()` 是函式。
+- 建置順序：shared → core → api → web（`npm run build`、Dockerfile.api、CI 已同步）。
 
 ## 本機啟動（免 Docker）
 

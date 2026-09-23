@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { AdminSessionGuard, UserSessionGuard, type AuthedRequest } from '../../common/guards';
-import { LogisticsService } from './logistics.service';
+import { LogisticsService } from '@sitekit/core';
 
 @Controller('logistics')
 export class LogisticsController {

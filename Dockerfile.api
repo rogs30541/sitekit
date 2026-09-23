@@ -3,15 +3,17 @@ FROM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/shared/package.json packages/shared/
+COPY packages/core/package.json packages/core/
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY apps/edge/package.json apps/edge/
 COPY mcp/package.json mcp/
 RUN npm ci --no-audit --no-fund
 COPY packages/shared packages/shared
+COPY packages/core packages/core
 COPY apps/api apps/api
 # 不 prune：啟動時的 prisma migrate deploy 需要 prisma CLI（devDependency）
-RUN npm run build -w @sitekit/shared && npm run db:generate -w @sitekit/api && npm run build -w @sitekit/api
+RUN npm run build -w @sitekit/shared && npm run db:generate -w @sitekit/api && npm run build -w @sitekit/core && npm run build -w @sitekit/api
 
 FROM node:22-alpine
 WORKDIR /app

@@ -2,7 +2,7 @@ import { Body, Controller, Delete, ForbiddenException, Get, Param, Patch, Post, 
 import type { Request, Response } from 'express';
 import { isProd } from '../../config/env';
 import { AdminSessionGuard, type AuthedRequest } from '../../common/guards';
-import { ADMIN_COOKIE, AdminAuthService, toPublicAdmin } from './admin-auth.service';
+import { ADMIN_COOKIE, AdminAuthService, toPublicAdmin } from '@sitekit/core';
 
 type CookieRequest = Request & { cookies?: Record<string, string> };
 

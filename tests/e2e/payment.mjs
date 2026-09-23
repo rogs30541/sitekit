@@ -2,7 +2,7 @@
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 import { fileURLToPath } from 'node:url';
-const { aesEncrypt, sha256Upper } = require(fileURLToPath(new URL('../../apps/api/dist/modules/payments/newebpay.js', import.meta.url)));
+const { aesEncrypt, sha256Upper } = require(fileURLToPath(new URL('../../packages/core/dist/modules/payments/newebpay.js', import.meta.url)));
 const B = process.env.API ?? 'http://localhost:4000';
 const NP = { merchantId: 'MS0000000001', hashKey: 'e2eFakeHashKey0123456789abcdefXY', hashIv: 'e2eFakeHashIv123' };
 let fails = 0;

@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AdminSessionGuard, UserSessionGuard, type AuthedRequest } from '../../common/guards';
-import { CreditsService } from './credits.service';
+import { CreditsService } from '@sitekit/core';
 
 @Controller('credits')
 @UseGuards(UserSessionGuard)

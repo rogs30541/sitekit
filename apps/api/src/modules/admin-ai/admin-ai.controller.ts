@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { AdminSessionGuard, type AuthedRequest } from '../../common/guards';
-import { OpsService } from '../ops/ops.service';
-import { CommandService, type ChatTurn } from './command.service';
+import { OpsService } from '@sitekit/core';
+import { CommandService, type ChatTurn } from '@sitekit/core';
 
 /** AI API 路徑：/api/admin/ai/*，只認後台 cookie session。與 MCP 路徑共用 OpsService。 */
 @Controller('admin/ai')

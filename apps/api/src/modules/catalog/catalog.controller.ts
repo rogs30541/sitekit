@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { AdminSessionGuard } from '../../common/guards';
-import { CatalogService } from './catalog.service';
+import { CatalogService } from '@sitekit/core';
 
 /** 公開目錄 API。 */
 @Controller('catalog')

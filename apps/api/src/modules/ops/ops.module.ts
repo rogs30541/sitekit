@@ -9,7 +9,7 @@ import { CatalogModule } from '../catalog/catalog.module';
 import { ContentModule } from '../content/content.module';
 import { InvoiceModule } from '../invoice/invoice.module';
 import { OpsController } from './ops.controller';
-import { OpsService } from './ops.service';
+import { OpsService } from '@sitekit/core';
 
 @Module({ imports: [AdminModule, SalesModule, StudioModule, MigrationModule, CreditsModule, OrdersModule, CatalogModule, ContentModule, InvoiceModule], controllers: [OpsController], providers: [OpsService], exports: [OpsService] })
 export class OpsModule {}

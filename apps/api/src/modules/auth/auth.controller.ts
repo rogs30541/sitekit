@@ -1,8 +1,8 @@
 import { Body, Controller, ForbiddenException, Get, Post, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { isProd } from '../../config/env';
-import { AuthService, toPublic } from './auth.service';
-import { SESSION_COOKIE, SessionService } from './session.service';
+import { AuthService, toPublic } from '@sitekit/core';
+import { SESSION_COOKIE, SessionService } from '@sitekit/core';
 
 type CookieRequest = Request & { cookies?: Record<string, string> };
 

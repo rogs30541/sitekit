@@ -1,6 +1,6 @@
 import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { AdminSessionGuard } from '../../common/guards';
-import { VideosService, parseYouTubeId } from './videos.service';
+import { VideosService, parseYouTubeId } from '@sitekit/core';
 
 /** 後台影片庫（管理員 session）。前台永不直接讀這裡。 */
 @Controller('admin/videos')

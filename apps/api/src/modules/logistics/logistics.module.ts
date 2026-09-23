@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { AdminLogisticsController, LogisticsController } from './logistics.controller';
-import { LogisticsService } from './logistics.service';
+import { LogisticsService } from '@sitekit/core';
 
 /** Global：OrdersService 試算運費要用 */
 @Global()
