@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.23.0（2026-09-23）
+
+- 外掛機制（1.1）：core 事件匯流排＋外掛註冊表（事件／OPS 動作／設定欄位）、api 建置期載入（sitekit.config.mjs／SITEKIT_PLUGINS）、後台「外掛」頁、MCP 動態外掛工具；第一個官方外掛 @sitekit/plugin-webhook（簽章 JSON 推送、事件篩選、webhook_test）；e2e p28
+
 ## v0.22.0（2026-09-23）
 
 - fix(release): 中文路徑用 fileURLToPath 解析 root
