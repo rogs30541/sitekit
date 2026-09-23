@@ -137,6 +137,10 @@ export const SETTING_KEYS = {
   aiProvider: 'ai.provider',
   openaiApiKey: 'openai.apiKey',
   aiImageModel: 'ai.imageModel',
+  /** 備份：每日自動備份、保留份數、上次備份時間 */
+  backupDaily: 'backup.daily',
+  backupKeep: 'backup.keep',
+  backupLastAt: 'backup.lastAt',
   /** Gemini（文字指令台＋產圖） */
   geminiApiKey: 'gemini.apiKey',
   /** AI 指令台（後台總控）：mock|anthropic|openai；模型；Anthropic 金鑰 */
@@ -186,6 +190,9 @@ export const OPS_ACTIONS = {
   create_admin: { desc: '建立後台管理員（email、password ≥8、role admin|superadmin；後台帳號與前台會員分離）', mutating: true },
   list_members: { desc: '會員資料庫：列出前台會員（q 關鍵字、tag shop|course|both|none、limit）；每筆含 tags（shop＝電商客戶、course＝課程學員，兩者皆有＝兩個標籤）、電商訂單數、課程數', mutating: false },
   delete_member: { desc: '刪除會員（idOrEmail 或 ids 陣列）；有訂單／點數紀錄者改為匿名化停用（保留訂單），無交易者直接刪除', mutating: true },
+  export_site: { desc: '完整匯出整個資料庫成 JSON 備份檔（含機密；存伺服器備份目錄，回檔名與大小；不經公開網址）', mutating: true },
+  import_site: { desc: '從備份目錄的檔案還原整個資料庫（file 檔名、confirm=true；清空後覆蓋，不可逆）', mutating: true },
+  list_backups: { desc: '列出伺服器備份目錄的備份檔與排程狀態', mutating: false },
   list_admins: { desc: '列出後台管理員', mutating: false },
   update_admin: { desc: '修改管理員（idOrEmail；password／displayName／role／status active|suspended）', mutating: true },
   delete_admin: { desc: '刪除管理員（idOrEmail；不可刪最後一位 superadmin）', mutating: true },
@@ -267,7 +274,7 @@ export interface OpsResult {
 export * from './design';
 
 /** AI 指令台排除的「系統功能」動作（只在系統功能選單人工操作，不開放自然語言指令） */
-export const COMMAND_EXCLUDED_ACTIONS: OpsAction[] = ['status', 'deploy', 'migrate', 'get_settings', 'update_settings', 'import_content', 'adjust_credits', 'audit', 'create_admin', 'list_admins', 'update_admin', 'delete_admin', 'send_test_notification', 'storage_status'];
+export const COMMAND_EXCLUDED_ACTIONS: OpsAction[] = ['status', 'deploy', 'migrate', 'get_settings', 'update_settings', 'import_content', 'adjust_credits', 'audit', 'create_admin', 'list_admins', 'update_admin', 'delete_admin', 'send_test_notification', 'storage_status', 'export_site', 'import_site', 'list_backups'];
 
 /** 指令台七大工作項目（快捷任務；範例指令會填入輸入框） */
 export const COMMAND_TASKS: { key: string; label: string; desc: string; examples: string[] }[] = [

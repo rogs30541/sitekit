@@ -8,6 +8,10 @@ import { StorageService } from '../storage/storage.service';
 import { NotifyService } from '../notify/notify.service';
 import { AdminAuthService } from '../admin-auth/admin-auth.service';
 import { events, pluginRegistry } from '../../plugins';
+import { ExportService } from './export.service';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { basename, resolve } from 'node:path';
+import { SETTING_KEYS } from '@sitekit/shared';
 
 /** 系統層設定鍵（不進 SETTING_KEYS：不給後台表單改） */
 export const SYSTEM_KEYS = { sessionSecret: 'system.sessionSecret', opsToken: 'system.opsToken', setupCompletedAt: 'setup.completedAt' } as const;
@@ -49,6 +53,7 @@ export class SystemService {
     private readonly notify: NotifyService,
     private readonly reval: RevalidateService,
     private readonly admins: AdminAuthService,
+    private readonly exporter: ExportService,
   ) {}
 
   private async getOrCreateSecret(key: string, bytes: number) {
@@ -164,6 +169,78 @@ export class SystemService {
       health,
       audit,
     };
+  }
+
+  /* ---------- 備份（整庫 JSON 快照，存伺服器備份目錄，只有 superadmin 端點能下載） ---------- */
+  backupDir() {
+    const dir = env.BACKUP_DIR || (env.STORAGE_DIR ? resolve(env.STORAGE_DIR, '..', 'backups') : resolve(process.cwd(), 'backups'));
+    mkdirSync(dir, { recursive: true });
+    return dir;
+  }
+  private safeName(name: string) {
+    const n = basename(String(name));
+    if (!/^sitekit-\d{8}-\d{6}(-[a-z0-9]+)?\.json$/.test(n)) throw new BadRequestException('不合法的備份檔名');
+    return n;
+  }
+  async listBackups() {
+    const dir = this.backupDir();
+    const files = readdirSync(dir)
+      .filter((f) => /^sitekit-\d{8}-\d{6}(-[a-z0-9]+)?\.json$/.test(f))
+      .map((f) => {
+        const st = statSync(resolve(dir, f));
+        return { name: f, size: st.size, at: st.mtime.toISOString() };
+      })
+      .sort((a, b) => (a.name < b.name ? 1 : -1));
+    const [daily, keep, lastAt] = await Promise.all([this.settings.get(SETTING_KEYS.backupDaily, undefined, 'false'), this.settings.get(SETTING_KEYS.backupKeep, undefined, '7'), this.settings.get(SETTING_KEYS.backupLastAt)]);
+    return { daily: daily === 'true', keep: Math.max(1, Number(keep) || 7), lastAt: lastAt || null, dir, files };
+  }
+  async backupNow(actor: string) {
+    const dir = this.backupDir();
+    const bundle = await this.exporter.exportAll({ includeSecrets: true });
+    const stamp = bundle.generatedAt.replace(/[-:]/g, '').replace('T', '-').slice(0, 15);
+    const name = `sitekit-${stamp}.json`;
+    const file = resolve(dir, name);
+    writeFileSync(file, JSON.stringify(bundle));
+    const size = statSync(file).size;
+    await this.prisma.setting.upsert({ where: { key: SETTING_KEYS.backupLastAt }, update: { value: bundle.generatedAt }, create: { key: SETTING_KEYS.backupLastAt, value: bundle.generatedAt, isSecret: false } });
+    this.settings.invalidate();
+    const keep = Math.max(1, Number(await this.settings.get(SETTING_KEYS.backupKeep, undefined, '7')) || 7);
+    const all = (await this.listBackups()).files;
+    for (const f of all.slice(keep)) rmSync(resolve(dir, f.name), { force: true });
+    await this.prisma.auditLog.create({ data: { actor, action: 'backup', ok: true, params: {}, result: { file: name, size } } });
+    this.log.log(`備份完成 ${name}（${Math.ceil(size / 1024)} KB，保留 ${keep} 份）`);
+    return { file: name, size, at: bundle.generatedAt, rows: Object.values(bundle.counts).reduce((a, c) => a + c, 0) };
+  }
+  backupPath(name: string) {
+    const n = this.safeName(name);
+    const file = resolve(this.backupDir(), n);
+    if (!existsSync(file)) throw new BadRequestException('備份檔不存在');
+    return file;
+  }
+  deleteBackup(name: string) {
+    rmSync(this.backupPath(name), { force: true });
+    return { ok: true };
+  }
+  async restoreFromBackup(name: string, actor: string) {
+    const bundle = JSON.parse(readFileSync(this.backupPath(name), 'utf8')) as unknown;
+    return this.exporter.importAll(bundle, { mode: 'replace', confirm: true, actor });
+  }
+  /** 每 30 分鐘檢查：backup.daily 開啟且距上次超過 24 小時就備份（Node 殼呼叫；Workers 改 Cron） */
+  startBackupScheduler() {
+    const tick = async () => {
+      try {
+        const st = await this.listBackups();
+        if (!st.daily) return;
+        if (st.lastAt && Date.now() - new Date(st.lastAt).getTime() < 24 * 3600_000) return;
+        await this.backupNow('scheduler');
+      } catch (e) {
+        this.log.warn(`自動備份失敗：${e instanceof Error ? e.message : String(e)}`);
+      }
+    };
+    const timer = setInterval(() => void tick(), 30 * 60_000);
+    timer.unref?.();
+    setTimeout(() => void tick(), 60_000).unref?.();
+    return timer;
   }
 
   /** 已載入外掛（後台「外掛」頁） */

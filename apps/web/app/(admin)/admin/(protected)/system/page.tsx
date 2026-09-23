@@ -5,6 +5,7 @@ import { Section } from '@/components/Section';
 import { apiServer, getAdminMe } from '@/lib/api-server';
 import { AdminAiPanel } from '../AdminAiPanel';
 import { SystemHealthPanel } from './SystemHealthPanel';
+import { SystemBackupPanel } from './SystemBackupPanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,6 +74,9 @@ export default async function AdminSystemPage() {
       </Section>
       <Section title="健康檢查與支援" group="(admin)">
         <SystemHealthPanel isSuperadmin={me?.admin?.role === 'superadmin'} />
+      </Section>
+      <Section title="備份與還原" group="(admin)">
+        <SystemBackupPanel isSuperadmin={me?.admin?.role === 'superadmin'} />
       </Section>
       <Section title="維運稽核（MCP 與 AI API 兩路徑共用）" group="(admin)">
         <table className="w-full text-left text-xs">

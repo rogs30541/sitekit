@@ -1,6 +1,8 @@
-import { Body, Controller, Get, Module, type OnModuleInit, Post, Query, Req, Res, UseGuards, ForbiddenException } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Module, type OnModuleInit, Param, Post, Query, Req, Res, UseGuards, ForbiddenException } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { ADMIN_COOKIE, AdminAuthService, SystemService } from '@sitekit/core';
+import { ADMIN_COOKIE, AdminAuthService, ExportService, SystemService } from '@sitekit/core';
+import { readFileSync } from 'node:fs';
+import { basename } from 'node:path';
 import { AdminSessionGuard, type AuthedRequest } from '../../common/guards';
 import { AdminAuthModule } from '../admin-auth/admin-auth.module';
 
@@ -36,7 +38,10 @@ export class SetupController {
 @Controller('admin/system')
 @UseGuards(AdminSessionGuard)
 export class SystemController {
-  constructor(private readonly system: SystemService) {}
+  constructor(
+    private readonly system: SystemService,
+    private readonly exporter: ExportService,
+  ) {}
 
   @Get('health')
   health() {
@@ -60,6 +65,49 @@ export class SystemController {
     return this.system.plugins();
   }
 
+  /* ---------- 匯出／備份／還原（superadmin） ---------- */
+  @Get('export')
+  async exportAll(@Req() req: AuthedRequest, @Res() res: Response, @Query('secrets') secrets?: string) {
+    this.superOnly(req);
+    const b = await this.exporter.exportAll({ includeSecrets: secrets === '1' });
+    res.setHeader('content-type', 'application/json; charset=utf-8');
+    res.setHeader('content-disposition', `attachment; filename="sitekit-export-${b.generatedAt.slice(0, 19).replace(/[:T]/g, '-')}${b.includeSecrets ? '-full' : ''}.json"`);
+    res.send(JSON.stringify(b));
+  }
+
+  @Post('import')
+  importAll(@Req() req: AuthedRequest, @Body() body: { bundle?: unknown; confirm?: boolean }) {
+    this.superOnly(req);
+    return this.exporter.importAll(body?.bundle, { mode: 'replace', confirm: body?.confirm === true, actor: `admin:${req.session!.user.email}` });
+  }
+
+  @Get('backups')
+  backups(@Req() req: AuthedRequest) {
+    this.superOnly(req);
+    return this.system.listBackups();
+  }
+
+  @Post('backups')
+  backupNow(@Req() req: AuthedRequest) {
+    this.superOnly(req);
+    return this.system.backupNow(`admin:${req.session!.user.email}`);
+  }
+
+  @Get('backups/:name')
+  download(@Req() req: AuthedRequest, @Param('name') name: string, @Res() res: Response) {
+    this.superOnly(req);
+    const file = this.system.backupPath(name);
+    res.setHeader('content-type', 'application/json; charset=utf-8');
+    res.setHeader('content-disposition', `attachment; filename="${basename(file)}"`);
+    res.send(readFileSync(file));
+  }
+
+  @Delete('backups/:name')
+  remove(@Req() req: AuthedRequest, @Param('name') name: string) {
+    this.superOnly(req);
+    return this.system.deleteBackup(name);
+  }
+
   @Get('update-check')
   updateCheck(@Query('force') force?: string) {
     return this.system.updateCheck(force === '1');
@@ -78,11 +126,12 @@ export class SystemController {
   }
 }
 
-@Module({ imports: [AdminAuthModule], controllers: [SetupController, SystemController], providers: [SystemService], exports: [SystemService] })
+@Module({ imports: [AdminAuthModule], controllers: [SetupController, SystemController], providers: [SystemService, ExportService], exports: [SystemService, ExportService] })
 export class SystemModule implements OnModuleInit {
   constructor(private readonly system: SystemService) {}
   /** 啟動即補機密（在 listen 之前完成，OperatorTokenGuard 才讀得到自動產生的 OPS_TOKEN） */
   async onModuleInit() {
     await this.system.ensureSecrets();
+    this.system.startBackupScheduler();
   }
 }

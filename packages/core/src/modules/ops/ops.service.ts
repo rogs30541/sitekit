@@ -23,6 +23,7 @@ import { getProvider } from '../studio/providers';
 import { composeTemplatePrompt, StudioService } from '../studio/studio.service';
 import { SalesService } from '../sales/sales.service';
 import { pluginRegistry } from '../../plugins';
+import { SystemService } from '../system/system.service';
 import { MembersService } from '../admin/members.service';
 
 const SECRET_KEY = /secret|key|token|password|hashiv|hash_iv|signing/i;
@@ -54,6 +55,7 @@ export class OpsService {
     private readonly studio: StudioService,
     private readonly sales: SalesService,
     private readonly members: MembersService,
+    private readonly system: SystemService,
   ) {}
 
   listActions() {
@@ -434,6 +436,13 @@ export class OpsService {
         if (Array.isArray(p.ids)) return this.members.removeMany(p.ids.map(String), actor);
         return this.members.remove(String(p.idOrEmail ?? p.email ?? p.id ?? ''), actor);
       }
+      case 'export_site':
+        return this.system.backupNow(actor);
+      case 'import_site':
+        if (p.confirm !== true && p.confirm !== 'true') throw new Error('import_site 會清空並覆蓋整個資料庫，必須 confirm=true');
+        return this.system.restoreFromBackup(String(p.file ?? ''), actor);
+      case 'list_backups':
+        return this.system.listBackups();
       case 'list_admins':
         return this.admins.list();
       case 'update_admin': {

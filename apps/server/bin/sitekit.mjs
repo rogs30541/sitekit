@@ -5,6 +5,8 @@
  *   sitekit migrate                                      只套用資料庫遷移
  *   sitekit seed [--demo]                                只補種子（--demo 建示範帳號與內容）
  *   sitekit env                                          印出實際生效的設定（機密遮蔽）
+ *   sitekit export [--out FILE] [--no-secrets]           整庫匯出 JSON（預設含機密，搬家用）
+ *   sitekit import FILE --confirm                        從匯出檔還原（清空後覆蓋，不可逆）
  * 環境變數（都有預設值，全新主機不用設）：
  *   PORT（3000）、SITEKIT_DATA_DIR（./data）、DATABASE_URL（file:<data>/sitekit.db；也可 postgresql://…）、
  *   STORAGE_DIR（<data>/storage）、FRONTEND_URL（http://localhost:<port>；正式請設公開網址或到後台填 site.url）、
@@ -78,7 +80,50 @@ async function seed(demo) {
   }
 }
 
+async function exporter() {
+  const { createPrisma } = require('@sitekit/db');
+  const { ExportService, configureCore } = require('@sitekit/core');
+  configureCore({ APP_VERSION: require('../package.json').version });
+  const prisma = createPrisma();
+  return { prisma, svc: new ExportService(prisma) };
+}
 switch (cmd) {
+  case 'export': {
+    const { prisma, svc } = await exporter();
+    try {
+      const b = await svc.exportAll({ includeSecrets: !args.includes('--no-secrets') });
+      const out = flag('out', '');
+      const text = JSON.stringify(b);
+      if (out && out !== true) {
+        const { writeFileSync } = await import('node:fs');
+        writeFileSync(resolve(String(out)), text);
+        console.error(`[sitekit] 已匯出 ${Object.values(b.counts).reduce((a, c) => a + c, 0)} 列 → ${resolve(String(out))}`);
+      } else process.stdout.write(text);
+    } finally {
+      await prisma.$disconnect();
+    }
+    break;
+  }
+  case 'import': {
+    const file = args.find((a, i) => i > 0 && !a.startsWith('--') && args[i - 1] === 'import') ?? args[1];
+    if (!file || file.startsWith('--')) {
+      console.error('usage: sitekit import FILE --confirm');
+      process.exit(1);
+    }
+    if (!args.includes('--confirm')) {
+      console.error('[sitekit] 匯入會清空並覆蓋整個資料庫，請加 --confirm');
+      process.exit(1);
+    }
+    const { prisma, svc } = await exporter();
+    try {
+      const bundle = JSON.parse(readFileSync(resolve(file), 'utf8'));
+      const r = await svc.importAll(bundle, { mode: 'replace', confirm: true, actor: 'cli' });
+      console.log(`[sitekit] 匯入完成：${Object.values(r.counts).reduce((a, c) => a + c, 0)} 列（來源版本 ${r.sourceVersion ?? '?'}）`);
+    } finally {
+      await prisma.$disconnect();
+    }
+    break;
+  }
   case 'env':
     show();
     break;

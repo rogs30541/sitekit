@@ -19,3 +19,5 @@ packages/db/sqlite/.shadow.db
 data/
 *.db
 *.db-journal
+# 備份目錄（整庫 JSON 快照，含機密）
+backups/

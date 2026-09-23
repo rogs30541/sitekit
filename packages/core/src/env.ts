@@ -33,6 +33,10 @@ export const env = {
   get APP_VERSION() {
     return read('APP_VERSION', '0.0.0');
   },
+  /** 備份目錄（不經 /api/assets 公開）；預設 STORAGE_DIR 的上一層 /backups，再退 cwd/backups */
+  get BACKUP_DIR() {
+    return read('BACKUP_DIR');
+  },
   /** 版本更新檢查的 GitHub repo（owner/name）；空字串＝關閉 */
   get UPDATE_REPO() {
     return read('SITEKIT_UPDATE_REPO', 'rogs30541/sitekit');
