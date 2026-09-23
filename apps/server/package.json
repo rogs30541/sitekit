@@ -1,10 +1,12 @@
 {
   "name": "@sitekit/server",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "private": true,
   "description": "SiteKit 單體殼：一個 Node 程序同時跑 API 與前台，預設 SQLite；sitekit start 即開站",
   "main": "dist/main.js",
-  "bin": { "sitekit": "bin/sitekit.mjs" },
+  "bin": {
+    "sitekit": "bin/sitekit.mjs"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node bin/sitekit.mjs start"

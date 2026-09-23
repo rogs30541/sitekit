@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.22.0（2026-09-23）
+
+- fix(release): 中文路徑用 fileURLToPath 解析 root
+- 發行管線：release.yml（tag → GHCR 單體映像＋免建置發行包＋GitHub Release）、scripts/release.mjs（升版／CHANGELOG／tag／push）、CHANGELOG.md、deploy/zeabur-template.yaml、後台版本更新檢查（GET /api/admin/system/update-check＋頂部提示）
+
 ## v0.21.0（2026-09-23）
 
 - 單體殼 apps/server：一個 Node 程序、一個埠，api＋前台同程序，預設 SQLite；`sitekit start` 即開站；Dockerfile.monolith；CI 加 e2e-monolith
