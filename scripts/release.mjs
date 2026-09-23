@@ -7,8 +7,9 @@
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
+const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const args = process.argv.slice(2);
 const sh = (c) => execSync(c, { cwd: root, encoding: 'utf8' }).trim();
 const PKGS = ['package.json', 'apps/api/package.json', 'apps/web/package.json', 'apps/server/package.json'];
