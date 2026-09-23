@@ -24,17 +24,20 @@ function run(args, env = {}) {
   const r = spawnSync(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['prisma', ...args], { stdio: 'inherit', cwd: root, env: { ...process.env, ...env }, shell: process.platform === 'win32' });
   if (r.status !== 0) process.exit(r.status ?? 1);
 }
+// validate／generate 會檢查 datasource URL 的協定：對「另一種」schema 執行時給一個同協定的假 URL（不需連線）
+const PG_ENV = isSqlite || !url ? { DATABASE_URL: 'postgresql://sitekit:sitekit@localhost:5432/sitekit' } : {};
+const SQ_ENV = !isSqlite ? { DATABASE_URL: 'file:./.validate.db' } : {};
 function gen() {
-  run(['generate', '--schema', PG]);
-  run(['generate', '--schema', SQ]);
+  run(['generate', '--schema', PG], PG_ENV);
+  run(['generate', '--schema', SQ], SQ_ENV);
 }
 switch (cmd) {
   case 'generate':
     gen();
     break;
   case 'validate':
-    run(['validate', '--schema', PG]);
-    run(['validate', '--schema', SQ]);
+    run(['validate', '--schema', PG], PG_ENV);
+    run(['validate', '--schema', SQ], SQ_ENV);
     break;
   case 'migrate':
     if (!url) {
