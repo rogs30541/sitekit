@@ -71,4 +71,4 @@ export function mergeTracking(site: TrackingConfig, page?: Partial<TrackingConfi
   for (const k of ['pageView', 'viewContent', 'addToCart', 'initiateCheckout', 'purchase'] as const) out.events[k] = [site.events[k], p.events[k]].filter(Boolean).join('\n;\n');
   return out;
 }
-export const hasTracking = (t: TrackingConfig) => !!(t.ga4 || t.gtm || t.fbPixel || t.tiktok || t.lineTag || t.googleAdsId || t.head || t.bodyTop || t.bodyBottom || Object.values(t.events).some(Boolean));
+export const hasTracking = (t: TrackingConfig) => !!(t.ga4 || t.gtm || t.fbPixel || t.tiktok || t.lineTag || t.googleAdsId || t.head || t.bodyTop || t.bodyBottom || Object.values(t.events ?? {}).some(Boolean));

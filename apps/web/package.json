@@ -1,6 +1,6 @@
 {
   "name": "@sitekit/web",
-  "version": "0.16.5",
+  "version": "0.17.0",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000",

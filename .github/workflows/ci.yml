@@ -4,10 +4,33 @@ on:
     branches: [main]
   pull_request:
 jobs:
-  build:
+  build-and-e2e:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sitekit
+          POSTGRES_PASSWORD: sitekit
+          POSTGRES_DB: sitekit
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U sitekit"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
     env:
-      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      DATABASE_URL: postgresql://sitekit:sitekit@localhost:5432/sitekit
+      APP_ENV: development
+      SESSION_SECRET: ci-session-secret-not-for-production
+      OPS_TOKEN: ci-ops-token
+      FRONTEND_URL: http://localhost:3000
+      API_INTERNAL_URL: http://localhost:4000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_ENV: development
+      # e2e 會連續登入數百次；限流關閉、測試以 E2E_RATE_LIMIT_OFF 跳過限流案例
+      RATE_LIMIT: off
+      E2E_RATE_LIMIT_OFF: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,3 +44,14 @@ jobs:
       - run: npm run build -w @sitekit/api
       - run: npm run build -w @sitekit/web
       - run: node --check mcp/server.mjs
+      - name: migrate + seed
+        run: npm run db:migrate -w @sitekit/api && npm run db:seed -w @sitekit/api
+      - name: start api
+        run: (cd apps/api && PORT=4000 nohup node dist/main.js > /tmp/api.log 2>&1 &) && for i in $(seq 1 30); do curl -sf http://localhost:4000/api/health && break; sleep 2; done
+      - name: start web
+        run: (cd apps/web && nohup npx next start -p 3000 > /tmp/web.log 2>&1 &) && for i in $(seq 1 30); do curl -sf -o /dev/null http://localhost:3000/ && break; sleep 2; done
+      - name: e2e
+        run: node tests/e2e/run.mjs
+      - name: logs on failure
+        if: failure()
+        run: tail -n 120 /tmp/api.log; tail -n 60 /tmp/web.log

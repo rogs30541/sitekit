@@ -209,12 +209,19 @@ npm run dev:web                 # 視窗 3：http://localhost:3000
 
 > 注意：dev server 跑著時不要執行建置（`build:web` 打壞 `.next`、`build:api` 清掉 dist 讓 watch 程序死掉）；要建置先停 dev server。
 
-## 建置與 CI
+## 建置、測試與 CI
 
 ```bash
 npm run build                   # shared → api → web
-npm run ci                      # build + prisma validate（與 .github/workflows/ci.yml 同步）
+npm run ci                      # build + prisma validate
+npm run test:e2e                # tests/e2e/run.mjs：對已啟動的 api（4000）＋web（3000）跑全部端到端（只打 HTTP，與平台無關）
+node tests/e2e/run.mjs p25      # 只跑指定檔
 ```
+
+- **e2e 護欄（M0，v0.17.0）**：`tests/e2e/p04…p25、payment.mjs` 共 20 檔約 450 個斷言，涵蓋電商／課程／金流／物流／發票／內容設計器／銷售頁／追蹤碼／AI 工作站／會員資料庫。`_setup.mjs` 會建立 tester@example.com、補點、把設定回到種子預設、從 `fixtures/image-templates.json` 匯入 22 組產圖模板。需要 web 的檔案檔頭標 `// needs: web`，WEB 未啟動時跳過。
+- 本機跑：api 以 `RATE_LIMIT=off` 啟動並帶 `E2E_RATE_LIMIT_OFF=1`（限流案例改為跳過），否則連續登入會被 429。
+- GitHub Actions（`.github/workflows/ci.yml`）：起 postgres service → build → migrate＋seed → 啟動 api 與 `next start` → 跑 e2e；紅燈即擋 PR。
+- 歷史教訓：v0.9 起後台首頁 `/admin` 就是 500、全新資料庫前台因追蹤設定為空而整站 500，都是沒有「全新資料庫＋登入後打每一頁」的測試才拖到上線後才發現。
 
 ## 接 MCP（Claude Desktop / Claude Code）
 

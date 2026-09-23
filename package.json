@@ -1,7 +1,7 @@
 {
   "name": "sitekit",
   "private": true,
-  "version": "0.16.5",
+  "version": "0.17.0",
   "description": "AIGC創客架站套件（SiteKit）：電商開店／線上課程／品牌網站共用骨架，後台具 MCP 與 AI API 雙路徑",
   "workspaces": [
     "packages/*",
@@ -22,6 +22,7 @@
     "db:seed": "npm run db:seed -w @sitekit/api",
     "db:setup": "npm run db:generate && npm run db:migrate && npm run db:seed",
     "ci": "npm run build && npm run db:validate -w @sitekit/api",
+    "test:e2e": "node tests/e2e/run.mjs",
     "dev:db:stop": "node scripts/dev-db.mjs stop",
     "dev:edge": "npm run dev -w @sitekit/edge",
     "edge:migrate:local": "npm run migrate:local -w @sitekit/edge",

@@ -1,0 +1,65 @@
+// P25：會員資料庫（標籤：電商客戶／課程學員／兩者；刪除：無交易硬刪、有訂單匿名化）＋OPS list_members/delete_member＋前台註冊永遠 role=user
+const B = process.env.API ?? 'http://localhost:4000';
+const RUN = Date.now().toString(36).slice(-5).toLowerCase();
+let fails = 0;
+const ok = (n, c, x = '') => { console.log(`${c ? 'PASS' : 'FAIL'} ${n}${x ? ' — ' + x : ''}`); if (!c) fails++; };
+const j = async (path, { method = 'GET', body, cookie } = {}) => {
+  const r = await fetch(B + path, { method, headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) });
+  const t = await r.text(); let b; try { b = JSON.parse(t); } catch { b = t; }
+  return { status: r.status, body: b, cookie: r.headers.get('set-cookie')?.split(';')[0] };
+};
+const admin = (await j('/api/admin/auth/login', { method: 'POST', body: { email: 'admin@example.com', password: 'admin12345' } })).cookie;
+ok('admin login', !!admin);
+const act = (action, params) => j('/api/admin/ai/act', { method: 'POST', cookie: admin, body: { action, params } });
+await act('update_settings', { settings: { 'logistics.provider': 'ecpay', 'logistics.methods': 'manual', 'shipping.fee': '0' } });
+const reg = async (tag) => { const email = `m-${tag}-${RUN}@example.com`; const r = await j('/api/auth/register', { method: 'POST', body: { email, password: 'password123', displayName: `會員${tag}` } }); return { email, cookie: r.cookie, body: r.body, status: r.status }; };
+const a = await reg('shop'), b = await reg('course'), c = await reg('none'), d = await reg('both');
+ok('註冊四位會員', [a, b, c, d].every((x) => x.status === 201 || x.status === 200), JSON.stringify(a.body).slice(0, 100));
+ok('前台註冊永遠 role=user', [a, b, c, d].every((x) => (x.body.user?.role ?? x.body.role ?? 'user') === 'user'), JSON.stringify(a.body).slice(0, 100));
+const prod = await j('/api/admin/catalog/products', { method: 'POST', cookie: admin, body: { type: 'physical', sku: `MB-${RUN.toUpperCase()}`, name: `會員測試品 ${RUN}`, price: 100, coverUrl: '' } });
+const course = await j('/api/admin/catalog/courses', { method: 'POST', cookie: admin, body: { slug: `mb-${RUN}`, isPublished: true, product: { sku: `MBC-${RUN.toUpperCase()}`, name: `會員測試課 ${RUN}`, price: 200, description: null, coverUrl: '' } } });
+ok('建商品與課程', prod.status === 201 && course.status === 201, JSON.stringify(course.body).slice(0, 100));
+const ship = { method: 'manual', name: 'A', phone: '0912345678', address: '台北市中正區重慶南路一段 1 號' };
+const order = (cookie, items, withShip) => j('/api/orders', { method: 'POST', cookie, body: { items, ...(withShip ? { shipping: ship } : {}) } });
+const oa = await order(a.cookie, [{ productId: prod.body.id, qty: 1 }], true);
+const ob = await order(b.cookie, [{ productId: course.body.productId, qty: 1 }], false);
+const od1 = await order(d.cookie, [{ productId: prod.body.id, qty: 1 }], true);
+const od2 = await order(d.cookie, [{ productId: course.body.productId, qty: 1 }], false);
+ok('四張訂單建立', [oa, ob, od1, od2].every((x) => x.status === 201), JSON.stringify(oa.body).slice(0, 120));
+for (const o of [oa, ob, od1, od2]) {
+  const r = await j(`/api/admin/orders/${o.body.id}/mark-paid`, { method: 'POST', cookie: admin, body: {} });
+  if (r.status >= 400) console.log('mark-paid', r.status, JSON.stringify(r.body).slice(0, 120));
+}
+const list = await j('/api/admin/members?limit=500', { cookie: admin });
+const find = (e) => list.body.find((r) => r.email === e);
+ok('members 列表 200', list.status === 200 && Array.isArray(list.body));
+ok('電商客戶標籤', JSON.stringify(find(a.email)?.tags) === '["shop"]', JSON.stringify(find(a.email)));
+ok('課程學員標籤', JSON.stringify(find(b.email)?.tags) === '["course"]', JSON.stringify(find(b.email)));
+ok('兩者皆有＝兩個標籤', JSON.stringify(find(d.email)?.tags) === '["shop","course"]', JSON.stringify(find(d.email)));
+ok('尚無交易＝無標籤', JSON.stringify(find(c.email)?.tags) === '[]', JSON.stringify(find(c.email)));
+ok('系統帳號不列入', !list.body.some((r) => r.email === 'admin-studio@system.local'));
+const both = await j('/api/admin/members?tag=both', { cookie: admin });
+ok('tag=both 篩選', both.body.some((r) => r.email === d.email) && !both.body.some((r) => r.email === a.email));
+const qq = await j(`/api/admin/members?q=${encodeURIComponent('m-none-' + RUN)}`, { cookie: admin });
+ok('q 關鍵字篩選', qq.body.length === 1 && qq.body[0].email === c.email);
+const dc = await j(`/api/admin/members/${find(c.email).id}`, { method: 'DELETE', cookie: admin });
+ok('無交易會員硬刪 mode=deleted', dc.status === 200 && dc.body.mode === 'deleted', JSON.stringify(dc.body));
+ok('硬刪後登入失敗', (await j('/api/auth/login', { method: 'POST', body: { email: c.email, password: 'password123' } })).status >= 400);
+const bd = await j('/api/admin/members/delete', { method: 'POST', cookie: admin, body: { ids: [find(a.email).id] } });
+ok('有訂單會員批次刪除 mode=anonymized', bd.status === 201 && bd.body[0]?.mode === 'anonymized', JSON.stringify(bd.body));
+ok('匿名化後登入失敗', (await j('/api/auth/login', { method: 'POST', body: { email: a.email, password: 'password123' } })).status >= 400);
+const after = await j('/api/admin/members?limit=500', { cookie: admin });
+ok('刪除後不在名單', !after.body.some((r) => r.email === a.email || r.email === c.email));
+const kept = await j(`/api/admin/orders/${oa.body.id}`, { cookie: admin });
+ok('匿名化保留訂單', kept.status === 200 && kept.body.merchantOrderNo === oa.body.merchantOrderNo, JSON.stringify(kept.body).slice(0, 120));
+const lm = await act('list_members', { tag: 'course' });
+ok('OPS list_members tag=course', lm.body.ok && lm.body.data.some((r) => r.email === b.email), JSON.stringify(lm.body).slice(0, 120));
+const dm = await act('delete_member', { idOrEmail: b.email });
+ok('OPS delete_member 有課程訂單→anonymized', dm.body.ok && dm.body.data.mode === 'anonymized', JSON.stringify(dm.body).slice(0, 160));
+const sys = await act('delete_member', { idOrEmail: 'admin-studio@system.local' });
+ok('系統帳號不可刪', sys.body.ok === false, JSON.stringify(sys.body).slice(0, 120));
+await act('delete_member', { idOrEmail: d.email });
+await j(`/api/admin/catalog/products/${prod.body.id}`, { method: 'PATCH', cookie: admin, body: { isActive: false } });
+await j(`/api/admin/catalog/courses/${course.body.id}`, { method: 'PATCH', cookie: admin, body: { isPublished: false } });
+console.log(fails ? `\n${fails} FAILED` : '\nALL PASS');
+process.exit(fails ? 1 : 0);

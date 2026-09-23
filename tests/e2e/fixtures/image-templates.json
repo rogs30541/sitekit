@@ -1,0 +1,1287 @@
+[
+  {
+    "key": "product-white-bg",
+    "name": "A01 商品白底圖",
+    "category": "商品展示",
+    "description": "電商去背/白底主圖，上架平台基本款（1:1；必填：自由補充、商品圖/服務圖）",
+    "systemPrompt": "Professional e-commerce packshot of {product_name}, a {product_material_and_color} {product_category}, photographed on a seamless pure white studio background (#FEFEFE) with absolutely no props, no text, no logo and no watermark. Single hero object centered in a 1:1 square frame, shot straight-on at a slightly elevated eye level of about 5 degrees, full product in frame occupying roughly 80 percent of the frame height and 25 percent of the width, generous symmetrical negative space on the left and right. Highlight the {product_selling_points} through visible structural detail such as {product_detail_focus}. Lighting: large softbox from the upper front left plus a white bounce card on the right, producing one long soft vertical specular highlight along the left edge of the body and a gentle grey falloff on the right, a soft feathered elliptical contact shadow directly beneath the object in very light grey (#EFEFEF) so the product sits on the surface instead of floating, no cast shadow on the background, no reflective floor. Color: pure white ground, matte body in deep charcoal black (#2B2B2B) with shadow core #1E1E1E and highlight rolloff #606060. Typography: none, the image must contain zero typography. Style: clean catalogue product photography, Amazon and Shopee main-image compliant, crisp anti-aliased edges, true-to-life material rendering, no vignette, no colour cast. Camera: 100mm macro lens, f/9, ISO 100, tripod, focus stacked so the entire product is tack sharp front to back. Aspect ratio 1:1, 640x640.\n\nNegative prompt (avoid): text, letters, chinese characters, watermark, logo, brand name, price tag, sticker, badge, props, hands, human, table, wooden surface, fabric, plants, gradient background, grey background, off-white background, coloured background, visible horizon line, reflective floor, mirror reflection, hard cast shadow, double shadow, harsh specular blowout, vignette, colour cast, motion blur, out of focus, low resolution, jpeg artifacts, rough cutout edges, halo outline, floating object, tilted product, cropped product, multiple products, duplicate object, 3d render look, plastic cgi look\n\nFill each {variable} from the user fields below (Chinese field labels map to the variables; free_notes may override any visual instruction). If a variable is not provided, choose a sensible default that keeps the same layout, palette and typography hierarchy. Reference images, when provided, define the actual product/service appearance and must be reproduced faithfully.\n\n套用注意事項：\n這張圖的成敗只在「白到底 + 接地陰影」：務必在 prompt 中同時寫死 `#FEFEFE 背景` 與 `feathered contact shadow`，只寫白底常會生出帶灰的漸層背景。\n絕對不要在 prompt 中放入商品名稱以外的中文行銷詞，否則 AI 很容易把字直接畫在白底上；負面詞一定要列 `chinese characters`。\n換品類時只改 `{product_category}` 與 `{product_detail_focus}`：軟質商品（服飾、食品袋）要補「不可過度反光」，透明商品（玻璃、瓶裝）要把「white bounce card」改成「backlit白底＋側邊黑旗」才壓得出輪廓。\n平台主圖多半要求商品佔框 80%～85%，安全邊界請維持四邊各 8%；若要上架 Amazon，主體佔比不得低於 85%，可把 prompt 內的 80 percent 調到 85。\n商品圖上傳 2 張以上（正面＋側 45 度）時，生成的輪廓與比例最穩；單張側拍容易導致 AI 自行腦補背面結構。",
+    "inputFields": [
+      {
+        "key": "product_name",
+        "type": "text",
+        "label": "商品名稱",
+        "required": false,
+        "placeholder": "例：霧面不鏽鋼保溫杯"
+      },
+      {
+        "key": "product_selling_points",
+        "type": "textarea",
+        "label": "商品賣點",
+        "required": false,
+        "placeholder": "例：保冰 24 小時、杯身霧面、適合通勤"
+      },
+      {
+        "key": "free_notes",
+        "type": "textarea",
+        "label": "自由補充",
+        "required": true,
+        "placeholder": "描述商品、材質、顏色與想要呈現的賣點。"
+      },
+      {
+        "key": "reference_images",
+        "type": "image",
+        "label": "商品圖／服務圖",
+        "required": false,
+        "placeholder": "最多 4 張、每張 10MB（商品／服務照片作為參考圖）"
+      }
+    ],
+    "defaultSize": "1024x1024",
+    "sortOrder": 1,
+    "isActive": true
+  },
+  {
+    "key": "marketplace-main-image",
+    "name": "A02 平台商品主圖",
+    "category": "商品展示",
+    "description": "蝦皮/momo 等平台第一張主圖，含新品標籤（1:1；必填：商品名稱、主賣點、自由補充、商品圖/服務圖）",
+    "systemPrompt": "Square 1:1 marketplace hero image, 640x640, for {product_name}. Lifestyle product photography with graphic overlay. Right side: the {product_name} packaging, a deep navy matte stand-up pouch with a cream label showing line-art icons, standing upright on a light oak countertop, occupying about 58 percent of the frame height. Foreground lower left: a clear glass of iced {product_usage_result} on a round walnut coaster, a drip sachet on a small ceramic plate, scattered coffee beans, arranged as a stable triangular composition. Background: warm cream linen and pale wood kitchen scene, softly blurred at f/2.8, bright airy high-key exposure with natural window light raking from the back left, short soft shadows falling to the lower right, refractive sparkle inside the ice. Left half of the frame is kept as clean cream negative space for typography. Typography: a 45 degree gold ribbon banner across the top left corner reading {corner_badge_text} in small white bold sans; below it the product title {product_name} in large heavy sans, deep espresso brown, set left aligned; a thin gold hairline divider with a tiny coffee bean icon at its centre; then a solid deep navy circle badge containing an oversized white numeral from {main_selling_point} plus a thin line stopwatch icon, with the remaining words of {main_selling_point} set in navy bold beneath it. Colour palette: deep navy #313B5B, cream #F2EEE8, gold #B6833D, espresso brown #3B2115, warm wood #8F7A6B. Style: premium Taiwanese e-commerce main image, {background_style}, clean commercial retouching, readable at thumbnail size. Camera: 50mm lens, f/2.8, eye level, natural daylight. Aspect ratio 1:1.\n\nNegative prompt (avoid): garbled text, misspelled chinese, broken glyphs, overlapping text, text over product, low contrast text, tiny unreadable type, more than one badge, duplicate ribbon, cluttered props, messy background, busy pattern, dark moody lighting, harsh flash, blown highlights, heavy vignette, oversaturated colours, neon colours, red and yellow discount style, watermark, stock photo logo, price tag, human hands, face, people, distorted packaging, warped label, crooked ribbon, tilted horizon, lens flare, jpeg artifacts, low resolution\n\nFill each {variable} from the user fields below (Chinese field labels map to the variables; free_notes may override any visual instruction). If a variable is not provided, choose a sensible default that keeps the same layout, palette and typography hierarchy. Reference images, when provided, define the actual product/service appearance and must be reproduced faithfully.\n\n套用注意事項：\n主標是中文大字，AI 生字最容易在這裡壞掉：建議「生成」先產版面，再用「微調」或後製把 `{商品名稱}`、`{主賣點}` 的字重新貼上，別硬要一次到位。\n圓形數字徽章是這張圖的靈魂，`{主賣點}` 請務必含阿拉伯數字（3 分鐘、24 小時、2 入）；若賣點沒有數字，改成 2–4 字短詞放在徽章裡，並在 prompt 把 oversized numeral 改成 oversized short phrase。\n左半部的米白留白是文字安全區，換品類（服飾、3C、保健）時只需換主體與情境物，**不可**把商品移到左邊，否則字會壓在商品上。\n深藍 `#313B5B` × 燙金 `#B6833D` 的配色對應食品／飲品的質感路線；若是 3C 改成深灰 × 冷銀、若是美妝改成霧粉 × 玫瑰金，緞帶與圓徽的形狀保持不變即可維持版型辨識度。\n記得在縮圖尺寸（約 160×160）檢查一次：主標與徽章數字要在縮圖下仍可讀，這是平台主圖的唯一驗收標準。",
+    "inputFields": [
+      {
+        "key": "product_name",
+        "type": "text",
+        "label": "商品名稱",
+        "required": true,
+        "placeholder": "例：冷萃咖啡包"
+      },
+      {
+        "key": "main_selling_point",
+        "type": "text",
+        "label": "主賣點",
+        "required": true,
+        "placeholder": "例：3 分鐘完成冷萃"
+      },
+      {
+        "key": "corner_badge_text",
+        "type": "text",
+        "label": "角標文字",
+        "required": false,
+        "placeholder": "例：新品／熱銷／限量"
+      },
+      {
+        "key": "background_style",
+        "type": "select",
+        "label": "背景風格",
+        "options": [
+          "純淨白底",
+          "情境質感"
+        ],
+        "required": true,
+        "placeholder": "預設：純淨白底"
+      },
+      {
+        "key": "free_notes",
+        "type": "textarea",
+        "label": "自由補充",
+        "required": true,
+        "placeholder": "輸入商品與 1-2 個主賣點，適合商品列表縮圖。"
+      },
+      {
+        "key": "reference_images",
+        "type": "image",
+        "label": "商品圖／服務圖",
+        "required": false,
+        "placeholder": "最多 4 張、每張 10MB（商品／服務照片作為參考圖）"
+      }
+    ],
+    "defaultSize": "1024x1024",
+    "sortOrder": 2,
+    "isActive": true
+  },
+  {
+    "key": "product-detail-infographic",
+    "name": "A03 商品賣點資訊圖",
+    "category": "商品展示",
+    "description": "規格＋功能圖示化，商品詳情頁用（2:3；必填：商品名稱、核心賣點、自由補充、商品圖/服務圖）",
+    "systemPrompt": "Vertical 2:3 product detail infographic, 640x960, for {product_name}, in a {visual_style} design language. Section 1, top 43 percent: a real product photograph of {product_name} placed on the right against a soft pale blue-grey interior window scene with blurred green foliage, natural light raking from the back right, soft highlight along the left edge and a short shadow; on the left, a small deep navy rounded pill label reading {sub_tagline}, below it the product title {product_name} in extra bold near-black navy at large size, then a one line slogan in light weight, then three benefit rows derived from {core_selling_points}, each row made of a thin line-art icon inside a circular navy outline, a bold 4 character heading and one 12 character grey description. Section 2: a white rounded card spanning the width, split into three equal cells by thin dividers, each cell showing a line-art icon plus an oversized bold figure from {spec_info} and two short lines of supporting text. Section 3: a centred section title with short decorative rules and diamond nodes on both sides. Section 4: two rounded rectangular lifestyle photographs side by side representing {usage_scenarios}, each overlaid with a small navy icon, a bold sub heading and two short description lines. Section 5: a white rounded card with five evenly spaced line-art feature icons separated by hairlines, each with a 4 character title and a small caption. Section 6: a deep navy rounded pill bar at the very bottom with a shield check icon and a closing trust statement. Colour palette: navy #39557A, accent navy #3C5679, page background #E1E5EA, card white #F7F8F9, body grey #535659, headline #111A29. Style: clean modern Taiwanese e-commerce detail page, flat vector icons in a single navy stroke weight, generous 5 percent side margins, consistent 24px block spacing, cards lifted with a 2px soft shadow. Aspect ratio 2:3.\n\nNegative prompt (avoid): garbled chinese text, fake characters, random glyphs, misaligned columns, uneven margins, overlapping blocks, text touching card edges, inconsistent icon stroke weights, mixed icon styles, 3d glossy icons, emoji, clip art, rainbow colours, red discount banners, heavy drop shadows, gradient overload, cluttered layout, more than three benefit rows, more than three spec cells, watermark, stock logo, human face, hands, price tag, blurry photo, noisy background, dark lighting, jpeg artifacts, low resolution, horizontal composition\n\nFill each {variable} from the user fields below (Chinese field labels map to the variables; free_notes may override any visual instruction). If a variable is not provided, choose a sensible default that keeps the same layout, palette and typography hierarchy. Reference images, when provided, define the actual product/service appearance and must be reproduced faithfully.\n\n套用注意事項：\n這是 A 分類文字量最大的一張，結構請鎖死「3 條賣點 + 3 格規格 + 2 格情境 + 5 個功能圖示」；數量一改，整張長圖的節奏就會塌。\n圖示一致性比插圖美感重要：prompt 裡務必寫 `single navy stroke weight, flat line-art`，否則 AI 會混用實心、漸層、3D 三種圖示風格。\n情境照建議由使用者自行上傳（對應「使用情境」欄位），讓 AI 只負責套版；純靠生成的情境照容易出現同一支商品長得不一樣的破綻。\n2:3 直式在手機上是滑動閱讀，所有說明文字請壓在 12 字內，字級不低於 13px；底部深藍膠囊條的結語不要超過 20 字。\n換品類時，`{視覺風格}` 與主色必須一起換：食品類改暖米白 × 焦糖棕、美妝類改霧白 × 香檳金，但白卡、細分隔線、膠囊標籤等結構元素保留，版型辨識度才不會流失。",
+    "inputFields": [
+      {
+        "key": "product_name",
+        "type": "text",
+        "label": "商品名稱",
+        "required": true,
+        "placeholder": "例：恆溫快煮壺"
+      },
+      {
+        "key": "core_selling_points",
+        "type": "textarea",
+        "label": "核心賣點",
+        "required": true,
+        "placeholder": "例：快速加熱、保溫 12 小時、防乾燒"
+      },
+      {
+        "key": "spec_info",
+        "type": "text",
+        "label": "規格資訊",
+        "required": false,
+        "placeholder": "例：1.2L、304 不鏽鋼、900W"
+      },
+      {
+        "key": "usage_scenarios",
+        "type": "text",
+        "label": "使用情境",
+        "required": false,
+        "placeholder": "例：辦公室、租屋族、家庭早餐"
+      },
+      {
+        "key": "visual_style",
+        "type": "select",
+        "label": "視覺風格",
+        "options": [
+          "乾淨科技"
+        ],
+        "required": true,
+        "placeholder": "預設：乾淨科技"
+      },
+      {
+        "key": "free_notes",
+        "type": "textarea",
+        "label": "自由補充",
+        "required": true,
+        "placeholder": "適合商品詳情頁、蝦皮/官網商品介紹圖。"
+      },
+      {
+        "key": "reference_images",
+        "type": "image",
+        "label": "商品圖／服務圖",
+        "required": false,
+        "placeholder": "最多 4 張、每張 10MB（商品／服務照片作為參考圖）"
+      }
+    ],
+    "defaultSize": "1024x1536",
+    "sortOrder": 3,
+    "isActive": true
+  },
+  {
+    "key": "new-product-launch",
+    "name": "A04 新品上市主視覺",
+    "category": "商品展示",
+    "description": "新品發表形象主視覺，強調上市訊息（2:3；必填：商品名稱、核心賣點、上市訊息、自由補充、商品圖/服務圖）",
+    "systemPrompt": "Vertical 2:3 new product launch key visual, 640x960, for {product_name}, brand tone {brand_tone}, aimed at {target_audience}. Right third of the frame: the {product_name} bottle, a green glass dropper bottle with a brushed gold collar and white rubber bulb, standing three-quarter view on a wet natural stone, occupying about 48 percent of the frame height, its own label carrying the product name in small elegant serif. Background: sunlit green foliage in heavy bokeh with backlight streaming through the leaves, one oversized transparent water sphere behind the bottle catching a rim highlight, a shallow water surface at the base with soft reflections, small white blossoms at the lower right, extremely shallow depth of field. Lighting: backlit plus soft top left key, dappled leaf light, gentle vertical specular band down the bottle, very faint shadows, bright high key mood. Left column typography stacked top to bottom: a thin gold circular frame badge with a small botanical line ornament containing {launch_message} in two short lines; a fine letterspaced sub headline; the main title {product_name} in an extra large serif with a subtle deep olive tone; a slogan line with middot separators; then three benefit rows from {core_selling_points}, each with a circular thin line icon of a leaf, a shield and a water drop, a bold 4 character heading and a 12 character grey description; then two semi transparent dark olive parallelogram label bars repeating {launch_message}. Bottom band: a full width solid deep green bar with a small leaf icon, three short trust phrases separated by vertical rules, and one closing brand sentence centred beneath. Colour palette: deep forest green #32462B, pale sage background #DDE2C9, highlight cream #F8F8F3, olive label #71815F, bottle green #C8CB99, muted gold #8A7C63 and #D4CCAB, text #505846. Style: premium clean beauty launch poster, serif typography, low saturation green and gold only, airy negative space. Camera: 85mm lens, f/2.0, slightly low eye level, natural sunlight. Aspect ratio 2:3.\n\nNegative prompt (avoid): garbled chinese characters, fake glyphs, duplicated title, text over the bottle, text on the water sphere, low contrast type, more than three benefit rows, extra badges, red or orange promotional colours, neon, high saturation, harsh contrast, dark moody lighting, hard shadows, heavy vignette, plastic cgi render, 3d cartoon, glossy plastic leaves, cluttered props, multiple bottles, distorted bottle shape, warped label, crooked badge, human face, hands, model, watermark, stock logo, price tag, discount sticker, lens dirt, jpeg artifacts, low resolution, horizontal composition\n\nFill each {variable} from the user fields below (Chinese field labels map to the variables; free_notes may override any visual instruction). If a variable is not provided, choose a sensible default that keeps the same layout, palette and typography hierarchy. Reference images, when provided, define the actual product/service appearance and must be reproduced faithfully.\n\n套用注意事項：\n這張的高級感來自「明體大標 + 低飽和雙色」，prompt 裡一定要同時寫 `serif typography` 與 `low saturation green and gold only`；少寫其一就會退回普通電商促銷感。\n`{上市訊息}` 會在畫面出現兩次（左上圓徽 + 中段標籤條），請寫成「主訊息／次訊息」兩段各 6 字內，例如「新品上市／限時預購中」；寫成一長串會讓圓徽塞爆。\n商品必須靠右、文字必須靠左，且兩者不可重疊；換成扁寬商品（粉餅、禮盒）時要把商品改成置中偏下，文字改成上方橫排，否則左欄會被壓住。\n`{品牌調性}` 一換，背景素材與主色要同步換：保健食品改成暖木＋麥穗＋琥珀金、3C 改成霧灰＋冷光＋銀白，但金線圓徽、三列賣點、底部深色資訊帶這三個結構元素保留。\n底部深綠資訊帶是出血滿版設計，印刷用途請預留 3mm 出血；社群投放則要確認最下方 12% 不會被 IG 的介面元件蓋掉。",
+    "inputFields": [
+      {
+        "key": "product_name",
+        "type": "text",
+        "label": "商品名稱",
+        "required": true,
+        "placeholder": "例：植萃修護精華"
+      },
+      {
+        "key": "core_selling_points",
+        "type": "textarea",
+        "label": "核心賣點",
+        "required": true,
+        "placeholder": "例：修護乾燥、穩定膚況、清爽吸收"
+      },
+      {
+        "key": "launch_message",
+        "type": "text",
+        "label": "上市訊息",
+        "required": true,
+        "placeholder": "例：新品上市／預購開跑"
+      },
+      {
+        "key": "brand_tone",
+        "type": "select",
+        "label": "品牌調性",
+        "options": [
+          "清新自然"
+        ],
+        "required": true,
+        "placeholder": "預設：清新自然"
+      },
+      {
+        "key": "target_audience",
+        "type": "text",
+        "label": "目標客群",
+        "required": false,
+        "placeholder": "例：25-40 歲保養族群"
+      },
+      {
+        "key": "free_notes",
+        "type": "textarea",
+        "label": "自由補充",
+        "required": true,
+        "placeholder": "適合新品上市、預購、開賣通知。"
+      },
+      {
+        "key": "reference_images",
+        "type": "image",
+        "label": "商品圖／服務圖",
+        "required": false,
+        "placeholder": "最多 4 張、每張 10MB（商品／服務照片作為參考圖）"
+      }
+    ],
+    "defaultSize": "1024x1536",
+    "sortOrder": 4,
+    "isActive": true
+  },
+  {
+    "key": "flash-sale-poster",
+    "name": "B05 限時促銷海報",
+    "category": "促銷優惠",
+    "description": "限時折扣／價格對比，衝刺短期轉換（2:3；必填：商品名稱、促銷內容、CTA、自由補充、商品圖/服務圖）",
+    "systemPrompt": "A premium vertical e-commerce flash-sale poster, 640x960 pixels, 2:3 portrait ratio. Hero subject: {product_name}, a {product_description} presented as an open gift box photographed from a 45-degree elevated three-quarter angle, occupying the right 45% of the frame, with a secondary lifestyle vignette of related props in the lower-left corner forming an L-shaped composition. Background: a matte beige concrete tabletop against a soft warm-grey wall, a sprig of green foliage entering from the upper right, shallow depth of field at f/2.8 so the backdrop falls into creamy blur. Lighting: soft natural window light from the upper right at 45 degrees, gentle leaf shadows on the wall, warm highlights on the box lid and a soft falloff shadow to the left, low-contrast editorial mood. Layout: a slim dark-brown rounded information column overlaps the left edge of the product photo, stacking a clock-icon label reading {urgency_label}, then the promotional line {promo_text} with the discount figure rendered in oversized gold serif numerals as the single focal point, then a white rounded price card carrying {price_text} in heavy dark-brown numerals with a thin strikethrough original price. Top zone: a centred small caption flanked by short hairlines and a gift icon, a very bold serif headline of the product name, and a light one-line subheadline. Bottom zone: a deep espresso band holding three icon-plus-text benefit columns divided by thin rules, a gold capsule call-to-action button reading {cta} with a cart icon and right chevron, and a final scarcity line. Typography: bold serif Traditional Chinese headline, clean sans-serif body, strict three-tier hierarchy. Color palette strictly limited to deep coffee #291C12, warm beige #CDBAA2, off-white #F8F4EE and gold #E2B676. Style: high-end Taiwanese gift-box commerce poster, print-grade, crisp, uncluttered. Camera: 50mm lens, product photography, natural light. Aspect ratio 2:3.\n\nNegative prompt (avoid): cluttered layout, more than four colors, neon or saturated primary colors, cold blue tones, cheap discount-sticker aesthetic, starburst badges, drop shadows on text, gradient rainbow text, distorted or garbled Chinese characters, misspelled text, text touching the canvas edge, watermark, logo of real brands, low resolution, jpeg artifacts, harsh direct flash, blown highlights, busy patterned background, multiple competing focal points, tiny unreadable body text, stock-photo people staring at camera, plastic-looking product render\n\nFill each {variable} from the user fields below (Chinese field labels map to the variables; free_notes may override any visual instruction). If a variable is not provided, choose a sensible default that keeps the same layout, palette and typography hierarchy. Reference images, when provided, define the actual product/service appearance and must be reproduced faithfully.\n\n套用注意事項：\n折扣數字是整張圖的唯一焦點，換品類時只改商品與道具，**不要同時放大價格與折扣兩組數字**，否則左側資訊柱會失去節奏。\n深色資訊柱必須壓在商品照的「暗部或背景」上，若上傳的商品圖左側是亮面或白底，請在自由補充註明「左側預留深色壓字區」。\n底部深棕條高度固定約 18%，三欄賣點每欄標題勿超過 4 字、說明勿超過 8 字，超過會自動縮字造成層級崩壞。\n原價刪除線需與活動價同時存在才成立；只填活動價時請刪掉 prompt 中的 strikethrough 描述，避免生出「刪掉自己」的怪圖。\n安全區：上下各留 4%、左右各留 5%，印刷用途再外擴 3mm 出血。",
+    "inputFields": [
+      {
+        "key": "product_name",
+        "type": "text",
+        "label": "商品名稱",
+        "required": true,
+        "placeholder": "例：手沖咖啡禮盒"
+      },
+      {
+        "key": "promo_text",
+        "type": "text",
+        "label": "促銷內容",
+        "required": true,
+        "placeholder": "例：限時 2 件 85 折"
+      },
+      {
+        "key": "price_text",
+        "type": "text",
+        "label": "價格/折扣",
+        "required": false,
+        "placeholder": "例：原價 980，活動價 799"
+      },
+      {
+        "key": "目標客群",
+        "type": "text",
+        "label": "目標客群",
+        "required": false,
+        "placeholder": "例：送禮、上班族、咖啡愛好者"
+      },
+      {
+        "key": "cta",
+        "type": "text",
+        "label": "CTA",
+        "required": true,
+        "placeholder": "例：立即下單"
+      },
+      {
+        "key": "品牌風格",
+        "type": "select",
+        "label": "品牌風格",
+        "options": [
+          "簡約質感"
+        ],
+        "required": true,
+        "placeholder": "預設：簡約質感"
+      },
+      {
+        "key": "free_notes",
+        "type": "textarea",
+        "label": "自由補充",
+        "required": true,
+        "placeholder": "填入商品、促銷內容、價格折扣與 CTA，適合快速做活動圖。"
+      },
+      {
+        "key": "reference_images",
+        "type": "image",
+        "label": "商品圖 / 服務圖",
+        "required": false,
+        "placeholder": "最多 4 張、每張 10MB（商品／服務照片作為參考圖）"
+      }
+    ],
+    "defaultSize": "1024x1536",
+    "sortOrder": 5,
+    "isActive": true
+  },
+  {
+    "key": "bundle-offer",
+    "name": "B06 組合套餐促銷",
+    "category": "促銷優惠",
+    "description": "套餐/組合價，提高客單價（2:3；必填：套餐名稱、組合內容、優惠內容、CTA、自由補充、商品圖/服務圖）",
+    "systemPrompt": "A rich vertical bundle-offer promotion poster, 640x960 pixels, 2:3 portrait ratio, Taiwanese e-commerce style. Hero: {bundle_name}, an open kraft gift box shot top-down flat-lay on a dark walnut wood table, containing {bundle_items} neatly arranged on shredded paper filler, with loose coffee beans, a green leaf and a ribboned second gift box blurred in the background corners. Lighting: soft overhead softbox slightly from the left, gentle specular edges on packaging, soft contact shadows, warm saturated brown grading with a natural vignette. Layout from top to bottom: a dark-brown ribbon banner with a gift icon carrying a short caption, a very bold cream serif headline of the bundle name with a circular dashed stamp badge in the upper right reading {campaign_badge}, a thin decorative rule and a one-line subheadline; the flat-lay product photo; a cream rounded card titled {bundle_label} in a dark-brown pill, presenting each included item as an icon with its name and quantity joined by large plus signs; a two-part price block where a dark-brown left panel holds the bundle price {bundle_price} in oversized numerals and a deep-red right panel with an angled edge holds the savings amount {savings} in white; a slim add-on offer row with small red discount tags; a deep-red rounded capsule call-to-action button reading {cta}; and a bottom strip of three icon-plus-text trust statements. Typography: heavy serif Traditional Chinese display type, clean sans-serif numerals and body, strict four-tier hierarchy, generous letter spacing on labels. Color palette: deep walnut #150D07 and #513923, cream #ECD6B8 and #F7E8D3, promotional red #8A231B. Style: premium yet high-urgency retail bundle poster, print-grade, crisp edges, no gradients on text. Camera: 50mm top-down flat-lay product photography. Aspect ratio 2:3.\n\nNegative prompt (avoid): flat lighting, washed-out colors, pastel palette, more than three items in the bundle card, overlapping icons, uneven card spacing, garbled or distorted Chinese characters, fake product logos, plastic 3D render look, glossy reflections on wood, heavy drop shadows, rainbow gradients, comic sans or playful fonts, price text cut off at edge, duplicate price numbers, cluttered add-on row, watermark, low resolution, oversharpened halos, empty white areas in the lower third\n\nFill each {variable} from the user fields below (Chinese field labels map to the variables; free_notes may override any visual instruction). If a variable is not provided, choose a sensible default that keeps the same layout, palette and typography hierarchy. Reference images, when provided, define the actual product/service appearance and must be reproduced faithfully.\n\n套用注意事項：\n「組合內容」的品項數直接決定中段卡片的欄數，**建議固定 3 項**；4 項以上請改成兩行排列並在 prompt 中明講 `two rows of two items`。\n價格塊是「左深棕＋右深紅」的對比結構，若只有組合價沒有現省金額，請把右側紅塊改成「限時優惠」字樣，別讓它空著。\n換成保養品、3C 等非食品品類時，木紋桌面要一併改掉（例如改成米色亞麻布或霧面石板），否則深棕木質會與商品調性打架。\n促銷紅只能出現在「現省塊、加購折扣標、CTA」三處，其餘一律深棕或奶油米；紅色一多就會掉到夜市傳單質感。\n底部三欄保證列是信任元素，文案建議統一為 6 字內，並保留最左的分隔線對齊。",
+    "inputFields": [
+      {
+        "key": "bundle_name",
+        "type": "text",
+        "label": "套餐名稱",
+        "required": true,
+        "placeholder": "例：早餐咖啡組"
+      },
+      {
+        "key": "bundle_items",
+        "type": "textarea",
+        "label": "組合內容",
+        "required": true,
+        "placeholder": "例：咖啡豆 1 包 + 濾掛 10 入 + 馬克杯"
+      },
+      {
+        "key": "bundle_price",
+        "type": "text",
+        "label": "優惠內容",
+        "required": true,
+        "placeholder": "例：組合價 799，現省 180"
+      },
+      {
+        "key": "cta",
+        "type": "text",
+        "label": "CTA",
+        "required": true,
+        "placeholder": "例：立即入手"
+      },
+      {
+        "key": "視覺風格",
+        "type": "select",
+        "label": "視覺風格",
+        "options": [
+          "強促銷"
+        ],
+        "required": true,
+        "placeholder": "預設：強促銷"
+      },
+      {
+        "key": "free_notes",
+        "type": "textarea",
+        "label": "自由補充",
+        "required": true,
+        "placeholder": "適合套組、禮盒、加購優惠與清庫存活動。"
+      },
+      {
+        "key": "reference_images",
+        "type": "image",
+        "label": "商品圖 / 服務圖",
+        "required": false,
+        "placeholder": "最多 4 張、每張 10MB（商品／服務照片作為參考圖）"
+      }
+    ],
+    "defaultSize": "1024x1536",
+    "sortOrder": 6,
+    "isActive": true
+  },
+  {
+    "key": "festival-campaign-poster",
+    "name": "B07 節慶活動海報",
+    "category": "促銷優惠",
+    "description": "母親節/中秋等節慶檔期主視覺（2:3；必填：商品名稱、節慶名稱、活動主題、自由補充、商品圖/服務圖）",
+    "systemPrompt": "A soft, dreamy vertical festival campaign poster, 640x960 pixels, 2:3 portrait ratio, Traditional Chinese layout. Occasion: {festival_name}. Hero: {product_name}, an open nine-compartment handmade cookie gift box tilted at about 40 degrees in the mid-right of the frame occupying roughly 45% of the canvas, its lid standing behind with a floral illustrated card and a large blush satin bow; a bouquet of pink carnations and baby's breath fills the lower-left foreground, with a small handwritten note card resting beside it. Background: a high-key blush and cream bokeh field with translucent heart-shaped light flares, dried florals and a soft candle glow, everything gently out of focus. Lighting: broad frontal soft light from slightly right, almost shadowless, delicate rim glow around the petals, airy pastel grading. Layout: a wavy coral ribbon banner at the very top carrying {festival_greeting} in white, a two-line ultra-bold red serif headline reading {campaign_theme} aligned left, and a heart-shaped hang tag with a ribbon bow in the upper right carrying a short thank-you message; beneath the headline a product caption {product_name} framed by small illustrated carnations, then a white rounded offer card with a delivery-truck icon showing {offer_text} in bold red with a light grey supporting line; at the bottom a coral band with three circular pastel icons and paired benefit captions. Typography: heavy calligraphic serif Traditional Chinese display type in warm red, clean light sans-serif for body, clear four-tier hierarchy. Color palette: blush cream #FBE4D0, coral pink #F4A694, warm red #D56463. Style: gentle gift-giving festival poster, editorial pastel, print-grade, no harsh contrast, illustration and photography blended. Camera: 50mm, high-key product photography, shallow depth of field. Aspect ratio 2:3.\n\nNegative prompt (avoid): harsh contrast, dark moody background, saturated neon pink, cold blue or green tint, hard drop shadows, clip-art quality flowers, plastic fake flowers, garbled or distorted Chinese characters, English typos, crowded layout, more than two headline lines, discount starburst stickers, aggressive sale badges, watermark, real brand logos, heavy vignette, oversharpened edges, low resolution, faces of real people, text overlapping the product, cluttered bottom band\n\nFill each {variable} from the user fields below (Chinese field labels map to the variables; free_notes may override any visual instruction). If a variable is not provided, choose a sensible default that keeps the same layout, palette and typography hierarchy. Reference images, when provided, define the actual product/service appearance and must be reproduced faithfully.\n\n套用注意事項：\n此模板**沒有 CTA 欄位**，畫面不放按鈕；想加行動指引請寫進自由補充並降級成一行小字，別做成按鈕破壞柔美氛圍。\n換節慶時必須同步替換三件事：節慶符號（康乃馨→月亮／聖誕樹）、緞帶祝福語、以及色彩氛圍下拉；只改文字會出現「粉紅色的中秋節」。\n主標固定雙行且左對齊，每行 5–7 字最佳；若活動主題超過 14 字，改用「主標＋副標」拆句再生成。\n白色優惠卡是全圖唯一的硬邊元素，請確保它壓在背景柔焦區而非花束上，否則邊界會糊掉。\n高調柔光容易讓淺色商品（白盒、米色包裝）與背景黏在一起，上傳商品圖時盡量選有色差或有陰影的拍攝版本。",
+    "inputFields": [
+      {
+        "key": "product_name",
+        "type": "text",
+        "label": "商品名稱",
+        "required": true,
+        "placeholder": "例：手工餅乾禮盒"
+      },
+      {
+        "key": "festival_name",
+        "type": "text",
+        "label": "節慶名稱",
+        "required": true,
+        "placeholder": "例：母親節 / 中秋節 / 周年慶"
+      },
+      {
+        "key": "campaign_theme",
+        "type": "text",
+        "label": "活動主題",
+        "required": true,
+        "placeholder": "例：把甜蜜送給最重要的人"
+      },
+      {
+        "key": "offer_text",
+        "type": "text",
+        "label": "優惠內容",
+        "required": false,
+        "placeholder": "例：滿千免運，第二件 8 折"
+      },
+      {
+        "key": "色彩氛圍",
+        "type": "select",
+        "label": "色彩氛圍",
+        "options": [
+          "溫暖柔和"
+        ],
+        "required": true,
+        "placeholder": "預設：溫暖柔和"
+      },
+      {
+        "key": "free_notes",
+        "type": "textarea",
+        "label": "自由補充",
+        "required": true,
+        "placeholder": "填入節慶、活動主題與優惠內容。"
+      },
+      {
+        "key": "reference_images",
+        "type": "image",
+        "label": "商品圖 / 服務圖",
+        "required": false,
+        "placeholder": "最多 4 張、每張 10MB（商品／服務照片作為參考圖）"
+      }
+    ],
+    "defaultSize": "1024x1536",
+    "sortOrder": 7,
+    "isActive": true
+  },
+  {
+    "key": "membership-loyalty",
+    "name": "B08 會員招募優惠",
+    "category": "促銷優惠",
+    "description": "會員入會禮＋集點方案說明（2:3；必填：會員方案名稱、會員福利、CTA、自由補充、商品圖/服務圖）",
+    "systemPrompt": "An information-rich vertical membership recruitment poster, 640x960 pixels, 2:3 portrait ratio, Traditional Chinese layout, warm cream paper aesthetic. Upper third: a lifestyle photograph of a latte with heart rosetta art on a round wooden table beside a cookie plate, natural window light, shallow depth of field, occupying the right side; green leaves decorate the upper-left corner. Over it, a thin outlined tagline box containing {tagline}, a very bold dark-brown sans-serif headline reading {membership_name} with a small coffee-bean accent, and a lighter subheadline. Below: a ticket-shaped coupon card with serrated left edge, a dark-brown vertical tab labelled {join_offer_label}, and the offer {join_offer} rendered with an oversized deep-red numeral flanked by small motion marks. Middle: a cream rounded panel titled {benefits_label} inside a dark-brown pill with wheat-sprig flourishes, holding three columns, each an illustrated icon plus a bold benefit title and two lines of light explanatory copy, taken from {member_benefits}. Lower middle: two side-by-side cream cards, the left a numbered three-step joining guide with circular step markers and small icons, the right an explanation of the loyalty stamp card showing a nine-cup grid with the final slot as a gift icon, beside a realistic smartphone mockup displaying a digital membership card with a barcode. Then a subscription bullet list with check marks and a wide green rounded call-to-action button reading {cta} with a right arrow. Bottom: a slim deep-brown trust strip with small icons and short reassurance statements. Typography: heavy sans-serif Traditional Chinese display, clean light body text, five-tier hierarchy, generous white space inside cards. Color palette: cream #FEFAF1, warm beige #FBF2E6, dark brown #674428, olive green #68863E used only for the button, deep red #A7352B used only for the coupon numeral. Style: friendly lifestyle brand membership flyer, flat editorial infographic mixed with one photographic hero, print-grade. Aspect ratio 2:3.\n\nNegative prompt (avoid): overlapping text blocks, misaligned cards, inconsistent card corner radius, more than three benefit columns, cramped padding, garbled or distorted Chinese characters, fake QR code that looks scannable, real brand logos beyond a generic chat icon, harsh shadows, 3D bevel effects, neon green, multiple accent colors, gradient backgrounds, blurry phone mockup, low resolution, watermark, empty bottom half, photo occupying more than half the canvas, tiny unreadable captions under 10px\n\nFill each {variable} from the user fields below (Chinese field labels map to the variables; free_notes may override any visual instruction). If a variable is not provided, choose a sensible default that keeps the same layout, palette and typography hierarchy. Reference images, when provided, define the actual product/service appearance and must be reproduced faithfully.\n\n套用注意事項：\n這是 B 類資訊密度最高的一支，**會員福利固定生成三欄**；只給 2 項會留大片空白，給 4 項以上會自動縮字到讀不清，請嚴格寫滿 3 項且每項「標題 4 字內＋說明 2 行」。\n綠色只允許出現在 CTA、紅色只允許出現在折價券數字，這是整張圖層級成立的關鍵；prompt 中的 `used only for` 敘述請勿刪掉。\n手機 mockup 與集點格子屬於高風險元素（容易生出畸形 UI）；若追求穩定，請在自由補充刪掉手機描述，改成單純的集點卡插圖。\n情境照只能佔上方 1/3，若上傳的商品圖是直式全身照，請在自由補充註明「照片僅置於上方 1/3、右側對齊」，否則會擠掉下方五個資訊區。\n安全區：底部深棕信任條約 5% 高且緊貼下緣，印刷時請確認出血不會吃掉文字。",
+    "inputFields": [
+      {
+        "key": "membership_name",
+        "type": "text",
+        "label": "會員方案名稱",
+        "required": true,
+        "placeholder": "例：咖啡好友會員"
+      },
+      {
+        "key": "member_benefits",
+        "type": "textarea",
+        "label": "會員福利",
+        "required": true,
+        "placeholder": "例：生日禮、每月折價券、集點換飲品"
+      },
+      {
+        "key": "join_offer",
+        "type": "text",
+        "label": "加入優惠",
+        "required": false,
+        "placeholder": "例：立即領 50 元折價券"
+      },
+      {
+        "key": "cta",
+        "type": "text",
+        "label": "CTA",
+        "required": true,
+        "placeholder": "例：免費加入"
+      },
+      {
+        "key": "風格",
+        "type": "select",
+        "label": "風格",
+        "options": [
+          "親切生活"
+        ],
+        "required": true,
+        "placeholder": "預設：親切生活"
+      },
+      {
+        "key": "free_notes",
+        "type": "textarea",
+        "label": "自由補充",
+        "required": true,
+        "placeholder": "適合會員招募、LINE 官方帳號、集點卡與訂閱方案。"
+      },
+      {
+        "key": "reference_images",
+        "type": "image",
+        "label": "商品圖 / 服務圖",
+        "required": false,
+        "placeholder": "最多 4 張、每張 10MB（商品／服務照片作為參考圖）"
+      }
+    ],
+    "defaultSize": "1024x1536",
+    "sortOrder": 8,
+    "isActive": true
+  },
+  {
+    "key": "restock-notice",
+    "name": "B09 補貨到貨通知",
+    "category": "促銷優惠",
+    "description": "熱銷回歸/限量開賣，製造急迫感（2:3；必填：商品名稱、到貨訊息、CTA、自由補充、商品圖/服務圖）",
+    "systemPrompt": "A calm, premium vertical restock announcement poster, 640x960 pixels, 2:3 portrait ratio, Traditional Chinese layout. Hero: {product_name}, a matte grey bottled beverage standing upright on a pale linen-covered stone table, occupying about 38% of the frame on the right, its minimalist cream label crisply legible; in the lower-left foreground a small wooden bowl of black sesame seeds, scattered oat flakes and a folded linen cloth; upper right corner shows blurred green foliage and a glass jar of oats. Lighting: soft directional light from the upper left at 45 degrees, a gentle specular band down the bottle, a long soft shadow across the table, low contrast, desaturated warm-neutral grading. Layout, left column: a bell icon flanked by short hairlines above a small gold-brown caption, then an ultra-bold charcoal sans-serif headline reading {restock_message} with small radiating emphasis strokes on both sides, then an angled gold-brown ribbon banner carrying {return_message} in white; below, the product name {product_name} in bold charcoal and two lines of light grey feature copy; then two stacked cream rounded info cards, the first with a circular clock icon reading {launch_time} with its numeral enlarged and a supporting urgency line, the second with a gift icon reading {scarcity_note} with its quantity enlarged and a sold-out warning line. Lower band: a wide dark-charcoal rounded bar containing a bell icon with two lines of reminder copy on the left and a gold rounded call-to-action button reading {cta} with a bell icon and right chevron on the right. Bottom: a single centred thank-you line flanked by small heart outlines. Typography: heavy sans-serif Traditional Chinese display, light sans-serif body, numerals always one tier larger than surrounding text. Color palette strictly cream #FAF3ED, warm grey #E3D9CF, charcoal #38332E and gold-brown #B18C55. Style: quiet premium beverage commerce poster, Japanese-minimal, print-grade, no red, no urgency stickers. Camera: 50mm product photography, natural soft light, shallow depth of field. Aspect ratio 2:3.\n\nNegative prompt (avoid): red discount badges, neon colors, high saturation, starburst or explosion shapes, countdown timer graphics, cluttered layout, more than two info cards, text over the bottle label, garbled or distorted Chinese characters, unreadable small numerals, fake nutrition claims, real brand logos, harsh flash lighting, heavy contrast, dark moody background, plastic 3D render, watermark, low resolution, oversharpened halos, product cropped at canvas edge, people in frame\n\nFill each {variable} from the user fields below (Chinese field labels map to the variables; free_notes may override any visual instruction). If a variable is not provided, choose a sensible default that keeps the same layout, palette and typography hierarchy. Reference images, when provided, define the actual product/service appearance and must be reproduced faithfully.\n\n套用注意事項：\n這支模板**沒有風格下拉選單**，色系固定；要改成其他調性只能在自由補充描述（例如「改為深藍＋銀灰的冷調」），且務必同時修改 prompt 的 color palette 段落。\n「開賣時間」與「稀缺提醒」是左欄那兩張資訊卡的唯一來源，兩者皆空時中段會整塊塌陷；至少填一項，且句中要含阿拉伯數字讓模型有東西可放大。\n左欄文字與右側商品各佔一半，是嚴格的左右分欄；上傳的商品圖若為橫式或帶大量背景元素，請先裁成直式去背再上傳，否則文字會壓到商品。\n主標與商品名是兩個不同層級，別讓「到貨訊息」和「商品名稱」寫成同一句（例如兩格都寫「黑芝麻燕麥奶補貨到」），會生出重複大字。\n安全區：上 5%／下 4%／左右各 5%；底部感謝語字級最小（約 13px），印刷輸出前建議放大到 15px 以上再重生成。",
+    "inputFields": [
+      {
+        "key": "product_name",
+        "type": "text",
+        "label": "商品名稱",
+        "required": true,
+        "placeholder": "例：黑芝麻燕麥奶"
+      },
+      {
+        "key": "restock_message",
+        "type": "text",
+        "label": "到貨訊息",
+        "required": true,
+        "placeholder": "例：熱銷補貨到"
+      },
+      {
+        "key": "launch_time",
+        "type": "text",
+        "label": "開賣時間",
+        "required": false,
+        "placeholder": "例：今晚 8 點開賣"
+      },
+      {
+        "key": "scarcity_note",
+        "type": "text",
+        "label": "稀缺提醒",
+        "required": false,
+        "placeholder": "例：限量 300 組"
+      },
+      {
+        "key": "cta",
+        "type": "text",
+        "label": "CTA",
+        "required": true,
+        "placeholder": "例：設定提醒"
+      },
+      {
+        "key": "free_notes",
+        "type": "textarea",
+        "label": "自由補充",
+        "required": true,
+        "placeholder": "適合熱銷商品補貨、預購提醒與限量販售。"
+      },
+      {
+        "key": "reference_images",
+        "type": "image",
+        "label": "商品圖 / 服務圖",
+        "required": false,
+        "placeholder": "最多 4 張、每張 10MB（商品／服務照片作為參考圖）"
+      }
+    ],
+    "defaultSize": "1024x1536",
+    "sortOrder": 9,
+    "isActive": true
+  },
+  {
+    "key": "product_white_bg",
+    "name": "商品白底圖",
+    "category": "ecommerce",
+    "description": "適合電商、直播銷售與商品主圖。",
+    "systemPrompt": "Studio product photo on a clean white background, centered, soft studio lighting, high detail, no text.",
+    "inputFields": [
+      {
+        "key": "productName",
+        "type": "text",
+        "label": "商品名稱",
+        "required": true,
+        "placeholder": "例：霧面不鏽鋼保溫杯"
+      },
+      {
+        "key": "sellingPoints",
+        "type": "textarea",
+        "label": "商品賣點",
+        "required": false,
+        "placeholder": "例：保冰 24 小時、杯身霧面"
+      }
+    ],
+    "defaultSize": "1024x1024",
+    "sortOrder": 10,
+    "isActive": true
+  },
+  {
+    "key": "brand-story-poster",
+    "name": "C10 品牌故事形象圖",
+    "category": "品牌社群",
+    "description": "職人/理念形象，建立品牌信任（2:3；必填：品牌名稱、品牌故事、自由補充、商品圖/服務圖）",
+    "systemPrompt": "A 640x960 vertical 2:3 brand story poster for {brand_name}, an editorial lifestyle composition in four stacked bands. Top band (48% height): a documentary-style interior photograph of a craftsperson working at a solid oak workbench, three-quarter side-back view, mid shot, head lowered toward the hands, wearing a linen shirt and a grey-green apron; the workbench carries leather tools, a paper roll, small wooden boxes and an amber glass bottle; behind, a warm off-white plaster wall with a floating light-wood shelf holding ceramic vessels and trailing green plants; shallow depth of field, soft natural side-backlight from the upper right casting gentle leaf shadows on the wall, high-key low-contrast exposure, no hard shadows. The entire left 45% of this band stays as clean empty wall for typography: a thin circular line-art logo mark beside the brand name {brand_name} in a refined serif at large size, a hairline rule underneath, then the tagline {brand_tagline} in wide-tracked letterforms, then two short paragraphs of {brand_story} in light small type with generous 1.9 line spacing. Second band (26%): a three-column photo grid of tactile close-ups — dried botanicals on a wooden tray, a hand smoothing folded linen, a natural bristle brush beside an amber bottle. Third band (18%): a flat sand-beige panel {accent_beige} with a centered section heading flanked by thin horizontal rules, and four evenly spaced single-line-weight icons (leaf, hand, heart, tree) each with a two-line label, separated by vertical hairlines. Bottom band: one closing sentence and a symmetrical botanical line ornament. Palette strictly linen off-white #E0D3C2, wood brown #80664A, sand #D2C3AE, deep coffee text #453019, {brand_mood} atmosphere. Muji-like artisanal editorial style, natural light photography, 50mm lens, f/2.0, fine grain, 2:3 aspect ratio.\n\nNegative prompt (avoid): cool blue tones, high saturation, neon colors, harsh flash lighting, hard black shadows, cluttered desk, busy background, modern glossy plastic, heavy drop shadow, gradient mesh, 3D render, cartoon, illustration of people, distorted hands, extra fingers, watermark, stock photo logo, misspelled Chinese characters, garbled text, overlapping text blocks, text covering the subject's face, centered symmetrical layout, thick heavy borders, drop-shadowed typography, more than four icons in the bottom band, mismatched photo color temperature across the grid\n\nFill each {variable} from the user fields below (Chinese field labels map to the variables; free_notes may override any visual instruction). If a variable is not provided, choose a sensible default that keeps the same layout, palette and typography hierarchy. Reference images, when provided, define the actual product/service appearance and must be reproduced faithfully.\n\n套用注意事項：\n主視覺的「左上留白牆面」是整張圖能成立的關鍵：換品類（例如餐飲、服飾）時，務必在 prompt 裡保留「left 45% stays clean empty wall」這句，否則文字會壓在主體身上。\n品牌故事超過 80 字時請自行斷成兩段並加空行，AI 排版才會維持兩段式節奏；一整段長文會被壓成小字密排。\n底部四圖示區固定四格，換行業時只換圖示語意（例如改成「食材／現做／無添加／在地」），不要增減格數，五格以上會破壞等分節奏。\n三宮格照片必須與主視覺同色溫，上傳素材時請先統一白平衡；色溫不一致是這個模板最常見的崩壞點。\n2:3 直式用於官網 about 或社群置頂時，上下各留 6% 安全邊界，避免頭像框或介面元件裁掉 logo 與結語。",
+    "inputFields": [
+      {
+        "key": "brand_name",
+        "type": "text",
+        "label": "品牌名稱",
+        "required": true,
+        "placeholder": "例：森日製作所"
+      },
+      {
+        "key": "brand_story",
+        "type": "textarea",
+        "label": "品牌故事",
+        "required": true,
+        "placeholder": "例：從台灣小工作室開始，重視天然材料與手作溫度"
+      },
+      {
+        "key": "brand_tagline",
+        "type": "text",
+        "label": "品牌標語",
+        "required": false,
+        "placeholder": "例：把日常做得更好"
+      },
+      {
+        "key": "brand_mood",
+        "type": "select",
+        "label": "品牌氛圍",
+        "options": [
+          "手作溫度"
+        ],
+        "required": true,
+        "placeholder": "預設：手作溫度"
+      },
+      {
+        "key": "free_notes",
+        "type": "textarea",
+        "label": "自由補充",
+        "required": true,
+        "placeholder": "適合品牌介紹・官網 about・社群置頂圖。"
+      },
+      {
+        "key": "reference_images",
+        "type": "image",
+        "label": "商品圖 / 服務圖",
+        "required": false,
+        "placeholder": "最多 4 張、每張 10MB（商品／服務照片作為參考圖）"
+      }
+    ],
+    "defaultSize": "1024x1536",
+    "sortOrder": 10,
+    "isActive": true
+  },
+  {
+    "key": "social-lifestyle-post",
+    "name": "C11 社群情境貼文",
+    "category": "品牌社群",
+    "description": "真人使用情境，IG/FB 方形貼文（1:1；必填：商品名稱、使用情境、自由補充、商品圖/服務圖）",
+    "systemPrompt": "A 640x640 square lifestyle social media post for {product_name}, bright Scandinavian home-kitchen scene shot in soft natural window light. Right 55% of the frame: a young woman in athletic wear with a high ponytail sits at a kitchen island, caught mid-bite eating {product_name}, three-quarter view, half-body medium shot, genuinely smiling, candid documentary energy rather than a posed studio look; behind her a white cabinet run, a light oak floating shelf and a large window, all softly defocused at f/2.2; on the counter at lower right sit the retail box of {product_name}, two unwrapped bars on a wooden plate, a bowl of fruit and a black shaker bottle. Left 45% stays a clean bright area reserved for typography, layered from top to bottom: a hand-lettered cream ribbon banner tilted about eight degrees carrying {scene_hook} with two small motion dashes above it; the product name {product_name} set very large in heavy dark-brown sans-serif across two lines; three stacked olive-green rounded pill badges {accent_green}, each with a small white line icon and one short benefit line drawn from {usage_scene}; below them a white handwritten note card held by a black binder clip with a two-line message. A sand-beige strip runs across the bottom 7% carrying a bookmark icon and a paper-plane icon with {post_goal} call-to-action text split by a vertical divider. Palette: bright white #F7F7F5, warm wood #A88361, sand #E4D8CA, olive accent #858D65, dark brown type #3D2719. {visual_style} mood, targeted at {audience}, natural light food and lifestyle photography, 35mm, clean bright airy grade, 1:1 aspect ratio.\n\nNegative prompt (avoid): studio seamless backdrop, dark moody lighting, heavy shadows, oversaturated colors, red or blue accent badges, stiff posed model looking straight at camera, closed mouth stock smile, distorted hands, extra fingers, deformed food, floating product with no surface contact, harsh drop shadows on text, gradient text, outlined display font, more than three benefit badges, text overlapping the model's face, cluttered kitchen counter, visible brand logos of other products, watermark, garbled Chinese characters, low resolution, motion blur on the subject\n\nFill each {variable} from the user fields below (Chinese field labels map to the variables; free_notes may override any visual instruction). If a variable is not provided, choose a sensible default that keeps the same layout, palette and typography hierarchy. Reference images, when provided, define the actual product/service appearance and must be reproduced faithfully.\n\n套用注意事項：\n主標字級極大（約畫面寬度 45%），商品名稱超過 7 個字時請在 prompt 裡改成「set across three lines」，否則會自動縮小到失去視覺重量。\n徽章固定三顆是這張圖的節奏基礎，換品類只換文案與圖示；要放四條賣點時建議改用 A03 商品賣點資訊圖，不要硬塞。\n橄欖綠 `#858D65` 是全圖唯一的彩度來源，若品牌主色不同，請只替換這一個色值並維持「低彩度、中明度」的特性，換成高彩度紅或藍會立刻破壞自然生活感。\n1:1 版位在 IG 動態消息會被裁切上下各約 2%，底部互動列請只放次要 CTA，重要資訊一律放在中間 80% 區域。\n換成服務類（非實體商品）時，把右下「retail box + unwrapped bars」改寫成服務現場道具，並在使用情境欄明確寫出地點，否則畫面會缺少可辨識的主體。",
+    "inputFields": [
+      {
+        "key": "product_name",
+        "type": "text",
+        "label": "商品名稱",
+        "required": true,
+        "placeholder": "例：燕麥能量棒"
+      },
+      {
+        "key": "usage_scene",
+        "type": "textarea",
+        "label": "使用情境",
+        "required": true,
+        "placeholder": "例：健身後、辦公室下午茶、戶外野餐"
+      },
+      {
+        "key": "audience",
+        "type": "text",
+        "label": "受眾",
+        "required": false,
+        "placeholder": "例：健康飲食族群"
+      },
+      {
+        "key": "visual_style",
+        "type": "select",
+        "label": "視覺風格",
+        "options": [
+          "自然生活感"
+        ],
+        "required": true,
+        "placeholder": "預設：自然生活感"
+      },
+      {
+        "key": "post_goal",
+        "type": "text",
+        "label": "貼文目的",
+        "required": false,
+        "placeholder": "例：提高收藏、吸引留言、介紹新品"
+      },
+      {
+        "key": "free_notes",
+        "type": "textarea",
+        "label": "自由補充",
+        "required": true,
+        "placeholder": "描述使用情境、受眾與想要的社群風格。"
+      },
+      {
+        "key": "reference_images",
+        "type": "image",
+        "label": "商品圖 / 服務圖",
+        "required": false,
+        "placeholder": "最多 4 張、每張 10MB（商品／服務照片作為參考圖）"
+      }
+    ],
+    "defaultSize": "1024x1024",
+    "sortOrder": 11,
+    "isActive": true
+  },
+  {
+    "key": "reel-cover",
+    "name": "C12 短影音封面",
+    "category": "品牌社群",
+    "description": "Reels/Shorts 封面，標題吸睛導點閱（2:3；必填：影片主題、封面標題、自由補充、商品圖/服務圖）",
+    "systemPrompt": "A 640x960 vertical 2:3 short-video cover for a reel titled {cover_title}, high-contrast dramatic food cinematography on a dark moody set. Lower 60% of the frame: a live pour-over coffee action shot featuring {subject_elements} — a matte black gooseneck kettle entering from the upper right pouring a clean visible stream of hot water into a glass dripper where the coffee bed blooms and bubbles, a glass server below filling with deep brown coffee, a stoneware cup of black coffee and a wooden bowl of roasted beans in the left foreground, all resting on a dark walnut table with a linen cloth; background falls off into near-black with a faint rim light outlining the kettle and rising steam; strong side-backlight, deep vignette, high contrast, crisp specular highlights on the water stream. Upper 45% is the typography zone over the darkest part of the background: first a tilted parallelogram tag in warm gold-beige {tag_gold} carrying {video_topic} with its leading numeral scaled up about 1.4 times; beneath it the headline {cover_title} set in extremely heavy condensed sans-serif across two lines, the first line cream white #F6F1E3 and the second line vivid yellow #F5B723 with a slight italic slant, both with a subtle dark outline and soft shadow so they separate from the photograph; below the headline a single row of three white circular line icons (droplet, powder, clock) divided by thin vertical rules, each captioned with a short three-to-five character label. Palette: near-black #0E0B06, wood brown #745134, gold beige #D9B071, yellow accent #F5B723. {cover_style} mood, cinematic 50mm, f/2.0, shallow depth of field, steam and motion visible, 2:3 aspect ratio, all typography kept between 15% and 55% of the frame height.\n\nNegative prompt (avoid): bright white background, flat even lighting, pastel palette, low contrast, thin light-weight typography, script or handwriting font for the headline, text in the bottom 20% of the frame, text in the top 10% of the frame, more than two headline lines, rainbow gradient text, heavy 3D bevel text, emoji, arrows scribbled over the photo, cluttered composition, empty kettle with no water stream, static lifeless product shot, garbled Chinese characters, misaligned strokes, watermark, stock photo border, oversharpened halo, plastic looking coffee\n\nFill each {variable} from the user fields below (Chinese field labels map to the variables; free_notes may override any visual instruction). If a variable is not provided, choose a sensible default that keeps the same layout, palette and typography hierarchy. Reference images, when provided, define the actual product/service appearance and must be reproduced faithfully.\n\n套用注意事項：\n封面標題必須維持「兩行、雙色」結構：第一行米白、第二行亮黃。只用單色會讓暗背景上的層次消失，是這個模板最關鍵的一條。\n文字一律鎖在畫面高度 15%–55%；IG Reels 下方約 20%、TikTok 下方約 25% 會被帳號名稱與文案遮住，越界就等於白做。\n換品類時，「正在發生的動作」要跟著換（注水→翻炒／擠奶泡／上色／開箱撕封），靜態擺拍會讓封面瞬間失去點閱動機。\n影片主題開頭放阿拉伯數字（3 個、5 招、7 天）能觸發標籤內的數字放大效果；改成純文字敘述會失去這個視覺重點。\n三圖示條的短標請控制在 3–5 字，超過會換行擠掉圖示；若重點超過三項，改在影片內講，不要塞進封面。",
+    "inputFields": [
+      {
+        "key": "video_topic",
+        "type": "text",
+        "label": "影片主題",
+        "required": true,
+        "placeholder": "例：3 個咖啡新手常犯錯"
+      },
+      {
+        "key": "cover_title",
+        "type": "text",
+        "label": "封面標題",
+        "required": true,
+        "placeholder": "例：別再這樣沖咖啡"
+      },
+      {
+        "key": "subject_elements",
+        "type": "text",
+        "label": "主體元素",
+        "required": false,
+        "placeholder": "例：手沖壺、咖啡杯、咖啡豆"
+      },
+      {
+        "key": "cover_style",
+        "type": "select",
+        "label": "封面風格",
+        "options": [
+          "強烈吸睛"
+        ],
+        "required": true,
+        "placeholder": "預設：強烈吸睛"
+      },
+      {
+        "key": "free_notes",
+        "type": "textarea",
+        "label": "自由補充",
+        "required": true,
+        "placeholder": "適合教學・開箱・商品推薦・Vlog 影片封面。"
+      },
+      {
+        "key": "reference_images",
+        "type": "image",
+        "label": "商品圖 / 服務圖",
+        "required": false,
+        "placeholder": "最多 4 張、每張 10MB（商品／服務照片作為參考圖）"
+      }
+    ],
+    "defaultSize": "1024x1536",
+    "sortOrder": 12,
+    "isActive": true
+  },
+  {
+    "key": "testimonial-social-proof",
+    "name": "C13 顧客好評見證",
+    "category": "品牌社群",
+    "description": "評價截圖＋星等數據，社會證明（2:3；必填：商品/服務名稱、顧客好評、自由補充、商品圖/服務圖）",
+    "systemPrompt": "A 640x960 vertical 2:3 customer testimonial social-proof graphic for {service_name}, a clean white card floating over a softly blurred bright home interior. Background: a sunlit living space with a white wall, green plants, woven baskets and light wood shelving, rendered at f/1.8 so it reads only as warm tone and color, never as detail. Top 22%: the headline set in a warm dark-brown serif at large size with a thin hand-drawn radiating burst on the left and a small line-art heart on the right, and a lighter grey-brown subhead underneath. From 22% to 88% sits one large rounded white card {card_white} with a 24px corner radius and a very soft long shadow. Inside the card, top-left a circular portrait of a smiling customer, beside it the reviewer nickname, a small pill badge, and a row of five solid gold stars {gold}; below, an oversized opening quotation mark and the pull quote {customer_review} set in medium-weight type with a soft yellow highlighter bar {highlight} running behind it, then two lines of smaller supporting body copy at 1.8 line spacing; to the right of the quote a rounded photograph showing the real result of {service_name}. Beneath, a row of five overlapping small circular avatars followed by the sentence built from {trust_metrics}. Below that, two beige stat tiles side by side: left shows a large numeral with five small stars and a caption, right shows a group icon with a large count and a caption. At the card's bottom, a full-width terracotta rounded button {cta_color} carrying {cta_text} in white with a white circular arrow at its right end. Bottom 12% of the frame: three evenly spaced line icons, each with a bold short title and a lighter one-line description. Palette: white #FDFCFA, beige #EEE5D9 and #DFD2C2, terracotta #D38761, gold #E8A83A, warm blurred backdrop #A88163. {tone} mood, bright airy lifestyle photography, soft diffused daylight, 2:3 aspect ratio.\n\nNegative prompt (avoid): sharp detailed background competing with the card, dark or moody lighting, cold blue white balance, pure #FFFFFF flat background with no depth, neon or high-saturation accent colors, fake five-star graphics with broken points, distorted faces, uncanny AI portraits, extra fingers, mismatched avatar lighting, text overflowing the card edges, card touching the canvas edge, heavy drop shadow, thick black borders, gradient buttons, more than three bottom icons, more than one CTA button, garbled Chinese characters, misspelled numbers, watermark, stock photo logo, low resolution\n\nFill each {variable} from the user fields below (Chinese field labels map to the variables; free_notes may override any visual instruction). If a variable is not provided, choose a sensible default that keeps the same layout, palette and typography hierarchy. Reference images, when provided, define the actual product/service appearance and must be reproduced faithfully.\n\n套用注意事項：\n白卡必須「浮」在背景上而不貼邊：卡片四周固定留約 6% 背景，這是整張圖高級感的來源，prompt 裡不要省略 `floating over a softly blurred` 這句。\n顧客好評請拆成「短金句＋補充內文」兩層；只給一長段會被排成一大塊小字，螢光底線與大引號的設計就失效了。\n數據雙格需要兩組數字（評分／人數）。若只有一組，請改成單格置中並在 prompt 裡刪掉右格，硬留兩格會出現 AI 自行編造的假數字。\n頭像牆的 5 張小圓頭像若用真實顧客照，務必先取得授權；用 AI 生成頭像時要在自由補充註明「五張頭像光線與色溫一致」，否則會明顯拼貼感。\nCTA 長鈕是全圖唯一的高彩度區塊，換品牌色時只替換 `#D38761` 這一處；若同時改金星與螢光底線的顏色，信任感配色會整組崩掉。",
+    "inputFields": [
+      {
+        "key": "service_name",
+        "type": "text",
+        "label": "商品/服務名稱",
+        "required": true,
+        "placeholder": "例：居家收納課程"
+      },
+      {
+        "key": "customer_review",
+        "type": "textarea",
+        "label": "顧客好評",
+        "required": true,
+        "placeholder": "例：終於知道家裡怎麼整理才不會亂"
+      },
+      {
+        "key": "trust_metrics",
+        "type": "text",
+        "label": "信任數據",
+        "required": false,
+        "placeholder": "例：4.9 星 / 3,200+ 位學員"
+      },
+      {
+        "key": "cta_text",
+        "type": "text",
+        "label": "CTA",
+        "required": false,
+        "placeholder": "例：查看真實評價"
+      },
+      {
+        "key": "tone",
+        "type": "select",
+        "label": "呈現語氣",
+        "options": [
+          "溫暖真實"
+        ],
+        "required": true,
+        "placeholder": "預設：溫暖真實"
+      },
+      {
+        "key": "free_notes",
+        "type": "textarea",
+        "label": "自由補充",
+        "required": true,
+        "placeholder": "適合廣告素材・社群貼文與商品頁信任區。"
+      },
+      {
+        "key": "reference_images",
+        "type": "image",
+        "label": "商品圖 / 服務圖",
+        "required": false,
+        "placeholder": "最多 4 張、每張 10MB（商品／服務照片作為參考圖）"
+      }
+    ],
+    "defaultSize": "1024x1536",
+    "sortOrder": 13,
+    "isActive": true
+  },
+  {
+    "key": "event-announcement",
+    "name": "D14 活動講座公告",
+    "category": "活動招生",
+    "description": "講座/試飲會時間地點與亮點公告（2:3；必填：活動名稱、時間、活動亮點、CTA、自由補充、商品圖/服務圖）",
+    "systemPrompt": "A 640x960 vertical 2:3 event announcement poster for {event_name}, editorial Japanese-cafe style. Composition: the upper-right third is a real photograph of {hero_subject} shot at a 45-degree eye-level medium close-up on a cork coaster with scattered coffee beans and a green leaf, separated from the layout by a torn-paper diagonal edge; the remaining canvas is a flat cream paper background #FAF1E8. Top-left a small dark-brown kicker line {kicker_line} with a tiny bean glyph. Below it a massive two-line display headline {event_name} in ultra-bold rounded CJK gothic, deep cocoa brown #361C0D, occupying 78% of the width. Under the headline a teal double-tailed ribbon banner #2D6E72 with white centered subtitle {sub_slogan}. Next an information block: solid teal circular icons (calendar, map pin) paired with thin outlined rounded label chips reading {time_label} and {place_label}, values set as an oversized date {event_time} plus smaller weekday and hour; close the block with a thin dashed rule #A35F1F. Middle section headed {highlight_title} in teal with small leaf and chevron ornaments, followed by three evenly spaced columns, each a single-line monoline illustration in cocoa brown, a bold short title and two lines of small grey-brown body text describing {highlight_1}, {highlight_2}, {highlight_3}. Bottom a wide teal pill button #2D6E72 with white bold text {cta_text} and a circular arrow, then a centered thin line {closing_note} flanked by short rules. Bottom-right an organic dark-brown blob #442612 with a white hand-drawn pour-over kettle line art and two short white lines {brand_line}. Soft natural daylight from upper right, gentle short shadows, shallow depth of field on the photo, warm cream and teal palette, clean generous negative space, print-quality vector-plus-photo hybrid, 2:3 aspect ratio.\n\nNegative prompt (avoid): blurry text, garbled CJK glyphs, misspelled characters, overlapping type, more than two headline lines, photo covering the text column, harsh flash lighting, heavy drop shadow, cluttered layout, neon or saturated primary colors, purple/magenta tint, gradient mesh backgrounds, stock-photo watermark, logo, QR code, 3D bevel text, comic sans, low resolution, jpeg artifacts, people looking at camera, cropped CTA button, text touching canvas edge, more than three highlight columns\n\nFill each {variable} from the user fields below (Chinese field labels map to the variables; free_notes may override any visual instruction). If a variable is not provided, choose a sensible default that keeps the same layout, palette and typography hierarchy. Reference images, when provided, define the actual product/service appearance and must be reproduced faithfully.\n\n套用注意事項：\n主標務必限制為「兩行」，中文 4+3 或 4+4 字最穩；超過會自動縮小並吃掉墨綠絲帶的位置。\n三欄亮點是硬性結構，一定要湊滿 3 組；只給 2 組時請改成左右兩欄並拉大圖示，否則右側會開天窗。\n換品類時要改的是「實拍主體」與「線稿插圖題材」兩處（例如換成親子手作課就改成剪刀／顏料／材料包），墨綠×暖棕的配色骨架可原封不動沿用。\n右下深棕有機色塊會壓到畫布邊角，出血印刷時請確認該區沒有重要文字；安全邊界維持左右 40px。\n虛線分隔線是資訊區與亮點區的視覺斷點，不可省略，否則中段資訊會糊成一團。",
+    "inputFields": [
+      {
+        "key": "event_name",
+        "type": "text",
+        "label": "活動名稱",
+        "required": true,
+        "placeholder": "例：夏日咖啡試飲會"
+      },
+      {
+        "key": "event_time",
+        "type": "text",
+        "label": "時間",
+        "required": true,
+        "placeholder": "例：6/18 週六 14:00"
+      },
+      {
+        "key": "place_label",
+        "type": "text",
+        "label": "地點/形式",
+        "required": false,
+        "placeholder": "例：台北信義店 / 線上直播"
+      },
+      {
+        "key": "活動亮點",
+        "type": "textarea",
+        "label": "活動亮點",
+        "required": true,
+        "placeholder": "例：新品試飲、職人分享、限定禮"
+      },
+      {
+        "key": "cta_text",
+        "type": "text",
+        "label": "CTA",
+        "required": true,
+        "placeholder": "例：立即報名"
+      },
+      {
+        "key": "free_notes",
+        "type": "textarea",
+        "label": "自由補充",
+        "required": true,
+        "placeholder": "適合講座・直播・市集・快閃店與品牌活動。"
+      },
+      {
+        "key": "reference_images",
+        "type": "image",
+        "label": "商品圖／服務圖",
+        "required": false,
+        "placeholder": "最多 4 張、每張 10MB（商品／服務照片作為參考圖）"
+      }
+    ],
+    "defaultSize": "1024x1536",
+    "sortOrder": 14,
+    "isActive": true
+  },
+  {
+    "key": "workshop-enrollment",
+    "name": "D15 課程工作坊招生",
+    "category": "活動招生",
+    "description": "課程招生，學習成果＋講師介紹（2:3；必填：課程名稱、學習成果、CTA、自由補充、商品圖/服務圖）",
+    "systemPrompt": "A 640x960 vertical 2:3 course enrollment poster for {course_name}, clean modern editorial style on a warm off-white background #FBF7F4. Top-left a pumpkin-orange rounded pill badge #DB6C35 with a small camera glyph and white text {badge_line}. Below it an oversized two-line headline {course_name} in ultra-bold near-black CJK gothic #1C1C1C, accompanied by a small orange focus-bracket icon, followed by a single-line subtitle {sub_slogan} underlined by a thin hairline rule. The middle forms an L-shaped interlock: on the left a soft rounded card headed by a camel label chip #B0926C reading {outcome_title}, containing four rows separated by hairline rules, each row an orange monoline icon plus a bold short title and one line of grey caption for {outcome_1} to {outcome_4}; on the right a bright high-key lifestyle photograph of two hands holding a smartphone photographing {hero_subject} on a pale stone surface, the phone screen showing the same subject as a picture-in-picture, green branch and wooden plate props, shallow depth of field. Beneath, a three-cell information row in rounded cards with solid orange circular icons: {audience_label} with {audience}, {time_label} with {course_time}, {venue_label} with {venue}. Then an instructor block: a circular cut-out portrait of {instructor}, name line with a small orange tag, three short credential bullets, and three small square work thumbnails to the right. Under it a handwritten-style orange script line {handwritten_line}. The bottom edge is a full-bleed orange bar #DB6C35 containing three tiny white outline feature items and a white pill button with bold orange text {cta_text}, a circular arrow, and a small line {closing_note}. Soft diffused side-backlight from upper right, minimal shadows, low contrast, airy negative space, two-color discipline of near-black and orange, print-quality, 2:3 aspect ratio.\n\nNegative prompt (avoid): blurry text, garbled CJK glyphs, dark moody lighting, heavy shadows, high contrast, saturated rainbow palette, more than one accent color, cluttered icon grid, photo bleeding over the outcome card, faces of students, watermark, logo, QR code, 3D rendered text, drop shadow on type, text touching canvas edge, cropped orange bottom bar, tilted or skewed layout, more than four outcome rows, stock collage frames, low resolution, jpeg artifacts\n\nFill each {variable} from the user fields below (Chinese field labels map to the variables; free_notes may override any visual instruction). If a variable is not provided, choose a sensible default that keeps the same layout, palette and typography hierarchy. Reference images, when provided, define the actual product/service appearance and must be reproduced faithfully.\n\n套用注意事項：\n「學習成果」固定排 4 列，圖示必須同一套單線風格且同色；混用實心與線性圖示會立刻破壞質感。\n右側實拍照的「畫中畫」是這張圖的靈魂，換品類時請保留「操作中＋成果同框」的拍法（烘焙課＝手正在擠花＋成品蛋糕入鏡）。\n底部橘條是滿版出血，文字需距離下緣至少 20px；輸出為社群圖時要確認手機介面不會遮住 CTA。\n全圖只准一個強調色（南瓜橘），講師標籤、圖示、手寫句都用同一支橘；再加第二個彩色會變成傳單感。\n講師區的人像請用去背圓形框，直接貼方形照片會和右側作品縮圖打架。",
+    "inputFields": [
+      {
+        "key": "course_name",
+        "type": "text",
+        "label": "課程名稱",
+        "required": true,
+        "placeholder": "例：手機商品攝影入門"
+      },
+      {
+        "key": "學習成果",
+        "type": "textarea",
+        "label": "學習成果",
+        "required": true,
+        "placeholder": "例：學會打光、構圖、修圖與商品主圖拍攝"
+      },
+      {
+        "key": "audience",
+        "type": "text",
+        "label": "適合對象",
+        "required": false,
+        "placeholder": "例：小商家、品牌主、社群小編"
+      },
+      {
+        "key": "course_time",
+        "type": "text",
+        "label": "時間資訊",
+        "required": false,
+        "placeholder": "例：7/6 週日 10:00"
+      },
+      {
+        "key": "cta_text",
+        "type": "text",
+        "label": "CTA",
+        "required": true,
+        "placeholder": "例：立即報名"
+      },
+      {
+        "key": "free_notes",
+        "type": "textarea",
+        "label": "自由補充",
+        "required": true,
+        "placeholder": "適合課程・教練・講師・工作坊招生。"
+      },
+      {
+        "key": "reference_images",
+        "type": "image",
+        "label": "商品圖／服務圖",
+        "required": false,
+        "placeholder": "最多 4 張、每張 10MB（商品／服務照片作為參考圖）"
+      }
+    ],
+    "defaultSize": "1024x1536",
+    "sortOrder": 15,
+    "isActive": true
+  },
+  {
+    "key": "lead-magnet-ad",
+    "name": "D16 名單收集廣告",
+    "category": "活動招生",
+    "description": "免費資源/諮詢換名單，B2B 廣告投放（2:3；必填：免費資源/服務、受眾痛點、價值承諾、CTA、自由補充、商品圖/服務圖）",
+    "systemPrompt": "A 640x960 vertical 2:3 lead-generation advertisement in a premium B2B consulting style on a clean white background #F7F7F7. Top-left a navy rounded tag #14243A with white text {tag_line}. Beneath it a three-line ultra-bold CJK headline stating the pain point {pain_point}, the first two lines in deep navy #142234 and the final line in champagne gold #AD8A55 ending with a question mark, followed by a navy one-line subtitle {sub_slogan}. On the right, a bright corporate portrait of {persona}, a professional woman in a navy blazer and white top, three-quarter pose with hand resting under the chin, warm confident smile looking at camera, softly blurred bright office bookshelf background, the photo enclosed by a thin gold hairline rounded frame bleeding to the right edge. Mid canvas a dark navy header bar #102237 containing a gold-outlined pill reading {free_badge} next to a large white bold {offer_name}. Below it a white rounded card with three rows, each a navy solid circular icon (target, rising chart, lightbulb) plus a bold navy title and one line of grey caption for {benefit_1}, {benefit_2}, {benefit_3}; to its right a narrower card with a clock icon and an oversized numeral promise {value_promise} plus three short supporting lines. Next a horizontal band labelled {audience_label} in a navy chip, followed by five evenly divided columns of flat navy icons with tiny captions for {audience_list}. Then a wide champagne-gold pill button #AD8A55 with a calendar glyph, bold white text {cta_text} and a circular arrow, and under it a centered trust line with a shield icon {trust_line}. The bottom edge is a full-bleed navy bar with a centered white tagline {brand_tagline}. Even soft frontal lighting, no harsh shadows, high-key background, disciplined navy-and-gold two-color system, crisp geometric alignment, generous white space, print-quality corporate design, 2:3 aspect ratio.\n\nNegative prompt (avoid): blurry text, garbled CJK glyphs, more than two accent colors, red or green highlights, playful rounded cartoon fonts, emoji, clip-art icons, gradient rainbow, dark background, moody low-key lighting, heavy vignette, cluttered small text, stock watermark, competitor logos, QR code, 3D bevel or glow on type, drop shadow on headline, tilted photo, casual clothing, cropped face, face touching headline, text touching canvas edge, more than five audience columns, low resolution, jpeg artifacts\n\nFill each {variable} from the user fields below (Chinese field labels map to the variables; free_notes may override any visual instruction). If a variable is not provided, choose a sensible default that keeps the same layout, palette and typography hierarchy. Reference images, when provided, define the actual product/service appearance and must be reproduced faithfully.\n\n套用注意事項：\n主標必須是「問句形式的痛點」，並且只有最後一行換成金色；三行都上色或全部深藍都會失去節奏感。\n人像照要求「明亮高調＋直視鏡頭＋手部有動作」，陰暗或側臉照會讓整張圖從專業變成廉價；換產業時換掉服裝但保留這三個條件。\n「免費」兩字要獨立成金框膠囊，不要和服務名寫在同一段字裡，否則轉換率視覺重點會消失。\n價值承諾的數字（30、7、3）務必獨立放大到 40px 以上，那是右側小卡唯一的視覺錨點。\n深藍與金的比例約 25%：8%，其餘留白；金色一旦超過 15% 面積就會變成俗氣的「土豪金」。",
+    "inputFields": [
+      {
+        "key": "offer_name",
+        "type": "text",
+        "label": "免費資源/服務",
+        "required": true,
+        "placeholder": "例：免費品牌健檢"
+      },
+      {
+        "key": "pain_point",
+        "type": "textarea",
+        "label": "受眾痛點",
+        "required": true,
+        "placeholder": "例：廣告花錢卻沒有穩定訂單"
+      },
+      {
+        "key": "value_promise",
+        "type": "text",
+        "label": "價值承諾",
+        "required": true,
+        "placeholder": "例：30 分鐘找出轉換問題"
+      },
+      {
+        "key": "cta_text",
+        "type": "text",
+        "label": "CTA",
+        "required": true,
+        "placeholder": "例：預約免費諮詢"
+      },
+      {
+        "key": "語氣",
+        "type": "select",
+        "label": "語氣",
+        "options": [
+          "專業顧問"
+        ],
+        "required": true,
+        "placeholder": "預設：專業顧問"
+      },
+      {
+        "key": "free_notes",
+        "type": "textarea",
+        "label": "自由補充",
+        "required": true,
+        "placeholder": "適合 B2B・課程・顧問・SaaS・服務業導流。"
+      },
+      {
+        "key": "reference_images",
+        "type": "image",
+        "label": "商品圖／服務圖",
+        "required": false,
+        "placeholder": "最多 4 張、每張 10MB（商品／服務照片作為參考圖）"
+      }
+    ],
+    "defaultSize": "1024x1536",
+    "sortOrder": 16,
+    "isActive": true
+  },
+  {
+    "key": "store-opening",
+    "name": "D17 開幕試營運海報",
+    "category": "活動招生",
+    "description": "新店開幕/試營運，開幕優惠導客（2:3；必填：店名、開幕訊息、自由補充、商品圖/服務圖）",
+    "systemPrompt": "A 640x960 vertical 2:3 grand-opening poster in a warm Japanese street-photography collage style. Full-bleed background: a real photograph of {store_front}, a cosy corner dessert shop facade in warm afternoon sunlight with a wooden hanging sign, glass display case, potted greenery and a small chalkboard, the far street softly out of focus. Over the left 55% lies an angled torn-edge cream paper panel #F7E6CC with subtle paper texture and a soft cast shadow. On the paper, from top: the shop name {store_name} in deep brown brush type with a small symmetrical leaf-branch divider beneath; then a huge two-line hand-lettered brush headline {opening_message}, the first line in brick red #B85338 and the second in deep brown #533412, flanked by two clusters of yellow triangular speed slashes #E4B056; below that a brick-red double-tailed ribbon banner #D17157 with white centered subtitle {sub_slogan}; then a slightly tilted white note card carrying a map-pin glyph, an oversized date {open_date} and the district {address}; under it a rounded dashed-border coupon card with a brick-red label chip reading {offer_label} and two lines of brick-red offer text {offer_detail} with a tiny hand-drawn heart. The lower edge is an olive-green organic wave block #6C6A31 containing a white handwritten script line {handwritten_line} on the left, three small white outline service icons with captions {service_tags} in the middle, and a warm yellow pill button #E9B761 with deep-brown bold text {cta_text} and a pointing cursor glyph. The hero food subject {hero_subject}, a glossy caramel custard pudding on a white fluted ceramic plate topped with a mint leaf, sits at the lower right, slightly high angle medium close-up, appetising caramel sheen. Warm late-afternoon side sunlight from the left, soft leaf shadows on the wall, warm interior lamp as secondary light, consistent shadow direction, cream-red-yellow-olive palette, handcrafted collage feel, print-quality, 2:3 aspect ratio.\n\nNegative prompt (avoid): blurry text, garbled CJK glyphs, flat studio white background, night scene, cold blue tone, neon lighting, harsh flash, oversaturated colors, plastic-looking food, melted or deformed dessert, duplicated signage text, unreadable chalkboard scribble, modern minimal corporate style, sans-serif headline instead of brush lettering, text over the food subject, people faces, crowd, watermark, logo of real brands, QR code, 3D extruded text, drop shadow on paper panel exceeding 8px, text touching canvas edge, low resolution, jpeg artifacts\n\nFill each {variable} from the user fields below (Chinese field labels map to the variables; free_notes may override any visual instruction). If a variable is not provided, choose a sensible default that keeps the same layout, palette and typography hierarchy. Reference images, when provided, define the actual product/service appearance and must be reproduced faithfully.\n\n套用注意事項：\n主標必須是「手寫毛筆體」且拆成紅／棕兩色上下兩行，換成一般黑體會立刻失去開幕的熱鬧感；黃色速度斜線一定要左右成對。\n右下方的主食／主商品區「不可壓字」，那是整張海報唯一的食慾點；所有文案都留在左側紙張與底部綠塊內。\n換品類時要同步替換三樣：實拍門面（工作室／零售店）、主體物特寫（作品／招牌商品）、底部三個服務標籤；配色骨架可沿用。\n虛線票券卡只在「開幕優惠」有填時才出現；若該欄留空，請把便條卡往下移並放大，否則左側紙張會出現大片空白。\n疊紙的撕邊與投影控制在 6–8px 內，過重會像 PowerPoint 的陰影；紙張斜角建議 2–4 度，超過會影響文字閱讀。",
+    "inputFields": [
+      {
+        "key": "store_name",
+        "type": "text",
+        "label": "店名",
+        "required": true,
+        "placeholder": "例：小巷甜點"
+      },
+      {
+        "key": "opening_message",
+        "type": "text",
+        "label": "開幕訊息",
+        "required": true,
+        "placeholder": "例：試營運開跑"
+      },
+      {
+        "key": "open_date",
+        "type": "text",
+        "label": "日期/地址",
+        "required": false,
+        "placeholder": "例：6/1 起 台中西區"
+      },
+      {
+        "key": "offer_detail",
+        "type": "text",
+        "label": "開幕優惠",
+        "required": false,
+        "placeholder": "例：前 100 名送招牌布丁"
+      },
+      {
+        "key": "視覺氛圍",
+        "type": "select",
+        "label": "視覺氛圍",
+        "options": [
+          "溫暖街角"
+        ],
+        "required": true,
+        "placeholder": "預設：溫暖街角"
+      },
+      {
+        "key": "free_notes",
+        "type": "textarea",
+        "label": "自由補充",
+        "required": true,
+        "placeholder": "適合餐飲・工作室・零售門市開幕宣傳。"
+      },
+      {
+        "key": "reference_images",
+        "type": "image",
+        "label": "商品圖／服務圖",
+        "required": false,
+        "placeholder": "最多 4 張、每張 10MB（商品／服務照片作為參考圖）"
+      }
+    ],
+    "defaultSize": "1024x1536",
+    "sortOrder": 17,
+    "isActive": true
+  },
+  {
+    "key": "menu-service-list",
+    "name": "E18 菜單/服務/商品清單海報",
+    "category": "門市售後",
+    "description": "價目表/菜單，店內張貼與外送平台（2:3；必填：店家/服務類型、清單項目、自由補充、商品圖/服務圖）",
+    "systemPrompt": "A 640x960 vertical 2:3 printed menu poster for a {business_type}, designed in a warm artisanal café-print style. Top 20% is a deep cocoa-brown banner (#382414) carrying a thin-line circular cup emblem with rising steam and wheat sprigs on the left, the shop name \"{shop_name}\" in a bold 40px traditional-Chinese sans-serif in cream, and the tagline \"{tagline}\" beneath it flanked by symmetrical hairlines and small diamond marks in muted gold (#C0A685); a 45-degree overhead photograph of a latte with rosetta art bleeds into the banner's right edge with shallow depth of field and a softly blurred dark wood background. Below, a rounded pill label reading \"{section_title}\" sits centered on a cream-beige paper-textured field (#F8EEE4), tied to the margins by thin dotted rules. The body is a three-column price table with a dark brown header row (品項 / 內容說明 / 價格) in small cream type, and {item_count} equal-height rows; each row places a square food thumbnail on the left, the item name \"{item_name}\" in bold 26px dark brown with a coffee-bean bullet, two lines of 13px greyish-brown descriptive copy under a short rule, and on the right a very large serif price number \"{price}\" in deep espresso brown (#2A1A0C) with a tiny 元 suffix on a lighter beige column (#EADBC6). Below the table a dashed rounded capsule announces \"{price_note}\" with the discount figure in burnt orange-red (#812820) beside a cupcake line icon and two lines of fine print. A dark olive-green banner (#2E412B) with a double inner keyline holds the call to action \"{cta}\" in large cream type with a kraft shopping-bag illustration and a takeaway-cup line icon. A final row of three small trust phrases separated by dot bullets closes the poster. Even soft daylight, no harsh shadows, flat vector graphics combined with photorealistic food photography, letterpress-like print feel, generous 24px side margins, high detail, 2:3 aspect ratio.\n\nNegative prompt (avoid): cluttered layout, more than five menu rows, misaligned table columns, broken or overlapping Chinese glyphs, garbled text, simplified Chinese characters, tiny unreadable price numbers, neon or saturated candy colors, cold blue tones, glossy 3D plastic look, heavy drop shadows, harsh flash lighting, white clinical background, stock-photo watermark, gradient mesh backgrounds, drifting decorative clip-art, text touching the canvas edge, uneven row heights, duplicated price columns, blurry food photography, low contrast cream-on-cream text\n\nFill each {variable} from the user fields below (Chinese field labels map to the variables; free_notes may override any visual instruction). If a variable is not provided, choose a sensible default that keeps the same layout, palette and typography hierarchy. Reference images, when provided, define the actual product/service appearance and must be reproduced faithfully.\n\n套用注意事項：\n**品項數是版面的生死線**：3 項時每列可容納「縮圖＋品名＋兩行說明＋大字價格」；超過 5 項請主動刪掉說明文，否則列高被壓縮、價格大字失效。\n價格數字一定要指定「襯線體、超大、緊鄰極小的『元』字」，這是此模板辨識度最高的一筆；若改成等寬黑體會立刻變成試算表。\n**換品類時**要同時改三處描述：頂部徽章圖案（咖啡杯→指甲油瓶／剪刀／狗爪等）、食物實拍→服務實拍、底部三句信任標語的語境；只改文字不改插畫會產生違和。\n深棕／墨綠兩條橫幅的色相請維持低彩高濃度；若改成品牌亮色（正紅、寶藍）會破壞「印刷品」的年代感，建議改以金米色細線換色即可。\n安全區：左右 24px、底部信任列距下緣至少 20px；表格外框不可貼齊畫布邊界，否則裁切出血會吃掉價格欄。",
+    "inputFields": [
+      {
+        "key": "business_type",
+        "type": "text",
+        "label": "店家/服務類型",
+        "required": true,
+        "placeholder": "例：咖啡店 / 美甲工作室"
+      },
+      {
+        "key": "item_name",
+        "type": "textarea",
+        "label": "清單項目",
+        "required": true,
+        "placeholder": "例：拿鐵 120、手沖 160、甜點套餐 220"
+      },
+      {
+        "key": "price_note",
+        "type": "text",
+        "label": "價格補充",
+        "required": false,
+        "placeholder": "例：加購甜點折 30 元"
+      },
+      {
+        "key": "版面風格",
+        "type": "select",
+        "label": "版面風格",
+        "options": [
+          "清楚表格式"
+        ],
+        "required": true,
+        "placeholder": "預設：清楚表格式"
+      },
+      {
+        "key": "cta",
+        "type": "text",
+        "label": "CTA",
+        "required": false,
+        "placeholder": "例：私訊預約 / 歡迎外帶"
+      },
+      {
+        "key": "free_notes",
+        "type": "textarea",
+        "label": "自由補充",
+        "required": true,
+        "placeholder": "填入店家類型、清單項目、價格資訊與 CTA。"
+      },
+      {
+        "key": "reference_images",
+        "type": "image",
+        "label": "商品圖 / 服務圖",
+        "required": false,
+        "placeholder": "最多 4 張、每張 10MB（商品／服務照片作為參考圖）"
+      }
+    ],
+    "defaultSize": "1024x1536",
+    "sortOrder": 18,
+    "isActive": true
+  },
+  {
+    "key": "before-after-service",
+    "name": "E19 服務前後對比",
+    "category": "門市售後",
+    "description": "Before/After 成果對比，服務業適用（2:3；必填：服務名稱、改造前狀態、改造後成果、風格、自由補充、商品圖/服務圖）",
+    "systemPrompt": "A 640x960 vertical 2:3 before-and-after service comparison poster in a clean, professional, interior-design-proposal style. Near-white background (#FAFAFA) softly warming to beige (#F3F0EA) at the bottom. At the top, the headline \"{service_name}\" in an extra-bold 42px traditional-Chinese sans-serif in near-black (#151D26), flanked left and right by small four-point sparkle stars in warm grey; beneath it a 16px letter-spaced subtitle \"{subtitle}\". The middle holds two perfectly mirrored rounded cards separated by a 20px gutter: the left card is capped by a dark grey tab (#575757) reading \"Before ｜ 改造前\" in white, the right by a gold-brown tab (#B99853) reading \"After ｜ 改造後\"; each card contains a photorealistic interior photograph of the same {space_type} shot from the identical camera position and focal length — the left one cluttered, dim and visually heavy, the right one bright, tidy and organised with pale wood, white shelving, woven baskets and a plant, both lit by soft natural window light. Under the photographs sit two mirrored lists of {point_count} points on pale cards: the left column uses dark grey circular line icons with a bold 17px title \"{before_point}\" and a 12px grey caption; the right column uses gold circular line icons with a gold 17px title \"{after_point}\" and its caption; a short thick gold arrow sits centred between the two columns pointing right. A beige rounded footer panel holds four square outline process icons with 12px labels \"{process_steps}\" and, on its right, a gold rounded button (#C99C4E) with a calendar icon reading \"{cta}\" in white bold type above a thin white sub-line. Flat editorial layout, very subtle 2px soft shadows, strict bilateral symmetry, generous white space, 24px safe margins, high detail, 2:3 aspect ratio.\n\nNegative prompt (avoid): different camera angles between before and after, mismatched focal length, mirrored or flipped room, asymmetric layout, unequal column heights, more than four comparison points, garbled or overlapping Chinese text, simplified Chinese characters, fake exaggerated transformation, HDR over-processing, heavy vignette, saturated neon colors, cold blue cast on the after photo, glossy 3D buttons, thick drop shadows, busy patterned background, watermark, stock-photo badge, clipart people, text overlapping the photographs, cramped margins\n\nFill each {variable} from the user fields below (Chinese field labels map to the variables; free_notes may override any visual instruction). If a variable is not provided, choose a sensible default that keeps the same layout, palette and typography hierarchy. Reference images, when provided, define the actual product/service appearance and must be reproduced faithfully.\n\n套用注意事項：\n**「風格」下拉預設為「乾淨專業」**，這正是範例圖的白底低彩質感；若換成美業／餐飲場景想要更暖，改下拉即可，不要在自由補充裡硬塞色彩指令而與下拉打架。\n前後兩張照片必須「同機位、同焦段、同構圖」，這是本模板唯一的可信度來源；提示詞中務必保留 `identical camera position and focal length`，否則模型會自作主張換角度。\n**左右條列條數務必相同**（建議 3 條）；條數不等會讓兩欄底線不齊，中央金箭頭也會失去對齊基準。\n換行業時要換的是「圖示語彙」而非版式：清潔業→水滴／抹布／光澤；裝修→油漆滾筒／磁磚／捲尺；美業→毛囊／膚質／鏡面；健身→體脂／啞鈴／曲線。版面骨架與色彩對比（冷灰 vs 暖金）保持不動即可通用。\n安全區：主標上方留白至少 50px 才有「提案」氣質；底欄 CTA 按鈕右緣距畫布邊界 ≥ 30px，印刷出血時才不會切到日曆圖示。",
+    "inputFields": [
+      {
+        "key": "service_name",
+        "type": "text",
+        "label": "服務名稱",
+        "required": true,
+        "placeholder": "例：居家收納改造"
+      },
+      {
+        "key": "before_point",
+        "type": "textarea",
+        "label": "改造前狀態",
+        "required": true,
+        "placeholder": "例：物品堆疊、動線不順"
+      },
+      {
+        "key": "after_point",
+        "type": "textarea",
+        "label": "改造後成果",
+        "required": true,
+        "placeholder": "例：分類清楚、取物方便、空間變明亮"
+      },
+      {
+        "key": "cta",
+        "type": "text",
+        "label": "CTA",
+        "required": false,
+        "placeholder": "例：預約評估"
+      },
+      {
+        "key": "風格",
+        "type": "select",
+        "label": "風格",
+        "options": [
+          "乾淨專業"
+        ],
+        "required": true,
+        "placeholder": "預設：乾淨專業"
+      },
+      {
+        "key": "free_notes",
+        "type": "textarea",
+        "label": "自由補充",
+        "required": true,
+        "placeholder": "適合清潔、裝修、美業、健身與顧問成果展示。"
+      },
+      {
+        "key": "reference_images",
+        "type": "image",
+        "label": "商品圖 / 服務圖",
+        "required": false,
+        "placeholder": "最多 4 張、每張 10MB（商品／服務照片作為參考圖）"
+      }
+    ],
+    "defaultSize": "1024x1536",
+    "sortOrder": 19,
+    "isActive": true
+  },
+  {
+    "key": "social_post",
+    "name": "社群情境貼文",
+    "category": "social",
+    "description": "IG、FB 風格的商品情境貼文圖。",
+    "systemPrompt": "Lifestyle social media photo, natural light, warm tone, product in a real-life scene, square composition, no text overlay.",
+    "inputFields": [
+      {
+        "key": "productName",
+        "type": "text",
+        "label": "商品名稱",
+        "required": true
+      },
+      {
+        "key": "scene",
+        "type": "textarea",
+        "label": "使用情境",
+        "required": true,
+        "placeholder": "例：健身後、辦公室下午茶"
+      }
+    ],
+    "defaultSize": "1024x1024",
+    "sortOrder": 20,
+    "isActive": true
+  },
+  {
+    "key": "thank-you-card",
+    "name": "E20 感謝卡/包裹小卡",
+    "category": "門市售後",
+    "description": "出貨小卡，導評價/回購折扣碼（2:3；必填：品牌名稱、感謝文案、自由補充、商品圖/服務圖）",
+    "systemPrompt": "A 640x960 vertical 2:3 thank-you insert card for an e-commerce parcel, in a warm handwritten collage style. The whole canvas is a soft cream paper texture (#EFE6D5) with fine visible fibres and a large kraft-brown rounded shape anchoring the lower-left corner; torn strips of kraft masking tape (#C6A57C) are pasted at the upper-left and lower-left corners with slightly translucent edges. At the top centre, a minimal single-line house-and-leaf emblem sits above the brand name \"{brand_name}\" in 18px widely letter-spaced dark brown type, with a small hand-drawn heart beside it. Below, the main message \"{thank_you_message}\" is written across two lines in a large 52px warm handwritten brush script in ink brown (#3B2C18), with a soft dusty-pink underline stroke (#E6BFA3) sweeping under the final words. A dashed horizontal rule broken by a small hand-drawn ribbon bow separates the sections. Beneath it, a rounded beige block (#E4D5BE) carries a brown pill label \"{step_label}\" at its top edge, a line-art message-board-and-pencil icon on the left, and the handwritten offer \"{next_step}\" in two lines with the discount number enlarged in burnt tan and flanked by small radiating sparkle marks. Under that, a second brown pill label \"{code_label}\" tops a rounded dashed ticket frame containing the promo code \"{promo_code}\" in large widely-spaced uppercase letters, with a tiny heart tucked at the end. Two closing handwritten lines \"{closing_lines}\" follow, each ending with a small heart or exclamation. The bottom 6% is a solid warm-brown band (#B18F62) holding four thin white outline icons with 12px labels \"{trust_points}\". Watercolour olive branches and dried gypsophila sprigs in muted olive (#A19464) decorate the upper-right and right edge only, leaving the central vertical channel clear. Flat illustration, no photographic depth of field, no directional lighting, papercraft collage feel, 30px safe margins, high detail, 2:3 aspect ratio.\n\nNegative prompt (avoid): product photography, realistic 3D rendering, glossy plastic surfaces, photographic depth of field, harsh directional lighting, drop shadows, neon or saturated colors, cold blue or grey tones, corporate sans-serif headline, simplified Chinese characters, garbled or broken handwritten glyphs, overlapping strokes, promo code longer than eight characters, text running into the decorative branches, cluttered centre, symmetrical rigid grid, gradient mesh background, watermark, stock-photo badge, clipart faces, pixelated paper texture, more than four bottom trust icons\n\nFill each {variable} from the user fields below (Chinese field labels map to the variables; free_notes may override any visual instruction). If a variable is not provided, choose a sensible default that keeps the same layout, palette and typography hierarchy. Reference images, when provided, define the actual product/service appearance and must be reproduced faithfully.\n\n套用注意事項：\n**手寫中文最容易糊**：提示詞務必指定「traditional Chinese brush handwriting, clean legible strokes」，並把感謝文案控制在 14–18 字、明確要求排成兩行；字數一多模型就會把筆畫黏在一起。\n優惠碼請用 8 字元以內的全大寫英數，並在提示詞中指定 `widely-spaced uppercase`；中文優惠碼或長字串會撐破虛線票券框。\n**裝飾只准待在四角與右緣**，一定要保留「中央縱向通道淨空」這句；否則乾燥花會壓到手寫主標，是本模板最常見的破版。\n換品類時只換裝飾素材與信任小標的語境（保養品→花瓣／香氛；食品→麥穗／叉匙；寵物→肉球／小骨頭），**不要換配色系統**；米白—牛皮—墨棕的同色調正是這張卡的質感來源，換成彩色會立刻變成廉價促銷 DM。\n安全區與印刷：左右各 30px、底部棕色橫帶要滿版出血；若實際要印刷成小卡，記得把 2:3 換算成常見卡片尺寸（如 100×150mm）並保留 3mm 出血，底部橫帶高度不要低於 45px，否則裁切後圖示會被切頭。",
+    "inputFields": [
+      {
+        "key": "brand_name",
+        "type": "text",
+        "label": "品牌名稱",
+        "required": true,
+        "placeholder": "例：木日選物"
+      },
+      {
+        "key": "thank_you_message",
+        "type": "textarea",
+        "label": "感謝文案",
+        "required": true,
+        "placeholder": "例：謝謝你讓我們的商品參與你的日常"
+      },
+      {
+        "key": "next_step",
+        "type": "text",
+        "label": "下一步引導",
+        "required": false,
+        "placeholder": "例：留下評價領 50 元折價券"
+      },
+      {
+        "key": "promo_code",
+        "type": "text",
+        "label": "優惠碼",
+        "required": false,
+        "placeholder": "例：THANKS50"
+      },
+      {
+        "key": "風格",
+        "type": "select",
+        "label": "風格",
+        "options": [
+          "溫暖手寫"
+        ],
+        "required": true,
+        "placeholder": "預設：溫暖手寫"
+      },
+      {
+        "key": "free_notes",
+        "type": "textarea",
+        "label": "自由補充",
+        "required": true,
+        "placeholder": "適合電商品牌出貨小卡、評價邀請與回購折扣。"
+      },
+      {
+        "key": "reference_images",
+        "type": "image",
+        "label": "商品圖 / 服務圖",
+        "required": false,
+        "placeholder": "最多 4 張、每張 10MB（商品／服務照片作為參考圖）"
+      }
+    ],
+    "defaultSize": "1024x1536",
+    "sortOrder": 20,
+    "isActive": true
+  }
+]

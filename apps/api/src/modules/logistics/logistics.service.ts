@@ -236,7 +236,8 @@ export class LogisticsService {
       this.log.warn('ecpay logistics notify: CheckMacValue mismatch');
       return '0|CheckMacValue';
     }
-    const order = await this.prisma.order.findFirst({ where: { OR: [{ merchantOrderNo: params.MerchantTradeNo ?? '' }, { logisticsId: params.AllPayLogisticsID ?? '' }] } });
+    // 先以 MerchantTradeNo 精準對應，找不到才退回物流單號（OR 查詢在多筆共用同一物流單號時會撈到舊單——e2e 重跑實測）
+    const order = (params.MerchantTradeNo ? await this.prisma.order.findFirst({ where: { merchantOrderNo: params.MerchantTradeNo } }) : null) ?? (params.AllPayLogisticsID ? await this.prisma.order.findFirst({ where: { logisticsId: params.AllPayLogisticsID }, orderBy: { createdAt: 'desc' } }) : null);
     if (!order) return '0|order';
     const mapped = mapRtnCode(params.RtnCode ?? '');
     await this.prisma.paymentEvent.create({ data: { orderId: order.id, provider: 'ecpay-logistics', type: `logistics_${params.RtnCode ?? 'unknown'}`, tradeNo: params.AllPayLogisticsID ?? null, payload: params as Prisma.InputJsonValue } });
