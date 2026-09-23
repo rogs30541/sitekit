@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { fmtDateTime } from '@/lib/api-public';
+import { t } from '@/lib/i18n';
 
 interface Announcement {
   id: string;
@@ -49,11 +50,11 @@ export function CommunityPanel({ slug, chapterId, entitled }: { slug: string; ch
     const j = await r.json().catch(() => ({}));
     setBusy(false);
     if (!r.ok) {
-      setMsg(typeof j.message === 'string' ? j.message : '送出失敗');
+      setMsg(typeof j.message === 'string' ? j.message : t('送出失敗'));
       return;
     }
     setBody('');
-    setMsg('已送出，回覆後會 Email 通知您。');
+    setMsg(t('已送出，回覆後會 Email 通知您。'));
     load();
   }
 
@@ -84,27 +85,27 @@ export function CommunityPanel({ slug, chapterId, entitled }: { slug: string; ch
           </ul>
         ) : (
           <p className="text-xs" style={{ color: 'var(--muted)' }}>
-            尚無公告
+            {t('尚無公告')}
           </p>
         )
       ) : (
         <div className="space-y-3 text-sm">
           {entitled ? (
             <form onSubmit={ask} className="space-y-2">
-              <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3} required minLength={2} placeholder="對這門課有什麼問題？" className="w-full rounded border px-2 py-1 text-sm" style={{ borderColor: 'var(--line)' }} />
+              <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3} required minLength={2} placeholder={t('對這門課有什麼問題？')} className="w-full rounded border px-2 py-1 text-sm" style={{ borderColor: 'var(--line)' }} />
               <div className="flex flex-wrap items-center gap-3 text-xs">
                 <label className="flex items-center gap-1">
-                  <input type="checkbox" checked={thisChapter} onChange={(e) => setThisChapter(e.target.checked)} /> 標記為本章節的問題
+                  <input type="checkbox" checked={thisChapter} onChange={(e) => setThisChapter(e.target.checked)} /> {t('標記為本章節的問題')}
                 </label>
                 <button disabled={busy} className="rounded bg-black px-3 py-1 text-white disabled:opacity-50">
-                  送出提問
+                  {t('送出提問')}
                 </button>
                 {msg ? <span>{msg}</span> : null}
               </div>
             </form>
           ) : (
             <p className="text-xs" style={{ color: 'var(--muted)' }}>
-              購買課程後即可提問。
+              {t('購買課程後即可提問。')}
             </p>
           )}
           {questions.length ? (
@@ -112,10 +113,10 @@ export function CommunityPanel({ slug, chapterId, entitled }: { slug: string; ch
               {questions.map((q) => (
                 <li key={q.id} className="rounded border p-2" style={{ borderColor: 'var(--line)' }}>
                   <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                    {q.user.displayName ?? '學員'}
-                    {q.mine ? '（我）' : ''} · {fmtDateTime(q.createdAt)}
+                    {q.user.displayName ?? t('學員')}
+                    {q.mine ? t('（我）') : ''} · {fmtDateTime(q.createdAt)}
                     {q.chapter ? ` · ${q.chapter.title}` : ''}
-                    {!q.isPublic ? ' · 僅自己可見' : ''}
+                    {!q.isPublic ? t(' · 僅自己可見') : ''}
                   </p>
                   <p className="mt-1 whitespace-pre-wrap">{q.body}</p>
                   {q.answer ? (
@@ -125,7 +126,7 @@ export function CommunityPanel({ slug, chapterId, entitled }: { slug: string; ch
                     </div>
                   ) : (
                     <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>
-                      等待回覆
+                      {t('等待回覆')}
                     </p>
                   )}
                 </li>
@@ -133,7 +134,7 @@ export function CommunityPanel({ slug, chapterId, entitled }: { slug: string; ch
             </ul>
           ) : (
             <p className="text-xs" style={{ color: 'var(--muted)' }}>
-              還沒有人提問
+              {t('還沒有人提問')}
             </p>
           )}
         </div>

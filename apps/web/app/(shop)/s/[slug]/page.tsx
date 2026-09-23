@@ -5,6 +5,7 @@ import { SalesPageView, type SalesRender } from '@/components/SalesPageView';
 import { API_INTERNAL_URL } from '@/lib/api-public';
 import { PasswordGate } from './PasswordGate';
 import { getSite } from '@/lib/site';
+import { t } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,7 @@ async function load(slug: string, pw?: string): Promise<Resp | null> {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const p = await load(slug);
-  if (!p) return { title: '找不到銷售頁' };
+  if (!p) return { title: t('找不到銷售頁') };
   const seo = 'doc' in p ? p.doc.seo : p.seo;
   return { title: seo.title || p.title, description: seo.description || undefined, ...(seo.ogImage ? { openGraph: { images: [seo.ogImage] } } : {}), ...('doc' in p && p.doc.seo.favicon ? { icons: { icon: p.doc.seo.favicon } } : {}) };
 }
@@ -36,7 +37,7 @@ export default async function SalesPage({ params, searchParams }: { params: Prom
   if (p.state === 'closed' || p.state === 'scheduled')
     return (
       <Section title={p.title} group="(shop)">
-        <p>{p.state === 'scheduled' ? `本銷售頁將於 ${p.openAt ? new Date(p.openAt).toLocaleString('zh-TW') : '稍後'} 開啟。` : p.closedMessage}</p>
+        <p>{p.state === 'scheduled' ? `本銷售頁將於 ${p.openAt ? new Date(p.openAt).toLocaleString('zh-TW') : t('稍後')} 開啟。` : p.closedMessage}</p>
       </Section>
     );
   if (p.state === 'locked') return <PasswordGate title={p.title} wrong={!!pw} />;

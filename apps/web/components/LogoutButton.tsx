@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { t } from '@/lib/i18n';
 
 export function LogoutButton() {
   const router = useRouter();
@@ -14,7 +15,7 @@ export function LogoutButton() {
       className="rounded border px-3 py-1 text-xs"
       style={{ borderColor: 'var(--line)' }}
     >
-      登出
+      {t('登出')}
     </button>
   );
 }

@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { t as tr } from '@/lib/i18n';
 
 type Status = { needsSetup: boolean; completed: boolean; version: string };
-const STEPS = ['管理員', '站名與網址', '儲存', 'Email', '金流', '完成'] as const;
 const input = 'w-full rounded border px-2 py-1.5 text-sm';
 const line = { borderColor: 'var(--line)' } as const;
 
@@ -30,6 +30,7 @@ const errText = (b: unknown) => {
  * 2 站名與網址 → 3 儲存（本機或 R2）→ 4 Email（Resend）→ 5 金流（可跳過）→ 6 完成（顯示 OPS token）
  */
 export function SetupWizard() {
+  const STEPS = [tr('管理員'), tr('站名與網址'), tr('儲存'), 'Email', tr('金流'), tr('完成')];
   const [status, setStatus] = useState<Status | null>(null);
   const [admin, setAdmin] = useState<{ email: string; role: string } | null>(null);
   const [step, setStep] = useState(0);
@@ -122,7 +123,7 @@ export function SetupWizard() {
       }
       await save({ 'notify.emailProvider': 'log', 'mail.adminTo': mail.adminTo });
       setStep(4);
-      return '先用 log 模式（不寄信）；之後可到「儲存與通知」補 Resend';
+      return tr('先用 log 模式（不寄信）；之後可到「儲存與通知」補 Resend');
     });
   const finish = () =>
     run(async () => {
@@ -133,12 +134,12 @@ export function SetupWizard() {
       setStep(5);
     });
 
-  if (!status) return <p className="text-sm">載入中…</p>;
+  if (!status) return <p className="text-sm">{tr('載入中…')}</p>;
   const needLogin = !status.needsSetup && !admin;
 
   return (
     <div className="rounded-xl border p-6" style={{ ...line, background: 'var(--card)' }}>
-      <h1 className="text-xl font-bold">SiteKit 安裝精靈</h1>
+      <h1 className="text-xl font-bold">{tr('SiteKit 安裝精靈')}</h1>
       <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>
         版本 {status.version}。像 WordPress 一樣，五步驟把站台建好；每一步之後都可以在後台再改。
       </p>
@@ -153,11 +154,11 @@ export function SetupWizard() {
 
       {needLogin ? (
         <p className="text-sm">
-          站台已有管理員。請先
+          {tr('站台已有管理員。請先')}
           <a href="/admin/login?next=/setup" className="mx-1 underline">
-            登入後台
+            {tr('登入後台')}
           </a>
-          再繼續精靈，或直接進入後台。
+          {tr('再繼續精靈，或直接進入後台。')}
         </p>
       ) : null}
 
@@ -169,12 +170,12 @@ export function SetupWizard() {
             void createAdmin();
           }}
         >
-          <p style={{ color: 'var(--muted)' }}>這個站台還沒有管理員。第一位建立者即為超級管理員（之後的管理員要由你在後台新增或白名單註冊）。</p>
-          <input className={input} style={line} type="email" placeholder="管理員 Email" required autoComplete="off" value={a.email} onChange={(e) => setA({ ...a, email: e.target.value })} />
-          <input className={input} style={line} type="password" placeholder="密碼（至少 8 碼）" required minLength={8} autoComplete="new-password" value={a.password} onChange={(e) => setA({ ...a, password: e.target.value })} />
-          <input className={input} style={line} placeholder="顯示名稱（選填）" value={a.displayName} onChange={(e) => setA({ ...a, displayName: e.target.value })} />
+          <p style={{ color: 'var(--muted)' }}>{tr('這個站台還沒有管理員。第一位建立者即為超級管理員（之後的管理員要由你在後台新增或白名單註冊）。')}</p>
+          <input className={input} style={line} type="email" placeholder={tr('管理員 Email')} required autoComplete="off" value={a.email} onChange={(e) => setA({ ...a, email: e.target.value })} />
+          <input className={input} style={line} type="password" placeholder={tr('密碼（至少 8 碼）')} required minLength={8} autoComplete="new-password" value={a.password} onChange={(e) => setA({ ...a, password: e.target.value })} />
+          <input className={input} style={line} placeholder={tr('顯示名稱（選填）')} value={a.displayName} onChange={(e) => setA({ ...a, displayName: e.target.value })} />
           <button disabled={busy} className="rounded bg-black px-4 py-2 text-white disabled:opacity-50">
-            建立並登入
+            {tr('建立並登入')}
           </button>
         </form>
       ) : null}
@@ -182,31 +183,31 @@ export function SetupWizard() {
       {step === 1 && admin ? (
         <div className="space-y-2 text-sm">
           <label className="block">
-            網站名稱（標題列、頁尾）
-            <input className={input} style={line} value={site.siteName} onChange={(e) => setSite({ ...site, siteName: e.target.value })} placeholder="例：小明烘焙坊" />
+            {tr('網站名稱（標題列、頁尾）')}
+            <input className={input} style={line} value={site.siteName} onChange={(e) => setSite({ ...site, siteName: e.target.value })} placeholder={tr('例：小明烘焙坊')} />
           </label>
           <label className="block">
-            品牌名稱（選填，預設同網站名稱）
+            {tr('品牌名稱（選填，預設同網站名稱）')}
             <input className={input} style={line} value={site.name} onChange={(e) => setSite({ ...site, name: e.target.value })} />
           </label>
           <label className="block">
-            公開網址（金流回呼、Email 連結、MCP 都用它）
+            {tr('公開網址（金流回呼、Email 連結、MCP 都用它）')}
             <input className={input} style={line} value={site.url} onChange={(e) => setSite({ ...site, url: e.target.value })} placeholder={origin} />
           </label>
           <button disabled={busy} onClick={() => void saveSite()} className="rounded bg-black px-4 py-2 text-white disabled:opacity-50">
-            下一步
+            {tr('下一步')}
           </button>
         </div>
       ) : null}
 
       {step === 2 && admin ? (
         <div className="space-y-2 text-sm">
-          <p style={{ color: 'var(--muted)' }}>上傳的圖片、商品封面與 AI 產圖存在哪裡。容器平台（Zeabur 等）重新部署會清掉本機磁碟，建議用 Cloudflare R2；VPS 或有持久磁碟的主機可用本機。</p>
+          <p style={{ color: 'var(--muted)' }}>{tr('上傳的圖片、商品封面與 AI 產圖存在哪裡。容器平台（Zeabur 等）重新部署會清掉本機磁碟，建議用 Cloudflare R2；VPS 或有持久磁碟的主機可用本機。')}</p>
           <label className="flex items-center gap-2">
-            <input type="radio" checked={st.driver === 'local'} onChange={() => setSt({ ...st, driver: 'local' })} /> 本機磁碟（預設）
+            <input type="radio" checked={st.driver === 'local'} onChange={() => setSt({ ...st, driver: 'local' })} /> {tr('本機磁碟（預設）')}
           </label>
           <label className="flex items-center gap-2">
-            <input type="radio" checked={st.driver === 's3'} onChange={() => setSt({ ...st, driver: 's3' })} /> Cloudflare R2／S3 相容
+            <input type="radio" checked={st.driver === 's3'} onChange={() => setSt({ ...st, driver: 's3' })} /> {tr('Cloudflare R2／S3 相容')}
           </label>
           {st.driver === 's3' ? (
             <div className="grid gap-2 sm:grid-cols-2">
@@ -214,15 +215,15 @@ export function SetupWizard() {
               <input className={input} style={line} placeholder="Bucket" value={st.bucket} onChange={(e) => setSt({ ...st, bucket: e.target.value })} />
               <input className={input} style={line} placeholder="Access Key ID" autoComplete="off" value={st.accessKeyId} onChange={(e) => setSt({ ...st, accessKeyId: e.target.value })} />
               <input className={input} style={line} type="password" placeholder="Secret Access Key" autoComplete="off" value={st.secretAccessKey} onChange={(e) => setSt({ ...st, secretAccessKey: e.target.value })} />
-              <input className={`${input} sm:col-span-2`} style={line} placeholder="公開網址（自訂網域或 https://pub-xxx.r2.dev）" value={st.publicUrl} onChange={(e) => setSt({ ...st, publicUrl: e.target.value })} />
+              <input className={`${input} sm:col-span-2`} style={line} placeholder={tr('公開網址（自訂網域或 https://pub-xxx.r2.dev）')} value={st.publicUrl} onChange={(e) => setSt({ ...st, publicUrl: e.target.value })} />
             </div>
           ) : null}
           <div className="flex gap-2">
             <button disabled={busy} onClick={() => void saveStorage()} className="rounded bg-black px-4 py-2 text-white disabled:opacity-50">
-              儲存並測試
+              {tr('儲存並測試')}
             </button>
             <button disabled={busy} onClick={() => setStep(1)} className="rounded border px-3 py-2" style={line}>
-              上一步
+              {tr('上一步')}
             </button>
           </div>
         </div>
@@ -230,29 +231,29 @@ export function SetupWizard() {
 
       {step === 3 && admin ? (
         <div className="space-y-2 text-sm">
-          <p style={{ color: 'var(--muted)' }}>管理員註冊驗證碼、忘記密碼、訂單通知都靠 Email。沒有寄信服務時先選 log（只寫日誌），之後再補。</p>
+          <p style={{ color: 'var(--muted)' }}>{tr('管理員註冊驗證碼、忘記密碼、訂單通知都靠 Email。沒有寄信服務時先選 log（只寫日誌），之後再補。')}</p>
           <label className="flex items-center gap-2">
-            <input type="radio" checked={mail.provider === 'log'} onChange={() => setMail({ ...mail, provider: 'log' })} /> 先不寄信（log）
+            <input type="radio" checked={mail.provider === 'log'} onChange={() => setMail({ ...mail, provider: 'log' })} /> {tr('先不寄信（log）')}
           </label>
           <label className="flex items-center gap-2">
-            <input type="radio" checked={mail.provider === 'resend'} onChange={() => setMail({ ...mail, provider: 'resend' })} /> Resend（免費額度每天 100 封）
+            <input type="radio" checked={mail.provider === 'resend'} onChange={() => setMail({ ...mail, provider: 'resend' })} /> {tr('Resend（免費額度每天 100 封）')}
           </label>
           {mail.provider === 'resend' ? (
             <div className="grid gap-2 sm:grid-cols-2">
               <input className={input} style={line} type="password" placeholder="Resend API Key" autoComplete="off" value={mail.apiKey} onChange={(e) => setMail({ ...mail, apiKey: e.target.value })} />
-              <input className={input} style={line} placeholder="寄件人，例：小明烘焙坊 <no-reply@你的網域>" value={mail.from} onChange={(e) => setMail({ ...mail, from: e.target.value })} />
+              <input className={input} style={line} placeholder={tr('寄件人，例：小明烘焙坊 <no-reply@你的網域>')} value={mail.from} onChange={(e) => setMail({ ...mail, from: e.target.value })} />
             </div>
           ) : null}
           <label className="block">
-            管理員通知信箱（新訂單、提問通知）
+            {tr('管理員通知信箱（新訂單、提問通知）')}
             <input className={input} style={line} type="email" value={mail.adminTo} onChange={(e) => setMail({ ...mail, adminTo: e.target.value })} />
           </label>
           <div className="flex gap-2">
             <button disabled={busy} onClick={() => void saveMail()} className="rounded bg-black px-4 py-2 text-white disabled:opacity-50">
-              {mail.provider === 'resend' ? '儲存並寄測試信' : '下一步'}
+              {mail.provider === 'resend' ? tr('儲存並寄測試信') : tr('下一步')}
             </button>
             <button disabled={busy} onClick={() => setStep(2)} className="rounded border px-3 py-2" style={line}>
-              上一步
+              {tr('上一步')}
             </button>
           </div>
         </div>
@@ -260,16 +261,16 @@ export function SetupWizard() {
 
       {step === 4 && admin ? (
         <div className="space-y-2 text-sm">
-          <p style={{ color: 'var(--muted)' }}>金流、物流、電子發票各家商店參數在後台「帳務」填；現在可以先跳過，站台照樣能瀏覽與管理內容（結帳會提示尚未啟用付款方式）。</p>
+          <p style={{ color: 'var(--muted)' }}>{tr('金流、物流、電子發票各家商店參數在後台「帳務」填；現在可以先跳過，站台照樣能瀏覽與管理內容（結帳會提示尚未啟用付款方式）。')}</p>
           <div className="flex flex-wrap gap-2">
             <a href="/admin/payments" target="_blank" className="rounded border px-3 py-2 underline" style={line}>
-              另開「帳務 → 金流」設定
+              {tr('另開「帳務 → 金流」設定')}
             </a>
             <button disabled={busy} onClick={() => void finish()} className="rounded bg-black px-4 py-2 text-white disabled:opacity-50">
-              完成安裝
+              {tr('完成安裝')}
             </button>
             <button disabled={busy} onClick={() => setStep(3)} className="rounded border px-3 py-2" style={line}>
-              上一步
+              {tr('上一步')}
             </button>
           </div>
         </div>
@@ -277,22 +278,22 @@ export function SetupWizard() {
 
       {step === 5 && admin ? (
         <div className="space-y-3 text-sm">
-          <p className="rounded bg-green-50 p-2 text-green-800">安裝完成。前台與後台都可以使用了。</p>
+          <p className="rounded bg-green-50 p-2 text-green-800">{tr('安裝完成。前台與後台都可以使用了。')}</p>
           {token ? (
             <div className="rounded border p-3 text-xs" style={line}>
-              <p className="font-semibold">MCP 連接 token（OPS_TOKEN）——只給你信任的 AI 工具，之後可在「系統設定 → 健康檢查與支援」查看或更換</p>
+              <p className="font-semibold">{tr('MCP 連接 token（OPS_TOKEN）——只給你信任的 AI 工具，之後可在「系統設定 → 健康檢查與支援」查看或更換')}</p>
               <code className="mt-1 block break-all rounded bg-neutral-100 p-2">{token}</code>
               <p className="mt-2" style={{ color: 'var(--muted)' }}>
-                Claude Desktop／Claude Code 設定：<code>SITEKIT_API_URL={site.url || origin}</code>、<code>SITEKIT_OPS_TOKEN=上面的 token</code>
+                {tr('Claude Desktop／Claude Code 設定：')}<code>SITEKIT_API_URL={site.url || origin}</code>、<code>{tr('SITEKIT_OPS_TOKEN=上面的 token')}</code>
               </p>
             </div>
           ) : null}
           <div className="flex gap-2">
             <a href="/admin" className="rounded bg-black px-4 py-2 text-white">
-              進入後台
+              {tr('進入後台')}
             </a>
             <a href="/" className="rounded border px-3 py-2" style={line}>
-              看前台
+              {tr('看前台')}
             </a>
           </div>
         </div>

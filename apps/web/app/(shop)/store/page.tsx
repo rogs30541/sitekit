@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Section } from '@/components/Section';
 import { apiPublic, priceParts, twd, type Product } from '@/lib/api-public';
 import { AddToCartButton } from './AddToCartButton';
+import { t } from '@/lib/i18n';
 
 export const revalidate = 60;
 export const metadata = { title: '商城', description: '實體商品與點數包' };
@@ -11,10 +12,10 @@ export default async function StorePage() {
   const products = (await apiPublic<Product[]>('/api/catalog/products')) ?? [];
   const goods = products.filter((p) => p.type !== 'course');
   return (
-    <Section title="電商商城" group="(shop)">
+    <Section title={t('電商商城')} group="(shop)">
       <p className="mb-4 text-xs" style={{ color: 'var(--muted)' }}>
         <Link href="/cart" className="underline">
-          前往購物車
+          {t('前往購物車')}
         </Link>
       </p>
       {goods.length ? (
@@ -38,14 +39,14 @@ export default async function StorePage() {
                     twd(p.price)
                   )}
                 </span>
-                {p.stock === 0 && !p.variants?.length ? <span className="text-xs text-red-700">售完</span> : <AddToCartButton productId={p.id} variants={p.variants ?? []} basePrice={p.price} />}
+                {p.stock === 0 && !p.variants?.length ? <span className="text-xs text-red-700">{t('售完')}</span> : <AddToCartButton productId={p.id} variants={p.variants ?? []} basePrice={p.price} />}
               </div>
               {p.stock !== null && p.stock !== undefined && p.stock > 0 && p.stock <= 5 ? <p className="mt-1 text-xs text-red-700">僅剩 {p.stock} 件</p> : null}
             </li>
           ))}
         </ul>
       ) : (
-        <p style={{ color: 'var(--muted)' }}>尚無上架商品。後台「商品管理」或 MCP `import_products` 匯入商品 CSV 後即顯示。</p>
+        <p style={{ color: 'var(--muted)' }}>{t('尚無上架商品。後台「商品管理」或 MCP `import_products` 匯入商品 CSV 後即顯示。')}</p>
       )}
     </Section>
   );

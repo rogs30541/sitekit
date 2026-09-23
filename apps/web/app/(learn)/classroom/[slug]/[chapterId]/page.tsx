@@ -4,6 +4,7 @@ import { buildTree, flattenPlayable, fmtDuration, type CourseDetail, fmtDate } f
 import { apiServer, getMe } from '@/lib/api-server';
 import { ChapterStage } from './ChapterStage';
 import { CommunityPanel } from './CommunityPanel';
+import { t } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { robots: { index: false, follow: false } };
@@ -81,21 +82,21 @@ export default async function ClassroomChapterPage({ params }: { params: Promise
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-xl font-bold">
             {current.title}
-            {progress[chapterId]?.completed ? <span className="ml-2 rounded bg-green-100 px-2 py-0.5 text-xs font-normal text-green-800">已完成</span> : <span className="ml-2 rounded bg-neutral-100 px-2 py-0.5 text-xs font-normal">未完成</span>}
+            {progress[chapterId]?.completed ? <span className="ml-2 rounded bg-green-100 px-2 py-0.5 text-xs font-normal text-green-800">{t('已完成')}</span> : <span className="ml-2 rounded bg-neutral-100 px-2 py-0.5 text-xs font-normal">{t('未完成')}</span>}
           </h1>
           <div className="flex gap-2 text-xs">
             {prev ? (
               <Link href={`/classroom/${slug}/${prev.id}`} className="rounded border px-3 py-1" style={{ borderColor: 'var(--line)' }}>
-                上一個
+                {t('上一個')}
               </Link>
             ) : null}
             {next ? (
               <Link href={`/classroom/${slug}/${next.id}`} className="rounded bg-black px-3 py-1 text-white">
-                下一個
+                {t('下一個')}
               </Link>
             ) : (
               <span className="rounded border px-3 py-1" style={{ borderColor: 'var(--line)', color: 'var(--muted)' }}>
-                沒有更多章節
+                {t('沒有更多章節')}
               </span>
             )}
           </div>
@@ -104,9 +105,9 @@ export default async function ClassroomChapterPage({ params }: { params: Promise
           <ChapterStage chapterId={chapterId} hasVideo={current.hasVideo !== false} initialCompleted={!!progress[chapterId]?.completed} startAt={progress[chapterId]?.positionSec ?? 0} nextHref={next ? `/classroom/${slug}/${next.id}` : null} />
         ) : (
           <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-lg bg-neutral-900 text-white">
-            <p>這一章需要購買後才能觀看</p>
+            <p>{t('這一章需要購買後才能觀看')}</p>
             <Link href={`/course/${slug}`} className="rounded bg-white px-4 py-2 text-sm text-black">
-              前往購買
+              {t('前往購買')}
             </Link>
           </div>
         )}

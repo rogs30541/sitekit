@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { t } from '@/lib/i18n';
 
 export function RefundRequestButton({ orderNo }: { orderNo: string }) {
   const router = useRouter();
@@ -10,7 +11,7 @@ export function RefundRequestButton({ orderNo }: { orderNo: string }) {
     <button
       disabled={busy}
       onClick={async () => {
-        const reason = window.prompt('退款原因（選填）') ?? '';
+        const reason = window.prompt(t('退款原因（選填）')) ?? '';
         setBusy(true);
         await fetch(`/api/orders/${encodeURIComponent(orderNo)}/refund-request`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reason }) });
         setBusy(false);
@@ -19,7 +20,7 @@ export function RefundRequestButton({ orderNo }: { orderNo: string }) {
       className="rounded border px-2 py-1 text-xs disabled:opacity-50"
       style={{ borderColor: 'var(--line)' }}
     >
-      申請退款
+      {t('申請退款')}
     </button>
   );
 }

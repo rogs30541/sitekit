@@ -6,6 +6,7 @@ import { DesignBody } from '@/components/DesignBody';
 import { Tracking } from '@/components/Tracking';
 import { getSite } from '@/lib/site';
 import type { TrackingConfig } from '@sitekit/shared';
+import { t } from '@/lib/i18n';
 
 export const revalidate = 60;
 
@@ -24,7 +25,7 @@ interface PageDoc {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const page = await apiPublic<PageDoc>(`/api/content/pages/${encodeURIComponent(slug)}`);
-  return page ? { title: page.title, description: page.excerpt ?? undefined, alternates: { canonical: `/p/${slug}` } } : { title: '找不到頁面' };
+  return page ? { title: page.title, description: page.excerpt ?? undefined, alternates: { canonical: `/p/${slug}` } } : { title: t('找不到頁面') };
 }
 
 /** 官網自訂頁面（後台內容編輯器 type=page） */

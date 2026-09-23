@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { uploadImage, UPLOAD_LIMIT_LABEL } from '@/lib/upload-image';
+import { LOCALES } from '@sitekit/shared';
 import type { HomeSection } from '@/lib/site';
 
 export interface SiteAdmin {
@@ -31,6 +32,14 @@ export function SiteSettingsForm({ fields }: { fields: SiteAdmin['fields'] }) {
             {f.label}
             {f.key === 'brand.footerText' || f.key === 'brand.description' ? (
               <textarea className="w-full rounded border px-2 py-1 text-sm" style={{ borderColor: 'var(--line)' }} rows={2} placeholder={f.placeholder} value={values[f.key] ?? ''} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />
+            ) : f.key === 'site.locale' ? (
+              <select className="w-full rounded border px-2 py-1 text-sm" style={{ borderColor: 'var(--line)' }} value={values[f.key] || 'zh-TW'} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })}>
+                {LOCALES.map((l) => (
+                  <option key={l.code} value={l.code}>
+                    {l.label}
+                  </option>
+                ))}
+              </select>
             ) : f.key === 'brand.logoUrl' ? (
               <span className="flex flex-wrap items-center gap-2">
                 <input className="min-w-0 flex-1 rounded border px-2 py-1 text-sm" style={{ borderColor: 'var(--line)' }} type="text" placeholder={f.placeholder || '貼上圖片網址，或按右側上傳'} value={values[f.key] ?? ''} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />

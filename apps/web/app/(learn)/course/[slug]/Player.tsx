@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { YouTubePlayer } from './YouTubePlayer';
+import { t } from '@/lib/i18n';
 
 interface Play {
   provider: string;
@@ -33,7 +34,7 @@ export function Player({ chapterId, autoLoad = false, startAt = 0, onProgress, o
     try {
       const r = await fetch(`/api/learn/play/${chapterId}`);
       const j = (await r.json()) as Play & { message?: string };
-      setPlay(r.ok ? j : { provider: 'error', message: j.message ?? '無法取得播放授權' });
+      setPlay(r.ok ? j : { provider: 'error', message: j.message ?? t('無法取得播放授權') });
     } finally {
       setBusy(false);
     }
@@ -50,7 +51,7 @@ export function Player({ chapterId, autoLoad = false, startAt = 0, onProgress, o
       <div className="aspect-video w-full rounded-lg bg-black" />
     ) : (
       <button onClick={load} disabled={busy} className="mt-2 rounded border px-3 py-1 text-xs" style={{ borderColor: 'var(--line)' }}>
-        {busy ? '取得播放授權…' : '播放'}
+        {busy ? t('取得播放授權…') : t('播放')}
       </button>
     );
   }
@@ -66,7 +67,7 @@ export function Player({ chapterId, autoLoad = false, startAt = 0, onProgress, o
   }
   return (
     <div className="flex aspect-video w-full items-center justify-center rounded-lg bg-neutral-900 text-xs text-white">
-      {play.message ?? '影片尚未接上'}
+      {play.message ?? t('影片尚未接上')}
     </div>
   );
 }

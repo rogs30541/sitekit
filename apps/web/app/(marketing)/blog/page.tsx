@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Section } from '@/components/Section';
 import { apiPublic, type PostList, fmtDate } from '@/lib/api-public';
+import { t } from '@/lib/i18n';
 
 export const revalidate = 60;
 export const metadata = { title: '文章', description: '最新文章與知識庫' };
@@ -11,7 +12,7 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
   const items = data?.items ?? [];
   const pages = data ? Math.max(1, Math.ceil(data.total / data.limit)) : 1;
   return (
-    <Section title="文章" group="(marketing)">
+    <Section title={t('文章')} group="(marketing)">
       {items.length ? (
         <ul className="divide-y" style={{ borderColor: 'var(--line)' }}>
           {items.map((p) => (
@@ -27,7 +28,7 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
           ))}
         </ul>
       ) : (
-        <p style={{ color: 'var(--muted)' }}>尚無文章。</p>
+        <p style={{ color: 'var(--muted)' }}>{t('尚無文章。')}</p>
       )}
       {pages > 1 ? (
         <p className="mt-4 text-xs" style={{ color: 'var(--muted)' }}>
@@ -36,7 +37,7 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
             <>
               {' · '}
               <Link href={`/blog?page=${(data?.page ?? 1) + 1}`} className="underline">
-                下一頁
+                {t('下一頁')}
               </Link>
             </>
           ) : null}

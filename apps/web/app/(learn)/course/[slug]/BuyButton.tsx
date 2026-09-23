@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { fetchPaymentMethods, startCheckout, type PaymentMethod } from '@/lib/checkout';
+import { t } from '@/lib/i18n';
 
 /** 課程單品購買：建單 → 結帳（多家金流時顯示付款方式選單）。 */
 export function BuyButton({ productId, label }: { productId: string; label?: string | null }) {
@@ -38,17 +39,17 @@ export function BuyButton({ productId, label }: { productId: string; label?: str
   return (
     <span className="flex flex-wrap items-center gap-2">
       {methods.length > 1 ? (
-        <select value={method} onChange={(e) => setMethod(e.target.value)} className="rounded border px-2 py-2 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="付款方式">
+        <select value={method} onChange={(e) => setMethod(e.target.value)} className="rounded border px-2 py-2 text-sm" style={{ borderColor: 'var(--line)' }} aria-label={t('付款方式')}>
           {methods.map((m) => (
             <option key={m.id} value={m.id}>
               {m.label}
-              {m.testMode ? '（測試）' : ''}
+              {m.testMode ? t('（測試）') : ''}
             </option>
           ))}
         </select>
       ) : null}
       <button onClick={buy} disabled={busy} className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50">
-        {busy ? '前往付款…' : label || '立即購買'}
+        {busy ? t('前往付款…') : label || t('立即購買')}
       </button>
       {methods.length === 1 && methods[0].testMode && methods[0].id !== 'mock' ? (
         <span className="text-xs" style={{ color: 'var(--muted)' }}>

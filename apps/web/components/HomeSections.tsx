@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { apiPublic, twd, type CourseSummary, type PostList, type Product } from '@/lib/api-public';
 import type { HomeSection } from '@/lib/site';
+import { t } from '@/lib/i18n';
 
 const A = ({ href, className, children }: { href: string; className?: string; children: React.ReactNode }) =>
   href.startsWith('/') ? (
@@ -84,7 +85,7 @@ export async function HomeSections({ sections }: { sections: HomeSection[] }) {
                   ))}
                   {!courses?.length ? (
                     <li className="text-sm" style={{ color: 'var(--muted)' }}>
-                      尚無上架課程
+                      {t('尚無上架課程')}
                     </li>
                   ) : null}
                 </ul>
@@ -104,7 +105,7 @@ export async function HomeSections({ sections }: { sections: HomeSection[] }) {
                         <p className="font-semibold">{p.name}</p>
                         <p className="mt-1 font-bold">{twd(p.price)}</p>
                         <Link href="/store" className="mt-2 inline-block text-sm underline">
-                          前往商城
+                          {t('前往商城')}
                         </Link>
                       </li>
                     ))}
@@ -130,7 +131,7 @@ export async function HomeSections({ sections }: { sections: HomeSection[] }) {
                   ))}
                   {!posts?.items.length ? (
                     <li className="text-sm" style={{ color: 'var(--muted)' }}>
-                      尚無文章
+                      {t('尚無文章')}
                     </li>
                   ) : null}
                 </ul>

@@ -7,6 +7,7 @@ import { addToCart, onCartChange, readCart } from '@/lib/cart';
 import { skTrack } from '@/lib/track';
 import { DesignBody } from './DesignBody';
 import { Tracking } from './Tracking';
+import { t } from '@/lib/i18n';
 
 export interface SalesProduct {
   id: string;
@@ -67,7 +68,7 @@ export function SalesPageView({ page, preview = false, siteTracking }: { page: S
     ['Facebook', doc.contact.facebook],
     ['Telegram', doc.contact.telegram ? (doc.contact.telegram.startsWith('http') ? doc.contact.telegram : `https://t.me/${doc.contact.telegram.replace(/^@/, '')}`) : ''],
     ['Email', doc.contact.email ? `mailto:${doc.contact.email}` : ''],
-    ['電話', doc.contact.phone ? `tel:${doc.contact.phone}` : ''],
+    [t('電話'), doc.contact.phone ? `tel:${doc.contact.phone}` : ''],
   ].filter(([, href]) => href) as [string, string][];
 
   function add(p: SalesProduct, kind: SalesItemKind) {
@@ -75,7 +76,7 @@ export function SalesPageView({ page, preview = false, siteTracking }: { page: S
     const vid = p.variants?.length ? (variantOf[p.id] ?? p.variants[0].id) : undefined;
     const variant = vid ? p.variants?.find((x) => x.id === vid) : undefined;
     if (variant && variant.stock === 0) {
-      setToast('此規格已售完');
+      setToast(t('此規格已售完'));
       return;
     }
     const limit = doc.cartLimits[kind === 'bundle' ? 'offer' : kind === 'addon' ? 'addon' : kind === 'offer' ? 'offer' : 'product'];
@@ -85,7 +86,7 @@ export function SalesPageView({ page, preview = false, siteTracking }: { page: S
       return;
     }
     if (p.stock !== null && p.stock !== undefined && cur + n > p.stock) {
-      setToast('庫存不足');
+      setToast(t('庫存不足'));
       return;
     }
     addToCart(p.id, n, vid);
@@ -145,12 +146,12 @@ export function SalesPageView({ page, preview = false, siteTracking }: { page: S
                   {doc.display.showSold !== 'never' ? `已售 ${p.sold}` : ''}
                 </p>
                 {p.variants?.length ? (
-                  <select className="rounded border px-1 py-1 text-sm" style={{ borderColor: 'var(--line)' }} value={variantOf[p.id] ?? p.variants[0].id} onChange={(e) => setVariantOf({ ...variantOf, [p.id]: e.target.value })} aria-label="規格">
+                  <select className="rounded border px-1 py-1 text-sm" style={{ borderColor: 'var(--line)' }} value={variantOf[p.id] ?? p.variants[0].id} onChange={(e) => setVariantOf({ ...variantOf, [p.id]: e.target.value })} aria-label={t('規格')}>
                     {p.variants.map((v) => (
                       <option key={v.id} value={v.id} disabled={v.stock === 0}>
                         {v.name}
                         {v.price !== null && v.price !== p.price ? ` ${twd(v.price)}` : ''}
-                        {v.stock === 0 ? '（售完）' : ''}
+                        {v.stock === 0 ? t('（售完）') : ''}
                       </option>
                     ))}
                   </select>
@@ -177,11 +178,11 @@ export function SalesPageView({ page, preview = false, siteTracking }: { page: S
                   )}
                   {p.type === 'course' && p.courseSlug ? (
                     <Link href={`/course/${p.courseSlug}`} className="px-4 py-1.5 text-sm font-bold text-white" style={{ background: accent, borderRadius: radius }}>
-                      立即購買課程
+                      {t('立即購買課程')}
                     </Link>
                   ) : (
                     <button onClick={() => add(p, kind)} disabled={p.stock === 0} className="px-4 py-1.5 text-sm font-bold text-white disabled:opacity-40" style={{ background: accent, borderRadius: radius }}>
-                      {p.stock === 0 ? '售完' : '選購'}
+                      {p.stock === 0 ? t('售完') : t('選購')}
                     </button>
                   )}
                 </div>
@@ -201,7 +202,7 @@ export function SalesPageView({ page, preview = false, siteTracking }: { page: S
       {doc.notice.enabled && doc.notice.text && noticeOpen ? (
         <div className="sticky top-0 z-30 flex items-center justify-between gap-2 px-4 py-2 text-sm text-white" style={{ background: accent }}>
           <span dangerouslySetInnerHTML={{ __html: doc.notice.text }} />
-          <button onClick={() => setNoticeOpen(false)} aria-label="關閉" className="px-2">
+          <button onClick={() => setNoticeOpen(false)} aria-label={t('關閉')} className="px-2">
             ✕
           </button>
         </div>
@@ -216,10 +217,10 @@ export function SalesPageView({ page, preview = false, siteTracking }: { page: S
               return (
                 <section key={k} className="rounded-xl border bg-white p-4 text-center" style={{ borderColor: 'var(--line)' }}>
                   <p className="text-sm">
-                    購物車 <strong>{cartCount}</strong> 件
+                    {t('購物車')} <strong>{cartCount}</strong> {t('件')}
                   </p>
                   <Link href={`/cart?sp=${encodeURIComponent(page.code)}`} onClick={checkout} className="mt-2 inline-block px-6 py-2 font-bold text-white" style={{ background: accent, borderRadius: radius }}>
-                    前往結帳
+                    {t('前往結帳')}
                   </Link>
                   {doc.form.note.enabled && doc.form.note.text ? <div className="mt-3 text-left text-xs opacity-80" dangerouslySetInnerHTML={{ __html: doc.form.note.text }} /> : null}
                 </section>
@@ -227,7 +228,7 @@ export function SalesPageView({ page, preview = false, siteTracking }: { page: S
             if (k === 'contact')
               return contacts.length ? (
                 <section key={k} className="rounded-xl border bg-white p-4 text-center text-sm" style={{ borderColor: 'var(--line)' }}>
-                  <p className="mb-2 font-semibold">洽詢客服</p>
+                  <p className="mb-2 font-semibold">{t('洽詢客服')}</p>
                   <div className="flex flex-wrap justify-center gap-2">
                     {contacts.map(([label, href]) => (
                       <a key={label} href={href} target="_blank" rel="noopener" className="rounded-full border px-3 py-1" style={{ borderColor: 'var(--line)' }}>
@@ -256,7 +257,7 @@ export function SalesPageView({ page, preview = false, siteTracking }: { page: S
           )) : null}
           {doc.contact.display === 'collapsed' ? (
             <button onClick={() => setContactOpen((o) => !o)} className="rounded-full px-4 py-2 text-sm font-bold text-white shadow-lg" style={{ background: accent }}>
-              {contactOpen ? '收合' : '客服'}
+              {contactOpen ? t('收合') : t('客服')}
             </button>
           ) : null}
         </div>

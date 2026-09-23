@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getSite } from '@/lib/site';
 import { apiPublic, SITE_URL, type PostDetail, fmtDate } from '@/lib/api-public';
+import { t } from '@/lib/i18n';
 
 export const revalidate = 60;
 
@@ -15,7 +16,7 @@ async function getPost(slug: string) {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const post = await getPost(slug);
-  if (!post) return { title: '找不到文章' };
+  if (!post) return { title: t('找不到文章') };
   const url = `${SITE_URL}/blog/${post.slug}`;
   return {
     title: post.title,
@@ -46,7 +47,7 @@ export default async function PostPage({ params }: Params) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <p className="text-xs" style={{ color: 'var(--muted)' }}>
         <Link href="/blog" className="underline">
-          文章
+          {t('文章')}
         </Link>
         {' / '}
         {post.publishedAt ? fmtDate(post.publishedAt) : ''} {post.author ? `· ${post.author}` : ''}

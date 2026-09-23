@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BRAND } from '@sitekit/shared';
+import { t } from '@/lib/i18n';
 
 export interface NavItem {
   id: string;
@@ -14,10 +15,10 @@ export interface NavItem {
 
 /** 後台「網站架構」尚未設定時的預設導覽 */
 export const DEFAULT_NAV: NavItem[] = [
-  { id: 'home', label: '首頁', href: '/', newTab: false, children: [] },
-  { id: 'store', label: '商城', href: '/store', newTab: false, children: [] },
-  { id: 'courses', label: '課程', href: '/courses', newTab: false, children: [] },
-  { id: 'member', label: '會員', href: '/member', newTab: false, children: [] },
+  { id: 'home', label: t('首頁'), href: '/', newTab: false, children: [] },
+  { id: 'store', label: t('商城'), href: '/store', newTab: false, children: [] },
+  { id: 'courses', label: t('課程'), href: '/courses', newTab: false, children: [] },
+  { id: 'member', label: t('會員'), href: '/member', newTab: false, children: [] },
 ];
 
 /** 前台導覽：讀後台維護的網站架構樹（兩層，子項以下拉顯示）；不含後台入口（後台走 /admin/login）。 */

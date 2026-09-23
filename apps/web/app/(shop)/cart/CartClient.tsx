@@ -8,6 +8,7 @@ import { twd, type Product } from '@/lib/api-public';
 import { clearCart, lineKey, onCartChange, readCart, setQty, type CartLine } from '@/lib/cart';
 import { fetchPaymentMethods, startCheckout, type PaymentMethod } from '@/lib/checkout';
 import { skTrack } from '@/lib/track';
+import { t as tr } from '@/lib/i18n';
 
 interface Quote {
   items: { productId: string; name: string; qty: number; unitPrice: number; type: string }[];
@@ -105,7 +106,7 @@ export function CartClient() {
       return;
     }
     const ctl = new AbortController();
-    const body = { items: lines, couponCode: applied || undefined, shipping: { method: shipMethod || undefined, name: ship.name || '暫', phone: ship.phone || '0000000000', address: ship.address, storeToken: storeToken || undefined }, invoice: { type: 'personal' } };
+    const body = { items: lines, couponCode: applied || undefined, shipping: { method: shipMethod || undefined, name: ship.name || tr('暫'), phone: ship.phone || '0000000000', address: ship.address, storeToken: storeToken || undefined }, invoice: { type: 'personal' } };
     fetch('/api/orders/quote', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), signal: ctl.signal })
       .then(async (r) => {
         const j = await r.json();
@@ -147,7 +148,7 @@ export function CartClient() {
     const r = await fetch('/api/logistics/ecpay/map', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ subType: shipMethod }) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) {
-      setError(typeof j.message === 'string' ? j.message : '無法開啟門市地圖');
+      setError(typeof j.message === 'string' ? j.message : tr('無法開啟門市地圖'));
       return;
     }
     const form = document.createElement('form');
@@ -198,9 +199,9 @@ export function CartClient() {
   if (!lines.length)
     return (
       <p style={{ color: 'var(--muted)' }}>
-        購物車是空的。
+        {tr('購物車是空的。')}
         <Link href="/store" className="ml-2 underline">
-          去逛商城
+          {tr('去逛商城')}
         </Link>
       </p>
     );
@@ -211,9 +212,9 @@ export function CartClient() {
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="text-xs" style={{ color: 'var(--muted)' }}>
-              <th className="py-1">商品</th>
-              <th className="py-1">單價</th>
-              <th className="py-1">數量</th>
+              <th className="py-1">{tr('商品')}</th>
+              <th className="py-1">{tr('單價')}</th>
+              <th className="py-1">{tr('數量')}</th>
               <th className="py-1" />
             </tr>
           </thead>
@@ -233,7 +234,7 @@ export function CartClient() {
                   </td>
                   <td className="py-2 text-right">
                     <button onClick={() => setQty(lineKey(l), 0)} className="text-xs underline">
-                      移除
+                      {tr('移除')}
                     </button>
                   </td>
                 </tr>
@@ -243,7 +244,7 @@ export function CartClient() {
         </table>
         {needsShipping ? (
           <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
-            <p className="mb-2 text-sm font-semibold">配送方式</p>
+            <p className="mb-2 text-sm font-semibold">{tr('配送方式')}</p>
             <div className="space-y-1 text-sm">
               {shipMethods.map((m) => (
                 <label key={m.id} className="flex items-center gap-2">
@@ -258,7 +259,7 @@ export function CartClient() {
                   />
                   {m.label}
                   <span className="text-xs" style={{ color: 'var(--muted)' }}>
-                    運費 {m.fee ? twd(m.fee) : '免費'}
+                    運費 {m.fee ? twd(m.fee) : tr('免費')}
                   </span>
                 </label>
               ))}
@@ -267,32 +268,32 @@ export function CartClient() {
               <div className="mt-2 text-sm">
                 {store ? (
                   <p>
-                    取貨門市：<strong>{store.name}</strong>（{store.id}）{store.address}
+                    {tr('取貨門市：')}<strong>{store.name}</strong>（{store.id}）{store.address}
                     <button onClick={pickStore} className="ml-2 text-xs underline">
-                      重新選擇
+                      {tr('重新選擇')}
                     </button>
                   </p>
                 ) : (
                   <button onClick={pickStore} disabled={authed !== true} className="rounded border px-3 py-1 text-xs disabled:opacity-50" style={{ borderColor: 'var(--line)' }}>
-                    選擇取貨門市（綠界電子地圖）
+                    {tr('選擇取貨門市（綠界電子地圖）')}
                   </button>
                 )}
-                {search.get('cvs') === 'error' ? <p className="text-xs text-red-700">門市選擇失敗，請再試一次。</p> : null}
+                {search.get('cvs') === 'error' ? <p className="text-xs text-red-700">{tr('門市選擇失敗，請再試一次。')}</p> : null}
               </div>
             ) : null}
             <p className="mb-1 mt-3 text-sm font-semibold">{current?.kind === 'cvs' ? '取貨人資料' : '收件資料'}</p>
             <div className="grid gap-2 sm:grid-cols-2">
               <label className="block text-xs">
-                姓名
+                {tr('姓名')}
                 <input className={input} style={{ borderColor: 'var(--line)' }} value={ship.name} onChange={(e) => setShip({ ...ship, name: e.target.value })} />
               </label>
               <label className="block text-xs">
-                手機
+                {tr('手機')}
                 <input className={input} style={{ borderColor: 'var(--line)' }} value={ship.phone} onChange={(e) => setShip({ ...ship, phone: e.target.value })} />
               </label>
               {current?.kind !== 'cvs' ? (
                 <label className="block text-xs sm:col-span-2">
-                  地址
+                  {tr('地址')}
                   <input className={input} style={{ borderColor: 'var(--line)' }} value={ship.address} onChange={(e) => setShip({ ...ship, address: e.target.value })} />
                 </label>
               ) : null}
@@ -300,7 +301,7 @@ export function CartClient() {
           </div>
         ) : null}
         <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
-          <p className="mb-2 text-sm font-semibold">電子發票</p>
+          <p className="mb-2 text-sm font-semibold">{tr('電子發票')}</p>
           <select value={inv.type} onChange={(e) => setInv({ ...inv, type: e.target.value as InvoiceType })} className={input} style={{ borderColor: 'var(--line)' }}>
             {(Object.keys(INVOICE_TYPE_LABELS) as InvoiceType[]).map((t) => (
               <option key={t} value={t}>
@@ -308,15 +309,15 @@ export function CartClient() {
               </option>
             ))}
           </select>
-          {inv.type === 'mobile' ? <input className={`${input} mt-2`} style={{ borderColor: 'var(--line)' }} placeholder="手機條碼（/ 開頭共 8 碼）" value={inv.carrierNum} onChange={(e) => setInv({ ...inv, carrierNum: e.target.value.toUpperCase() })} /> : null}
-          {inv.type === 'citizen' ? <input className={`${input} mt-2`} style={{ borderColor: 'var(--line)' }} placeholder="自然人憑證條碼（2 英文＋14 數字）" value={inv.carrierNum} onChange={(e) => setInv({ ...inv, carrierNum: e.target.value.toUpperCase() })} /> : null}
+          {inv.type === 'mobile' ? <input className={`${input} mt-2`} style={{ borderColor: 'var(--line)' }} placeholder={tr('手機條碼（/ 開頭共 8 碼）')} value={inv.carrierNum} onChange={(e) => setInv({ ...inv, carrierNum: e.target.value.toUpperCase() })} /> : null}
+          {inv.type === 'citizen' ? <input className={`${input} mt-2`} style={{ borderColor: 'var(--line)' }} placeholder={tr('自然人憑證條碼（2 英文＋14 數字）')} value={inv.carrierNum} onChange={(e) => setInv({ ...inv, carrierNum: e.target.value.toUpperCase() })} /> : null}
           {inv.type === 'company' ? (
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
-              <input className={input} style={{ borderColor: 'var(--line)' }} placeholder="統一編號（8 碼）" value={inv.taxId} onChange={(e) => setInv({ ...inv, taxId: e.target.value.replace(/\D/g, '').slice(0, 8) })} />
-              <input className={input} style={{ borderColor: 'var(--line)' }} placeholder="公司抬頭" value={inv.title} onChange={(e) => setInv({ ...inv, title: e.target.value })} />
+              <input className={input} style={{ borderColor: 'var(--line)' }} placeholder={tr('統一編號（8 碼）')} value={inv.taxId} onChange={(e) => setInv({ ...inv, taxId: e.target.value.replace(/\D/g, '').slice(0, 8) })} />
+              <input className={input} style={{ borderColor: 'var(--line)' }} placeholder={tr('公司抬頭')} value={inv.title} onChange={(e) => setInv({ ...inv, title: e.target.value })} />
             </div>
           ) : null}
-          {inv.type === 'donate' ? <input className={`${input} mt-2`} style={{ borderColor: 'var(--line)' }} placeholder="愛心碼（3–7 碼數字）" value={inv.loveCode} onChange={(e) => setInv({ ...inv, loveCode: e.target.value.replace(/\D/g, '').slice(0, 7) })} /> : null}
+          {inv.type === 'donate' ? <input className={`${input} mt-2`} style={{ borderColor: 'var(--line)' }} placeholder={tr('愛心碼（3–7 碼數字）')} value={inv.loveCode} onChange={(e) => setInv({ ...inv, loveCode: e.target.value.replace(/\D/g, '').slice(0, 7) })} /> : null}
         </div>
       </div>
       <div className="space-y-3 rounded-lg border p-4 text-sm" style={{ borderColor: 'var(--line)' }}>
@@ -324,22 +325,22 @@ export function CartClient() {
           <p>
             結帳前請先{' '}
             <Link href="/login?next=/cart" className="underline">
-              登入
+              {tr('登入')}
             </Link>
             。
           </p>
         ) : null}
         <div className="flex gap-2">
-          <input placeholder="折扣碼" value={coupon} onChange={(e) => setCoupon(e.target.value.toUpperCase())} className={input} style={{ borderColor: 'var(--line)' }} />
+          <input placeholder={tr('折扣碼')} value={coupon} onChange={(e) => setCoupon(e.target.value.toUpperCase())} className={input} style={{ borderColor: 'var(--line)' }} />
           <button onClick={() => setApplied(coupon.trim())} className="whitespace-nowrap rounded border px-3 text-xs" style={{ borderColor: 'var(--line)' }}>
-            套用
+            {tr('套用')}
           </button>
         </div>
         {quoteError ? <p className="text-xs text-red-700">{quoteError}</p> : null}
         {quote ? (
           <dl className="space-y-1 text-xs">
             <div className="flex justify-between">
-              <dt>小計</dt>
+              <dt>{tr('小計')}</dt>
               <dd>{twd(quote.subtotal)}</dd>
             </div>
             {quote.discount ? (
@@ -351,29 +352,29 @@ export function CartClient() {
             {quote.needsShipping ? (
               <div className="flex justify-between">
                 <dt>運費{current ? `（${current.label}）` : ''}</dt>
-                <dd>{quote.shippingFee ? twd(quote.shippingFee) : '免運'}</dd>
+                <dd>{quote.shippingFee ? twd(quote.shippingFee) : tr('免運')}</dd>
               </div>
             ) : null}
             <div className="flex justify-between text-base font-bold">
-              <dt>應付</dt>
+              <dt>{tr('應付')}</dt>
               <dd>{twd(quote.amount)}</dd>
             </div>
           </dl>
         ) : null}
-        {nwpShip && !payMethods.length ? <p className="text-sm text-red-600">藍新超商取貨需啟用藍新金流付款</p> : null}
-        {nwpShip && payMethods.length ? <p className="text-xs" style={{ color: 'var(--muted)' }}>藍新超商取貨僅能以藍新金流付款</p> : null}
+        {nwpShip && !payMethods.length ? <p className="text-sm text-red-600">{tr('藍新超商取貨需啟用藍新金流付款')}</p> : null}
+        {nwpShip && payMethods.length ? <p className="text-xs" style={{ color: 'var(--muted)' }}>{tr('藍新超商取貨僅能以藍新金流付款')}</p> : null}
         {payMethods.length > 1 ? (
-          <select value={method} onChange={(e) => setMethod(e.target.value)} className={input} style={{ borderColor: 'var(--line)' }} aria-label="付款方式">
+          <select value={method} onChange={(e) => setMethod(e.target.value)} className={input} style={{ borderColor: 'var(--line)' }} aria-label={tr('付款方式')}>
             {payMethods.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.label}
-                {m.testMode ? '（測試）' : ''}
+                {m.testMode ? tr('（測試）') : ''}
               </option>
             ))}
           </select>
         ) : null}
         <button onClick={submit} disabled={busy || !quote || authed !== true || (needsShipping && current?.kind === 'cvs' && !store) || (nwpShip && !payMethods.length)} className="w-full rounded bg-black px-4 py-2 text-white disabled:opacity-50">
-          {busy ? '前往付款…' : '結帳'}
+          {busy ? tr('前往付款…') : tr('結帳')}
         </button>
         {error ? <p className="text-xs text-red-700">{error}</p> : null}
       </div>

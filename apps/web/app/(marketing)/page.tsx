@@ -6,6 +6,7 @@ import { getSite } from '@/lib/site';
 import { DesignBody } from '@/components/DesignBody';
 import { Tracking } from '@/components/Tracking';
 import type { TrackingConfig } from '@sitekit/shared';
+import { t } from '@/lib/i18n';
 
 interface PageDoc {
   slug: string;
@@ -37,11 +38,11 @@ export default async function HomePage() {
         <Section title={site.brand.siteName} group="(marketing)">
           <p>{site.brand.description}</p>
           <p className="mt-2 text-xs" style={{ color: 'var(--muted)' }}>
-            到後台「網站設定 → 首頁版面」加入區塊，或在「內容編輯」建立 slug 為 home 的頁面並發布，即可取代這段預設內容。
+            {t('到後台「網站設定 → 首頁版面」加入區塊，或在「內容編輯」建立 slug 為 home 的頁面並發布，即可取代這段預設內容。')}
           </p>
         </Section>
       )}
-      <Section title="最新文章" group="(marketing)">
+      <Section title={t('最新文章')} group="(marketing)">
         {posts?.items.length ? (
           <ul className="space-y-2">
             {posts.items.map((p) => (
@@ -54,7 +55,7 @@ export default async function HomePage() {
             ))}
           </ul>
         ) : (
-          <p style={{ color: 'var(--muted)' }}>尚無文章（api 未啟動或尚未匯入內容）。</p>
+          <p style={{ color: 'var(--muted)' }}>{t('尚無文章（api 未啟動或尚未匯入內容）。')}</p>
         )}
       </Section>
     </div>

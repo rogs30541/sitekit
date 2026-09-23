@@ -1,5 +1,5 @@
 import { Injectable } from '../../compat';
-import { BRAND, SETTING_KEYS, normalizeTracking, type TrackingConfig } from '@sitekit/shared';
+import { BRAND, SETTING_KEYS, normalizeLocale, normalizeTracking, type TrackingConfig } from '@sitekit/shared';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
 import { SettingsService } from '../settings/settings.service';
@@ -23,6 +23,7 @@ export const BRAND_FIELDS = [
   { key: SETTING_KEYS.brandName, label: '品牌名稱', def: BRAND.name },
   { key: SETTING_KEYS.brandSiteName, label: '網站名稱（標題列）', def: BRAND.siteName },
   { key: SETTING_KEYS.brandDescription, label: '網站描述（SEO）', def: BRAND.description },
+  { key: SETTING_KEYS.siteLocale, label: '前台介面語言', def: 'zh-TW' },
   { key: SETTING_KEYS.brandTagline, label: '標語', def: '' },
   { key: SETTING_KEYS.brandLogoUrl, label: 'Logo 圖片網址', def: '' },
   { key: SETTING_KEYS.brandPrimaryColor, label: '主色（#hex）', def: '' },
@@ -62,7 +63,7 @@ export class SiteService {
       address: get(SETTING_KEYS.brandAddress, ''),
       social,
       footerText: get(SETTING_KEYS.brandFooterText, ''),
-      locale: BRAND.locale,
+      locale: normalizeLocale(get(SETTING_KEYS.siteLocale, 'zh-TW')),
       seo: { ogImage: get(SETTING_KEYS.seoOgImage, ''), gaId: get(SETTING_KEYS.seoGaId, '') },
     };
   }

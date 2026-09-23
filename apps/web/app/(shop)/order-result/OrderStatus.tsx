@@ -6,8 +6,9 @@ import { useSearchParams } from 'next/navigation';
 import { paymentLabel } from '@sitekit/shared';
 import { twd, type Order } from '@/lib/api-public';
 import { skTrack } from '@/lib/track';
+import { t } from '@/lib/i18n';
 
-const LABEL: Record<Order['status'], string> = { pending: '等待付款', paid: '付款成功', failed: '付款失敗', refunded: '已退款', canceled: '已取消' };
+const LABEL = (): Record<Order['status'], string> => ({ pending: t('等待付款'), paid: t('付款成功'), failed: t('付款失敗'), refunded: t('已退款'), canceled: t('已取消') });
 
 /** 導回頁只讀狀態（每 3 秒輪詢到 paid 或 failed），授權由伺服器回呼寫入。 */
 export function OrderStatus() {
@@ -22,7 +23,7 @@ export function OrderStatus() {
     async function tick() {
       const r = await fetch(`/api/orders/${encodeURIComponent(no as string)}`);
       if (!r.ok) {
-        setError(r.status === 401 ? '請先登入' : '找不到訂單');
+        setError(r.status === 401 ? t('請先登入') : t('找不到訂單'));
         return;
       }
       const o = (await r.json()) as Order;
@@ -37,13 +38,13 @@ export function OrderStatus() {
     };
   }, [no]);
 
-  if (search.get('error')) return <p className="text-red-700">付款資料驗證失敗，請至會員中心確認訂單狀態。</p>;
-  if (!no) return <p>缺少訂單編號。</p>;
+  if (search.get('error')) return <p className="text-red-700">{t('付款資料驗證失敗，請至會員中心確認訂單狀態。')}</p>;
+  if (!no) return <p>{t('缺少訂單編號。')}</p>;
   if (error) return <p className="text-red-700">{error}</p>;
-  if (!order) return <p style={{ color: 'var(--muted)' }}>讀取中…</p>;
+  if (!order) return <p style={{ color: 'var(--muted)' }}>{t('讀取中…')}</p>;
   return (
     <div className="space-y-2 text-sm">
-      <p className="text-lg font-bold">{LABEL[order.status]}</p>
+      <p className="text-lg font-bold">{LABEL()[order.status]}</p>
       <p className="font-mono text-xs" style={{ color: 'var(--muted)' }}>
         {order.merchantOrderNo}
       </p>
@@ -57,14 +58,14 @@ export function OrderStatus() {
       <p>金額 {twd(order.amount)}</p>
       {order.provider && order.provider !== 'free' ? <p style={{ color: 'var(--muted)' }}>付款方式：{paymentLabel(order.provider, order.paymentType)}</p> : null}
       {order.status === 'pending' && order.virtualAccount ? <p>ATM 虛擬帳號 {order.virtualAccount}，請於期限前完成轉帳。</p> : null}
-      {order.status === 'pending' && !order.virtualAccount ? <p style={{ color: 'var(--muted)' }}>等待金流回呼中…</p> : null}
+      {order.status === 'pending' && !order.virtualAccount ? <p style={{ color: 'var(--muted)' }}>{t('等待金流回呼中…')}</p> : null}
       <p className="pt-2">
         <Link href="/member" className="underline">
-          前往會員中心
+          {t('前往會員中心')}
         </Link>
         {' · '}
         <Link href="/courses" className="underline">
-          回課程列表
+          {t('回課程列表')}
         </Link>
       </p>
     </div>

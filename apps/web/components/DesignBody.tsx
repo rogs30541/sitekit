@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { memo, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { t } from '@/lib/i18n';
 
 interface Slot {
   el: HTMLElement;
@@ -65,7 +66,7 @@ export function DesignBody({ html, fullBleed = true, className = '' }: { html: s
         const rows = data[s.widget];
         return createPortal(
           rows === undefined ? (
-            <div className="sk-widget-empty">載入中…</div>
+            <div className="sk-widget-empty">{t('載入中…')}</div>
           ) : rows.length ? (
             <div className="sk-widget-grid">
               {rows.slice(0, s.limit).map((r) => (
@@ -77,7 +78,7 @@ export function DesignBody({ html, fullBleed = true, className = '' }: { html: s
               ))}
             </div>
           ) : (
-            <div className="sk-widget-empty">尚無資料</div>
+            <div className="sk-widget-empty">{t('尚無資料')}</div>
           ),
           s.el,
           `${s.widget}-${i}`,

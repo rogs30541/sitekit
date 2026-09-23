@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Section } from '@/components/Section';
 import { apiPublic, priceParts, twd, type CourseSummary } from '@/lib/api-public';
+import { t } from '@/lib/i18n';
 
 export const revalidate = 60;
 export const metadata = { title: '課程', description: '線上課程列表' };
@@ -8,7 +9,7 @@ export const metadata = { title: '課程', description: '線上課程列表' };
 export default async function CoursesPage() {
   const courses = (await apiPublic<CourseSummary[]>('/api/catalog/courses')) ?? [];
   return (
-    <Section title="線上課程" group="(learn)">
+    <Section title={t('線上課程')} group="(learn)">
       {courses.length ? (
         <ul className="grid gap-4 sm:grid-cols-2">
           {courses.map((c) => (
@@ -25,7 +26,7 @@ export default async function CoursesPage() {
           ))}
         </ul>
       ) : (
-        <p style={{ color: 'var(--muted)' }}>尚無課程。</p>
+        <p style={{ color: 'var(--muted)' }}>{t('尚無課程。')}</p>
       )}
     </Section>
   );

@@ -36,6 +36,8 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
 /** 設定鍵名（settings 表；env 備援鍵見 api SettingsService） */
 export const SETTING_KEYS = {
   siteUrl: 'site.url',
+  /** 前台介面語言（zh-TW｜en；後台維持繁中） */
+  siteLocale: 'site.locale',
   paymentProvider: 'payment.provider',
   newebpayMerchantId: 'newebpay.merchantId',
   newebpayHashKey: 'newebpay.hashKey',
@@ -304,3 +306,4 @@ export function effectivePrice(p: { price: number; salePrice?: number | null; sa
   if ((s && s > now) || (e && e < now)) return { price: p.price, original: p.price, onSale: false };
   return { price: sp, original: p.price, onSale: true };
 }
+export * from './i18n';

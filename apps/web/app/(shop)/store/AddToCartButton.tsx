@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { addToCart } from '@/lib/cart';
+import { t } from '@/lib/i18n';
 
 export interface VariantOption {
   id: string;
@@ -20,12 +21,12 @@ export function AddToCartButton({ productId, variants = [], basePrice }: { produ
   return (
     <span className="flex flex-wrap items-center gap-2">
       {variants.length ? (
-        <select className="rounded border px-2 py-1 text-xs" style={{ borderColor: 'var(--line)' }} value={variantId} onChange={(e) => setVariantId(e.target.value)} aria-label="規格">
+        <select className="rounded border px-2 py-1 text-xs" style={{ borderColor: 'var(--line)' }} value={variantId} onChange={(e) => setVariantId(e.target.value)} aria-label={t('規格')}>
           {variants.map((x) => (
             <option key={x.id} value={x.id} disabled={x.stock === 0}>
               {x.name}
               {x.price !== null && x.price !== basePrice ? ` ${twd(x.price)}` : ''}
-              {x.stock === 0 ? '（售完）' : ''}
+              {x.stock === 0 ? t('（售完）') : ''}
             </option>
           ))}
         </select>
@@ -39,7 +40,7 @@ export function AddToCartButton({ productId, variants = [], basePrice }: { produ
         }}
         className="rounded bg-black px-3 py-1.5 text-xs text-white disabled:opacity-40"
       >
-        {soldOut ? '售完' : done ? '已加入' : '加入購物車'}
+        {soldOut ? t('售完') : done ? t('已加入') : t('加入購物車')}
       </button>
     </span>
   );

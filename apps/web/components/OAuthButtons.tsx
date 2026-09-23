@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { t } from '@/lib/i18n';
 
 /** 第三方登入按鈕：只顯示後端已設定的供應商（/api/auth/oauth/providers）。 */
 export function OAuthButtons() {
@@ -22,7 +23,7 @@ export function OAuthButtons() {
       {providers.length ? (
         <>
           <p className="text-xs" style={{ color: 'var(--muted)' }}>
-            或使用第三方帳號
+            {t('或使用第三方帳號')}
           </p>
           <div className="flex flex-wrap gap-2">
             {providers.map((p) => (

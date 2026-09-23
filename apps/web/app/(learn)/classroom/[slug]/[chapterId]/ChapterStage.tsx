@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Player } from '@/app/(learn)/course/[slug]/Player';
+import { t } from '@/lib/i18n';
 
 /** 播放器＋進度回報：每 5 秒回報一次位置；≥90% 或按鈕＝完成。 */
 export function ChapterStage({ chapterId, hasVideo, initialCompleted, startAt, nextHref }: { chapterId: string; hasVideo: boolean; initialCompleted: boolean; startAt: number; nextHref: string | null }) {
@@ -40,15 +41,15 @@ export function ChapterStage({ chapterId, hasVideo, initialCompleted, startAt, n
 
   return (
     <div className="space-y-3">
-      {hasVideo ? <Player chapterId={chapterId} autoLoad startAt={completed ? 0 : startAt} onProgress={onProgress} onEnded={() => report(0, true)} /> : <div className="flex aspect-video w-full items-center justify-center rounded-lg bg-neutral-900 text-xs text-white">這一章沒有影片（影片準備中）</div>}
+      {hasVideo ? <Player chapterId={chapterId} autoLoad startAt={completed ? 0 : startAt} onProgress={onProgress} onEnded={() => report(0, true)} /> : <div className="flex aspect-video w-full items-center justify-center rounded-lg bg-neutral-900 text-xs text-white">{t('這一章沒有影片（影片準備中）')}</div>}
       <div className="flex flex-wrap items-center gap-3 text-xs">
         <span style={{ color: 'var(--muted)' }}>觀看進度 {percent}%</span>
         <button onClick={markDone} disabled={busy} className="rounded border px-3 py-1 disabled:opacity-50" style={{ borderColor: 'var(--line)' }}>
-          {completed ? '取消完成標記' : '標記為已完成'}
+          {completed ? t('取消完成標記') : t('標記為已完成')}
         </button>
         {completed && nextHref ? (
           <a href={nextHref} className="rounded bg-black px-3 py-1 text-white">
-            前往下一個
+            {t('前往下一個')}
           </a>
         ) : null}
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { t as tr } from '@/lib/i18n';
 
 declare global {
   interface Window {
@@ -171,7 +172,7 @@ export function YouTubePlayer({ videoId, host = 'https://www.youtube-nocookie.co
       ) : null}
       <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-black/80 to-transparent px-3 py-2 text-xs text-white">
         <button type="button" onClick={toggle} disabled={!ready} className="rounded bg-white/20 px-2 py-1">
-          {state === 'playing' ? '暫停' : '播放'}
+          {state === 'playing' ? tr('暫停') : tr('播放')}
         </button>
         <span className="tabular-nums">{fmt(t)}</span>
         <div className="relative h-2 flex-1 cursor-pointer rounded bg-white/30" onClick={seek}>
@@ -179,10 +180,10 @@ export function YouTubePlayer({ videoId, host = 'https://www.youtube-nocookie.co
         </div>
         <span className="tabular-nums">{fmt(dur)}</span>
         <button type="button" onClick={toggleMute} className="rounded bg-white/20 px-2 py-1">
-          {muted ? '取消靜音' : '靜音'}
+          {muted ? tr('取消靜音') : tr('靜音')}
         </button>
         <button type="button" onClick={fullscreen} className="rounded bg-white/20 px-2 py-1">
-          全螢幕
+          {tr('全螢幕')}
         </button>
       </div>
     </div>
