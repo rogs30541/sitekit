@@ -2,6 +2,18 @@
 // P9 本機端到端：網站架構樹／選單（後台 PUT、公開 GET、OPS get_menu/set_menu、前台導覽渲染、隱藏／草稿頁過濾、深度與驗證）
 const B = process.env.API ?? 'http://localhost:4000';
 const W = process.env.WEB ?? 'http://localhost:3000';
+// 發佈即清快取是非同步（api 去抖 300ms 後通知 web），前台以輪詢等待新內容（最多 10 秒）
+const untilHtml = async (url, pred, ms = 10000) => {
+  const t0 = Date.now();
+  let html = '';
+  while (Date.now() - t0 < ms) {
+    html = await fetch(url, { headers: { 'cache-control': 'no-cache' } }).then((r) => r.text()).catch(() => '');
+    if (pred(html)) return html;
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  return html;
+};
+
 const RUN = Date.now().toString(36).slice(-4).toLowerCase();
 let fails = 0;
 const ok = (n, c, x = '') => { console.log(`${c ? 'PASS' : 'FAIL'} ${n}${x ? ' — ' + x : ''}`); if (!c) fails++; };
@@ -41,8 +53,8 @@ const got = await act('get_menu');
 ok('OPS get_menu（含隱藏節點）', got.body.ok && got.body.data.length === 4);
 const set = await act('set_menu', { items: [{ label: '首頁', kind: 'route', href: '/' }, { label: `關於 ${RUN}`, kind: 'page', contentId: pubPage.body.id }] });
 ok('OPS set_menu', set.body.ok && set.body.data.length === 2);
-const html = await (await fetch(`${W}/`, { headers: { 'cache-control': 'no-cache' } })).text();
-ok('前台導覽渲染選單（ISR 60 秒內可能為舊版）', html.includes(`關於 ${RUN}`) || html.includes('關於我們') || html.includes('關於 '));
+const html = await untilHtml(`${W}/`, (h) => h.includes(`關於 ${RUN}`));
+ok('前台導覽渲染選單（發佈即清快取）', html.includes(`關於 ${RUN}`));
 await j(`/api/admin/content/${pubPage.body.id}`, { method: 'DELETE', cookie: admin });
 const afterDel = await j('/api/content/menu');
 ok('刪除頁面後選單節點自動失效（contentId SetNull → 不顯示）', !afterDel.body.some((n) => n.label === `關於 ${RUN}`));

@@ -6,6 +6,7 @@ import { lintDesign, mapTree, parseDesignDoc, renderDesignDocument, type DesignD
 import { env } from '../../config/env';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
+import { RevalidateService } from '../settings/revalidate.service';
 import { sanitizeHtml, slugify } from '../migration/normalize';
 
 const draftInput = z.object({
@@ -33,6 +34,7 @@ export class DesignService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly settings: SettingsService,
+    private readonly reval: RevalidateService,
   ) {}
 
   async content(idOrSlug: string) {
@@ -172,6 +174,7 @@ export class DesignService {
       if (old.length) await tx.contentRevision.deleteMany({ where: { id: { in: old.map((o) => o.id) } } });
       return { version, backedUpVersion: backedUp, updated };
     });
+    this.reval.trigger('content');
     return { id: c.id, slug: result.updated.slug, version: result.version, backedUpVersion: result.backedUpVersion, url: c.type === 'page' ? (result.updated.slug === 'home' ? '/' : `/p/${result.updated.slug}`) : `/blog/${result.updated.slug}`, warnings: lint.filter((l) => l.level === 'warn') };
   }
 

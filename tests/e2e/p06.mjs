@@ -2,6 +2,18 @@
 // P6 本機端到端：後台帳號分離（admin_users／sk_admin）、前台會員不能進後台、管理員 CRUD、內容編輯器（頁面／文章／上傳）、首頁 home 頁面
 const B = process.env.API ?? 'http://localhost:4000';
 const W = process.env.WEB ?? 'http://localhost:3000';
+// 發佈即清快取是非同步（api 去抖 300ms 後通知 web），前台以輪詢等待新內容（最多 10 秒）
+const untilHtml = async (url, pred, ms = 10000) => {
+  const t0 = Date.now();
+  let html = '';
+  while (Date.now() - t0 < ms) {
+    html = await fetch(url, { headers: { 'cache-control': 'no-cache' } }).then((r) => r.text()).catch(() => '');
+    if (pred(html)) return html;
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  return html;
+};
+
 const RUN = Date.now().toString(36).slice(-4).toLowerCase();
 let fails = 0;
 const ok = (n, c, x = '') => { console.log(`${c ? 'PASS' : 'FAIL'} ${n}${x ? ' — ' + x : ''}`); if (!c) fails++; };
@@ -89,8 +101,8 @@ ok('upsert_content home', home.body.ok && home.body.data.slug === 'home');
 // P9 起 upsert_content 一律存草稿，要上線需 publish_content confirm
 const pubHome = await j('/api/admin/ai/act', { method: 'POST', cookie: admin, body: { action: 'publish_content', params: { slug: 'home', confirm: true } } });
 ok('publish_content home', pubHome.body.ok, JSON.stringify(pubHome.body).slice(0, 120));
-const homeHtml = await (await fetch(`${W}/`, { headers: { 'cache-control': 'no-cache' } })).text();
-ok('首頁顯示 home 頁面內容（ISR 60 秒內可能為舊版）', homeHtml.includes(`HOME-${RUN}`) || homeHtml.includes('HOME-'));
+const homeHtml = await untilHtml(`${W}/`, (h) => h.includes(`HOME-${RUN}`));
+ok('首頁顯示 home 頁面內容（發佈即清快取）', homeHtml.includes(`HOME-${RUN}`));
 const post = await j('/api/admin/ai/act', { method: 'POST', cookie: admin, body: { action: 'upsert_content', params: { slug: `news-${RUN}`, type: 'post', title: `公告 ${RUN}`, body: '<p>news</p>', tags: ['公告'], status: 'published' } } });
 await j('/api/admin/ai/act', { method: 'POST', cookie: admin, body: { action: 'publish_content', params: { slug: `news-${RUN}`, confirm: true } } });
 const postsAfter = await j('/api/content/posts?tag=公告');

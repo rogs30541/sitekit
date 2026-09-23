@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RevalidateService } from '../settings/revalidate.service';
 
 const productInput = z.object({
   type: z.enum(['physical', 'course', 'credit_pack']),
@@ -69,7 +70,10 @@ const PUBLIC_CHAPTER = { id: true, parentId: true, order: true, title: true, dur
 /** 目錄：商品與課程共用 Product；公開讀取只回上架／已發布，且永不回傳章節影片 ID。 */
 @Injectable()
 export class CatalogService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly reval: RevalidateService,
+  ) {}
 
   // ---- 公開 ----
   listProducts(type?: string, category?: string) {
@@ -98,6 +102,7 @@ export class CatalogService {
     if (p.course) throw new BadRequestException('課程商品請到「課程管理」處理');
     if (p._count.items > 0) throw new BadRequestException('此商品已有訂單紀錄，不能刪除；請改為下架');
     await this.prisma.product.delete({ where: { id } });
+    this.reval.trigger('catalog');
     return { deleted: p.sku };
   }
 
@@ -181,10 +186,12 @@ export class CatalogService {
 
   createProduct(input: unknown) {
     const d = parse(productInput, input);
+    this.reval.trigger('catalog');
     return this.prisma.product.create({ data: { ...this.productData(d), type: d.type, sku: d.sku, name: d.name, price: d.price } });
   }
 
   updateProduct(id: string, input: unknown) {
+    this.reval.trigger('catalog');
     return this.prisma.product.update({ where: { id }, data: this.productData(parse(productInput.partial(), input)) });
   }
 
@@ -208,6 +215,7 @@ export class CatalogService {
 
   createCourse(input: unknown) {
     const d = parse(courseInput, input);
+    this.reval.trigger('catalog');
     return this.prisma.course.create({
       data: { ...this.courseData(d), slug: d.slug, product: { create: { ...this.productData(d.product), sku: d.product.sku, name: d.product.name, price: d.product.price, type: 'course' } } },
       include: { product: true },
@@ -216,6 +224,7 @@ export class CatalogService {
 
   updateCourse(id: string, input: unknown) {
     const d = parse(courseInput.partial().extend({ product: productInput.omit({ type: true }).partial().optional() }), input);
+    this.reval.trigger('catalog');
     return this.prisma.course.update({
       where: { id },
       data: { ...this.courseData(d), ...(d.product ? { product: { update: this.productData(d.product) } } : {}) },

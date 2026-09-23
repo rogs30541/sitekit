@@ -2,6 +2,7 @@ import { BadRequestException, Body, Controller, Get, Injectable, Put, Query, Use
 import { z } from 'zod';
 import { AdminSessionGuard } from '../../common/guards';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RevalidateService } from '../settings/revalidate.service';
 
 const itemInput: z.ZodType<MenuInput, z.ZodTypeDef, MenuInputRaw> = z.lazy(() =>
   z.object({
@@ -50,7 +51,10 @@ export interface MenuNode {
 /** 網站架構樹／選單：公開端只回可見節點與解析後的 href；後台整棵覆寫（交易內先刪後建）。 */
 @Injectable()
 export class MenuService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly reval: RevalidateService,
+  ) {}
 
   private resolveHref(i: { kind: string; href: string | null; content: { slug: string; type: string } | null }) {
     if (i.kind === 'page' && i.content) return i.content.type === 'page' ? (i.content.slug === 'home' ? '/' : `/p/${i.content.slug}`) : `/blog/${i.content.slug}`;
@@ -100,6 +104,7 @@ export class MenuService {
       };
       await create(items, null);
     });
+    this.reval.trigger('menu');
     return this.tree(false, location);
   }
 }

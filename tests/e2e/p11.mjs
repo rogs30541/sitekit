@@ -1,7 +1,8 @@
 // P11 本機端到端：物流設定／配送方式與運費／超商門市 token／綠界物流簽章與回呼／發票設定／結帳發票欄位驗證／發票列表與 OPS
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const dist = 'C:/Users/Tw/AppData/Local/Temp/p11/';
+import { fileURLToPath } from 'node:url';
+const dist = fileURLToPath(new URL('../../apps/api/dist/modules/', import.meta.url));
 const B = process.env.API ?? 'http://localhost:4000';
 const RUN = Date.now().toString(36).slice(-4).toLowerCase();
 let fails = 0;

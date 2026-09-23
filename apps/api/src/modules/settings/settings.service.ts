@@ -19,8 +19,11 @@ export class SettingsService {
     return this.cache.map;
   }
 
+  /** 設定變更後的外部通知（RevalidateService 註冊：清前台 ISR 快取） */
+  onInvalidate?: () => void;
   invalidate() {
     this.cache = null;
+    this.onInvalidate?.();
   }
 
   /** DB 有值優先；否則讀環境變數；再否則回預設。 */

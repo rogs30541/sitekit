@@ -6,6 +6,7 @@ import { lintDesign, mapTree, normalizeSalesDoc, parseDesignDoc, renderDesignDoc
 import { env } from '../../config/env';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
+import { RevalidateService } from '../settings/revalidate.service';
 import { sanitizeHtml, slugify } from '../migration/normalize';
 
 const createInput = z.object({ title: z.string().trim().min(1).max(200), slug: z.string().trim().max(120).optional(), code: z.string().trim().regex(/^[A-Z0-9]{0,3}$/).optional() });
@@ -20,6 +21,7 @@ export class SalesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly settings: SettingsService,
+    private readonly reval: RevalidateService,
   ) {}
 
   list() {
@@ -188,6 +190,7 @@ export class SalesService {
       if (old.length) await tx.salesPageRevision.deleteMany({ where: { id: { in: old.map((o) => o.id) } } });
       return { version, backedUpVersion: hadLive ? p.version : null, slug: u.slug };
     });
+    this.reval.trigger('sales');
     return { id: p.id, ...r, url: `/s/${r.slug}`, warnings: this.lint(doc).filter((l) => l.level === 'warn') };
   }
   async unpublish(idOrSlug: string) {

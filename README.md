@@ -218,6 +218,7 @@ npm run test:e2e                # tests/e2e/run.mjs：對已啟動的 api（4000
 node tests/e2e/run.mjs p25      # 只跑指定檔
 ```
 
+- **發佈即清快取（v0.17.1）**：前台頁面 ISR 60 秒，過去管理員發佈／改選單／改設定要等一分鐘才看得到。現在 api 在內容發佈、銷售頁發佈、選單、站台設定（`settings.invalidate()`）、商品／課程寫入後，去抖 300ms 通知 web `POST /sitekit-internal/revalidate`（token＝時間戳＋HMAC(SESSION_SECRET)；web 沒共享密鑰時回呼 `POST /api/internal/revalidate/verify`），web 執行 `revalidatePath('/', 'layout')` 清整站含 sitemap。web 未啟動或 Workers 版無此路徑只記 warn。
 - **e2e 護欄（M0，v0.17.0）**：`tests/e2e/p04…p25、payment.mjs` 共 20 檔約 450 個斷言，涵蓋電商／課程／金流／物流／發票／內容設計器／銷售頁／追蹤碼／AI 工作站／會員資料庫。`_setup.mjs` 會建立 tester@example.com、補點、把設定回到種子預設、從 `fixtures/image-templates.json` 匯入 22 組產圖模板。需要 web 的檔案檔頭標 `// needs: web`，WEB 未啟動時跳過。
 - 本機跑：api 以 `RATE_LIMIT=off` 啟動並帶 `E2E_RATE_LIMIT_OFF=1`（限流案例改為跳過），否則連續登入會被 429。
 - GitHub Actions（`.github/workflows/ci.yml`）：起 postgres service → build → migrate＋seed → 啟動 api 與 `next start` → 跑 e2e；紅燈即擋 PR。

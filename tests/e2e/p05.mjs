@@ -48,7 +48,11 @@ ok('通知紀錄含 welcome／order_paid／order_paid_admin(line skipped)／orde
 ok('買家 order_paid 收件人正確', st3.body.data.recent.some((r) => r.kind === 'order_paid' && r.to === 'tester@example.com' && r.result.ok));
 
 // 媒體落地：CSV 內文含本機圖片網址（web dev server 的 favicon）
-const img = 'http://localhost:4000/api/assets/ai/cmuangv540001or1gf8xu0amd.svg';
+// 圖片來源改由測試自己上傳（CI 全新環境沒有既有資產）；回傳網址走 site.url，媒體落地在 api 端以本機讀取
+const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="#0b6e77"/></svg>').toString('base64');
+const up = await j('/api/admin/content/upload', { method: 'POST', cookie: admin, body: { filename: 'p5.svg', contentType: 'image/svg+xml', dataBase64: `data:image/svg+xml;base64,${svg}` } });
+const img = up.body.url;
+ok('上傳測試圖片', up.status === 201 && typeof img === 'string' && img.includes('/api/assets/'), JSON.stringify(up.body).slice(0, 120));
 const csv = `external_id,title,slug,body,published_at,original_url,cover_url\np5-${RUN},媒體落地測試 ${RUN},media-${RUN},"<p>hi</p><img src=""${img}""><img src=""https://invalid.invalid/none.png"">",2026-09-01,https://old.example.com/2026/09/media-${RUN},${img}`;
 const dry = await act(admin, 'import_content', { source: 'csv', csv, dryRun: true, landMedia: true });
 ok('import_content 乾跑回 mediaCount', dry.body.ok && dry.body.data.mediaCount === 3, JSON.stringify(dry.body.data));

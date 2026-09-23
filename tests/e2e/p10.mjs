@@ -2,6 +2,18 @@
 // P10 本機端到端：站台設定（品牌／聯絡／SEO）、首頁區塊、頁尾選單、公開 /api/content/site、sitemap、前台渲染（導覽名稱／頁尾／GA／區塊）
 const B = process.env.API ?? 'http://localhost:4000';
 const W = process.env.WEB ?? 'http://localhost:3000';
+// 發佈即清快取是非同步（api 去抖 300ms 後通知 web），前台以輪詢等待新內容（最多 10 秒）
+const untilHtml = async (url, pred, ms = 10000) => {
+  const t0 = Date.now();
+  let html = '';
+  while (Date.now() - t0 < ms) {
+    html = await fetch(url, { headers: { 'cache-control': 'no-cache' } }).then((r) => r.text()).catch(() => '');
+    if (pred(html)) return html;
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  return html;
+};
+
 const RUN = Date.now().toString(36).slice(-4).toLowerCase();
 let fails = 0;
 const ok = (n, c, x = '') => { console.log(`${c ? 'PASS' : 'FAIL'} ${n}${x ? ' — ' + x : ''}`); if (!c) fails++; };
@@ -52,9 +64,9 @@ ok('OPS get_menu location=footer', opsFooter.body.ok && opsFooter.body.data.leng
 
 const pages = await j('/api/content/pages');
 ok('公開 /api/content/pages', pages.status === 200 && Array.isArray(pages.body));
-const sm = await (await fetch(`${W}/sitemap.xml`)).text();
+const sm = await untilHtml(`${W}/sitemap.xml`, (t) => t.includes('/course/') && t.includes('/blog/'));
 ok('sitemap 含 /course/ 與 /blog/', sm.includes('/course/') && sm.includes('/blog/'));
-const html = await (await fetch(`${W}/`, { headers: { 'cache-control': 'no-cache' } })).text();
+const html = await untilHtml(`${W}/`, (h) => h.includes(`歡迎 ${RUN}`) && h.includes(`測試站 ${RUN}`) && h.includes('G-TEST1234'));
 ok('首頁渲染區塊（hero／features／cta）', html.includes(`歡迎 ${RUN}`) && html.includes('特色') && html.includes('CTA'));
 ok('首頁 script 被清、HTML 區塊保留', html.includes('自訂') && !html.includes('alert(1)'));
 ok('導覽顯示新站名、頁尾有文字／Email／頁尾選單', html.includes(`測試站 ${RUN}`) && html.includes(`頁尾文字 ${RUN}`) && html.includes(`hi-${RUN}@example.com`) && html.includes(`隱私 ${RUN}`));
