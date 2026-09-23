@@ -1,0 +1,82 @@
+# Zeabur Template：SiteKit 單體殼＋PostgreSQL（一鍵部署）
+# 匯入方式：Zeabur 儀表板 → Templates → Create from YAML（貼上本檔），或 `npx zeabur@latest template deploy -f deploy/zeabur-template.yaml`
+# 注意：ghcr.io/rogs30541/sitekit 在原始碼 repo 公開前是私有映像；私有時請在 Zeabur 服務加 registry 認證，或改用 Dockerfile.monolith 從 Git 建置。
+apiVersion: zeabur.com/v1
+kind: Template
+metadata:
+  name: SiteKit
+spec:
+  description: 電商開店／線上課程／品牌網站開放套件：後台 AI 指令台＋MCP、台灣金流物流發票內建。一個服務＋PostgreSQL，開站後到 /setup 建立管理員。
+  icon: https://raw.githubusercontent.com/rogs30541/sitekit/main/apps/web/public/favicon.ico
+  tags:
+    - CMS
+    - E-commerce
+    - Course
+  variables:
+    - key: PUBLIC_DOMAIN
+      type: DOMAIN
+      name: 網域
+      description: 站台的公開網址（金流回呼、Email 連結、MCP 都用它；之後可在後台「網站設定」改）
+  readme: |
+    ## SiteKit
+    1. 部署完成後開啟網域 → 自動導到 `/setup`，建立第一位超級管理員、填站名、儲存（建議 Cloudflare R2）、Email（Resend）。
+    2. 金流／物流／發票在後台「帳務」填各家商店參數。
+    3. MCP 連接用的 OPS token 在精靈完成頁或「系統設定 → 健康檢查與支援」查看。
+    4. 更新：把 sitekit 服務的映像 tag 改成新版號後重新部署，資料庫遷移會自動套用。
+  services:
+    - name: postgresql
+      icon: https://raw.githubusercontent.com/zeabur/service-icons/main/marketplace/postgresql.svg
+      template: PREBUILT
+      spec:
+        source:
+          image: postgres:16-alpine
+        ports:
+          - id: database
+            port: 5432
+            type: TCP
+        volumes:
+          - id: data
+            dir: /var/lib/postgresql/data
+        env:
+          POSTGRES_USER:
+            default: sitekit
+          POSTGRES_PASSWORD:
+            default: ${PASSWORD}
+          POSTGRES_DB:
+            default: sitekit
+          PGDATA:
+            default: /var/lib/postgresql/data/pgdata
+        instructions:
+          - type: TEXT
+            title: 連線字串
+            content: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${PORT_FORWARDED_HOSTNAME}:${DATABASE_PORT_FORWARDED_PORT}/${POSTGRES_DB}
+            category: 連線
+    - name: sitekit
+      icon: https://raw.githubusercontent.com/rogs30541/sitekit/main/apps/web/public/favicon.ico
+      template: PREBUILT
+      domainKey: PUBLIC_DOMAIN
+      dependencies:
+        - postgresql
+      spec:
+        source:
+          image: ghcr.io/rogs30541/sitekit:latest
+        ports:
+          - id: web
+            port: 3000
+            type: HTTP
+        volumes:
+          - id: data
+            dir: /data
+        env:
+          DATABASE_URL:
+            default: postgresql://sitekit:${POSTGRES_PASSWORD}@postgresql.zeabur.internal:5432/sitekit
+          FRONTEND_URL:
+            default: https://${PUBLIC_DOMAIN}
+          NEXT_PUBLIC_SITE_URL:
+            default: https://${PUBLIC_DOMAIN}
+          APP_ENV:
+            default: production
+          PORT:
+            default: "3000"
+          SITEKIT_DATA_DIR:
+            default: /data

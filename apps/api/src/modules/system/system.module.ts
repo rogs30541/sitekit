@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Module, type OnModuleInit, Post, Req, Res, UseGuards, ForbiddenException } from '@nestjs/common';
+import { Body, Controller, Get, Module, type OnModuleInit, Post, Query, Req, Res, UseGuards, ForbiddenException } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { ADMIN_COOKIE, AdminAuthService, SystemService } from '@sitekit/core';
 import { AdminSessionGuard, type AuthedRequest } from '../../common/guards';
@@ -53,6 +53,11 @@ export class SystemController {
 
   private superOnly(req: AuthedRequest) {
     if (req.session?.user.role !== 'superadmin') throw new ForbiddenException('只有超級管理員可以檢視或更換 OPS token');
+  }
+
+  @Get('update-check')
+  updateCheck(@Query('force') force?: string) {
+    return this.system.updateCheck(force === '1');
   }
 
   @Get('ops-token')

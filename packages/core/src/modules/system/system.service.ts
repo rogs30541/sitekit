@@ -11,6 +11,23 @@ import { AdminAuthService } from '../admin-auth/admin-auth.service';
 /** 系統層設定鍵（不進 SETTING_KEYS：不給後台表單改） */
 export const SYSTEM_KEYS = { sessionSecret: 'system.sessionSecret', opsToken: 'system.opsToken', setupCompletedAt: 'setup.completedAt' } as const;
 type Source = 'env' | 'generated';
+export interface UpdateCheck {
+  current: string;
+  latest: string | null;
+  hasUpdate: boolean;
+  url: string | null;
+  publishedAt?: string | null;
+  notes?: string;
+  checkedAt: string;
+  error?: string;
+  disabled?: boolean;
+}
+const cmpVer = (a: string, b: string) => {
+  const pa = a.split(/[.-]/).map((x) => (Number.isFinite(Number(x)) ? Number(x) : 0));
+  const pb = b.split(/[.-]/).map((x) => (Number.isFinite(Number(x)) ? Number(x) : 0));
+  for (let i = 0; i < 3; i++) if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) - (pb[i] ?? 0);
+  return 0;
+};
 
 /**
  * 交付化地基（v0.19.0）：任何人獨自部署時第一天要用到的東西。
@@ -145,6 +162,27 @@ export class SystemService {
       health,
       audit,
     };
+  }
+
+  /* ---------- 版本更新檢查（GitHub Releases；6 小時快取；失敗靜默） ---------- */
+  private updateCache: { at: number; value: UpdateCheck } | null = null;
+  async updateCheck(force = false): Promise<UpdateCheck> {
+    const current = env.APP_VERSION;
+    const repo = env.UPDATE_REPO;
+    if (!repo) return { current, latest: null, hasUpdate: false, url: null, checkedAt: new Date().toISOString(), disabled: true };
+    if (!force && this.updateCache && Date.now() - this.updateCache.at < 6 * 3600_000) return this.updateCache.value;
+    let value: UpdateCheck;
+    try {
+      const r = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, { headers: { accept: 'application/vnd.github+json', 'user-agent': `sitekit/${current}` }, signal: AbortSignal.timeout(6000) });
+      if (!r.ok) throw new Error(`GitHub ${r.status}（私有 repo 未公開時檢查不到）`);
+      const j = (await r.json()) as { tag_name?: string; html_url?: string; published_at?: string; body?: string };
+      const latest = (j.tag_name ?? '').replace(/^v/, '') || null;
+      value = { current, latest, hasUpdate: !!latest && cmpVer(latest, current) > 0, url: j.html_url ?? null, publishedAt: j.published_at ?? null, notes: (j.body ?? '').slice(0, 2000), checkedAt: new Date().toISOString() };
+    } catch (e) {
+      value = { current, latest: null, hasUpdate: false, url: null, checkedAt: new Date().toISOString(), error: e instanceof Error ? e.message : String(e) };
+    }
+    this.updateCache = { at: Date.now(), value };
+    return value;
   }
 
   /* ---------- OPS token（MCP 連接用） ---------- */

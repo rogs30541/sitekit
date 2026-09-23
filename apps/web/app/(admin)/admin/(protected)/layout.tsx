@@ -11,10 +11,21 @@ export const dynamic = 'force-dynamic';
 
 /** 後台受保護區：只認 admin_users 的 sk_admin session；未登入導去獨立登入頁。前台導覽在 /admin 下不顯示。 */
 export default async function AdminProtectedLayout({ children }: { children: React.ReactNode }) {
-  const [me, site, setup] = await Promise.all([getAdminMe(), getSite(), apiServer<{ completed: boolean }>('/api/setup/status')]);
+  const [me, site, setup, update] = await Promise.all([getAdminMe(), getSite(), apiServer<{ completed: boolean }>('/api/setup/status'), apiServer<{ hasUpdate: boolean; latest: string | null; current: string; url: string | null }>('/api/admin/system/update-check')]);
   if (!me?.authenticated || !me.admin) redirect('/admin/login?next=/admin');
   return (
     <div>
+      {update?.hasUpdate ? (
+        <div className="mb-3 rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-xs text-blue-900">
+          SiteKit 有新版本 v{update.latest}（目前 v{update.current}）。
+          {update.url ? (
+            <a href={update.url} target="_blank" rel="noreferrer" className="ml-1 font-semibold underline">
+              看更新內容
+            </a>
+          ) : null}
+          。容器：把映像 tag 改成新版重新部署；主機安裝：下載新版發行包解壓後執行 sitekit start（遷移自動套用）。
+        </div>
+      ) : null}
       {setup && !setup.completed ? (
         <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
           安裝精靈尚未完成（站名／儲存／Email／金流）。

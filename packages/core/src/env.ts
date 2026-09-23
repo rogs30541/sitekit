@@ -33,5 +33,9 @@ export const env = {
   get APP_VERSION() {
     return read('APP_VERSION', '0.0.0');
   },
+  /** 版本更新檢查的 GitHub repo（owner/name）；空字串＝關閉 */
+  get UPDATE_REPO() {
+    return read('SITEKIT_UPDATE_REPO', 'rogs30541/sitekit');
+  },
 };
 export const isProd = () => env.APP_ENV === 'production';
