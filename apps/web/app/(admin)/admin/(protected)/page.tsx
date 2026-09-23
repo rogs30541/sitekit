@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Section } from '@/components/Section';
-import { ADMIN_NAV } from '@/components/AdminNav';
+import { ADMIN_NAV } from '@/components/admin-nav-data';
 
 export const dynamic = 'force-dynamic';
 
