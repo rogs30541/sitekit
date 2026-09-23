@@ -1,7 +1,7 @@
 {
   "name": "sitekit",
   "private": true,
-  "version": "0.20.0",
+  "version": "0.21.0",
   "description": "AIGC創客架站套件（SiteKit）：電商開店／線上課程／品牌網站共用骨架，後台具 MCP 與 AI API 雙路徑",
   "workspaces": [
     "packages/*",
@@ -11,10 +11,12 @@
   "scripts": {
     "dev:web": "npm run dev -w @sitekit/web",
     "dev:api": "npm run dev -w @sitekit/api",
-    "build": "npm run build -w @sitekit/shared && npm run build -w @sitekit/db && npm run build -w @sitekit/core && npm run build -w @sitekit/api && npm run build -w @sitekit/web",
+    "build": "npm run build -w @sitekit/shared && npm run build -w @sitekit/db && npm run build -w @sitekit/core && npm run build -w @sitekit/api && npm run build -w @sitekit/web && npm run build -w @sitekit/server",
     "build:shared": "npm run build -w @sitekit/shared",
     "build:core": "npm run build -w @sitekit/core",
     "build:db": "npm run build -w @sitekit/db",
+    "build:server": "npm run build -w @sitekit/server",
+    "start:server": "node apps/server/bin/sitekit.mjs start",
     "db:diff:sqlite": "node packages/db/scripts/prisma.mjs diff-sqlite",
     "build:api": "npm run build -w @sitekit/api",
     "build:web": "npm run build -w @sitekit/web",

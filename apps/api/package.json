@@ -1,6 +1,6 @@
 {
   "name": "@sitekit/api",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "private": true,
   "main": "dist/main.js",
   "scripts": {
@@ -38,5 +38,9 @@
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"
-  }
+  },
+  "files": [
+    "dist",
+    "prisma"
+  ]
 }

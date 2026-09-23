@@ -15,7 +15,7 @@ env:
   RATE_LIMIT: off
   E2E_RATE_LIMIT_OFF: '1'
 jobs:
-  # 一份模型、兩種資料庫：同一套 e2e 分別對 PostgreSQL 與 SQLite 跑，兩者行為一致由此保證
+  # 一份模型、兩種資料庫、兩種殼：同一套 e2e 分別對「分離殼＋PostgreSQL」「分離殼＋SQLite」「單體殼＋SQLite」跑
   e2e-postgres:
     runs-on: ubuntu-latest
     services:
@@ -43,7 +43,6 @@ jobs:
       - run: npm run build -w @sitekit/shared
       - run: npm run build -w @sitekit/db
       - run: npm run db:validate -w @sitekit/api
-      - run: npm run db:generate -w @sitekit/api
       - run: npm run build -w @sitekit/core
       - run: npm run build -w @sitekit/api
       - run: npm run build -w @sitekit/web
@@ -74,7 +73,6 @@ jobs:
       - run: npm run build -w @sitekit/shared
       - run: npm run build -w @sitekit/db
       - run: npm run db:validate -w @sitekit/api
-      - run: npm run db:generate -w @sitekit/api
       - run: npm run build -w @sitekit/core
       - run: npm run build -w @sitekit/api
       - run: npm run build -w @sitekit/web
@@ -89,3 +87,29 @@ jobs:
       - name: logs on failure
         if: failure()
         run: tail -n 120 /tmp/api.log; tail -n 60 /tmp/web.log
+
+  # 單體殼：sitekit start（一個程序、一個埠、SQLite），api 與 web 都在 3000
+  e2e-monolith:
+    runs-on: ubuntu-latest
+    env:
+      API_INTERNAL_URL: http://127.0.0.1:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build -w @sitekit/shared
+      - run: npm run build -w @sitekit/db
+      - run: npm run build -w @sitekit/core
+      - run: npm run build -w @sitekit/api
+      - run: npm run build -w @sitekit/web
+      - run: npm run build -w @sitekit/server
+      - name: sitekit start（demo 種子）
+        run: (nohup node apps/server/bin/sitekit.mjs start --demo --port 3000 --data ${{ github.workspace }}/data/mono > /tmp/mono.log 2>&1 &) && for i in $(seq 1 45); do curl -sf http://localhost:3000/api/health && curl -sf -o /dev/null http://localhost:3000/ && break; sleep 2; done
+      - name: e2e（API 與 WEB 同埠）
+        run: API=http://localhost:3000 WEB=http://localhost:3000 node tests/e2e/run.mjs
+      - name: logs on failure
+        if: failure()
+        run: tail -n 150 /tmp/mono.log

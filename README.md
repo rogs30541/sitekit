@@ -146,6 +146,7 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 ## P5 營運化＋後台分離（2026-09-21，v0.4.0）
 
+- **單體殼 `apps/server`（v0.21.0，1.0 預設安裝形態）**：`node apps/server/bin/sitekit.mjs start` 一個 Node 程序、一個埠，`/api/*` 交給與分離殼相同的 `createApiApp()`（apps/api/src/app.ts），其餘交給 Next.js request handler；前台的伺服器端呼叫走同程序（`API_INTERNAL_URL=http://127.0.0.1:<port>`）。預設 SQLite（`file:<data>/sitekit.db`）、上傳存 `<data>/storage`、機密自動產生，**全新主機只要 Node 20 就能開站**。CLI：`start [--port] [--data] [--demo]`／`migrate`／`seed`／`env`；啟動時自動套用遷移＋補預設設定與模板。`Dockerfile.monolith`＝單一映像（`/data` volume）。同一套 21 支 e2e 以 `API=WEB=http://localhost:3000` 跑單體殼全綠；CI 第三個 job `e2e-monolith`。已知限制：`NEXT_PUBLIC_SITE_URL` 在 web 建置時定案，只影響 metadataBase；站台網址以後台 `site.url` 為準。
 - **一份模型、兩種資料庫（v0.20.0，M2）**：`packages/db` 由 `apps/api/prisma/schema.prisma`（PostgreSQL＝單一真相源）自動產生 SQLite 版 schema（`packages/db/sqlite/schema.prisma`，禁止手改；enum→String、Json→String、String[]→String、去 `@db.*`）與獨立的 sqlite migrations。`createPrisma()` 依 `DATABASE_URL` 選 client：`postgresql://…` 用預設 client；`file:/絕對路徑/sitekit.db` 用 SQLite client＋執行期轉換層（Proxy 在呼叫點把 Json／陣列／`Prisma.JsonNull` 轉成字串或 NULL，query extension 把讀出的字串 parse 回物件；`tags: { has }` 改 `contains`、`mode: 'insensitive'` 移除）。**core 與 api 零改動**，同一套 21 支 e2e 在兩種資料庫都全綠，CI 兩個 job 分別跑。指令：`npm run db:generate`（產兩個 client）、`npm run db:migrate`（依 URL 選 schema）、`npm run db:diff:sqlite <name>`（改模型後重產 sqlite schema＋migration）。SQLite 的 `file:` 相對路徑是相對 schema 檔，一律用絕對路徑。這是單體模式（任何有 Node 的主機）與 Cloudflare D1 的共同地基。
 - **交付化地基（v0.19.0）**：任何人獨自部署第一天要用的四件事。①**安裝精靈 `/setup`**：admin_users 為空時 middleware 把所有頁面導到精靈；第一步免 Email 驗證直接建立超級管理員（`POST /api/setup/admin`，只在為空時允許；之後一律登入頁／白名單註冊），接著站名與網址、儲存（本機或 R2）、Email（Resend）、金流（可跳過），完成後顯示 MCP 用的 OPS token 並標記 `setup.completedAt`（後台未完成時顯示提示）。②**機密自動產生**：`SESSION_SECRET`／`OPS_TOKEN` 未由環境變數提供時，api 啟動（`SystemModule.onModuleInit`）自動產生並存進 settings（`system.sessionSecret`／`system.opsToken`，重啟不變）；OperatorTokenGuard 改讀 core env。③**去示範資料、去品牌化**：`db:seed` 一律只建設定預設與 22 組產圖模板（`apps/api/prisma/image-templates.json`，封面 `/templates/<key>.jpg` 靜態檔），`SEED_DEMO=1` 才建 admin@example.com／示範內容（本機與 CI 用）；`BRAND` 預設改中性（SiteKit／我的網站），品牌由精靈或網站設定填。④**健康檢查與支援包**：`GET /api/admin/system/health`（DB、儲存寫讀、Email、公開網址、發佈即清快取、付款方式、機密來源）、`GET /api/admin/system/support-bundle`（機密遮蔽的設定＋最近 50 筆稽核＋健康檢查）、superadmin 的 `GET/POST /api/admin/system/ops-token[/rotate]`；後台「系統設定 → 健康檢查與支援」面板。
 - **後台首頁 /admin 500 修正**（v0.16.5）：`ADMIN_NAV` 搬到純資料模組 `components/admin-nav-data.ts`——server component 從 `'use client'` 模組 import 非元件常數會拿到 client reference（`.map is not a function`），線上 digest 2174542681。鐵律：client 模組只 export 元件，資料常數另放無 `'use client'` 的檔案。
@@ -176,7 +177,8 @@ packages/shared   共用型別、品牌設定、設定鍵名、OPS_ACTIONS（單
 packages/db       ★ v0.20.0（M2）資料庫層：一份模型產生 postgres／sqlite client；createPrisma() 依 DATABASE_URL 選用＋SQLite 轉換層
 packages/core     ★ v0.18.0（M1）業務核心：所有 service／金流物流發票 adapter／AI 供應商／匯入連接器，純 TypeScript、零 NestJS 依賴
                   compat.ts＝HttpError 家族＋no-op Injectable＋Logger；env.ts＝configureCore() 注入；三個殼共用
-apps/api          NestJS 11 薄殼：只剩 controller／module／guard／filter；服務全部 `import from '@sitekit/core'`
+apps/api          NestJS 11 薄殼：controller／module／guard／filter；`src/app.ts` 的 createApiApp() 供分離殼（main.ts）與單體殼共用
+apps/server       ★ v0.21.0 單體殼：bin/sitekit.mjs（start／migrate／seed／env）＋ src/main.ts（同埠掛 api 與 Next）
 apps/web          Next.js 15 App Router：(marketing)(shop)(learn)(account)(admin) 路由分組
 mcp/              MCP stdio server（打任一殼的 /api/ops）
 tests/e2e/        端到端護欄（只打 HTTP，與殼無關）
@@ -192,7 +194,15 @@ docs/             架構說明、雙平台部署架構（一核心三殼路線�
 - core 讀環境值只經 `env` getter（`configureCore()` 注入，Node 殼退回 `process.env`）；`isProd()` 是函式。
 - 建置順序：shared → core → api → web（`npm run build`、Dockerfile.api、CI 已同步）。
 
-## 本機啟動（免 Docker）
+## 最快開站（單體模式，任何有 Node 20 的主機）
+
+```bash
+npm install && npm run build          # 一次建置 shared → db → core → api → web → server
+node apps/server/bin/sitekit.mjs start   # http://localhost:3000 ；資料在 ./data（SQLite＋上傳檔）；首次開 /setup 建立管理員
+# 或 Docker：docker build -f Dockerfile.monolith -t sitekit . && docker run -p 3000:3000 -v sitekit-data:/data sitekit
+```
+
+## 本機啟動（分離模式，免 Docker）
 
 ```bash
 npm install

@@ -1,0 +1,33 @@
+# SiteKit 單體映像：一個容器、一個埠（3000），api＋前台同程序，預設 SQLite 存在 /data（掛 volume 即持久化）
+#   docker build -f Dockerfile.monolith -t sitekit .
+#   docker run -d -p 3000:3000 -v sitekit-data:/data -e FRONTEND_URL=https://your.domain sitekit
+# 要用 PostgreSQL：加 -e DATABASE_URL=postgresql://…（其餘不變）
+FROM node:22-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json packages/shared/
+COPY packages/core/package.json packages/core/
+COPY packages/db/package.json packages/db/
+COPY apps/api/package.json apps/api/
+COPY apps/web/package.json apps/web/
+COPY apps/server/package.json apps/server/
+COPY apps/edge/package.json apps/edge/
+COPY mcp/package.json mcp/
+RUN npm ci --no-audit --no-fund
+COPY packages packages
+COPY apps/api apps/api
+COPY apps/web apps/web
+COPY apps/server apps/server
+# 單體殼：前台呼叫 api 走同程序；NEXT_PUBLIC_SITE_URL 只影響 metadataBase，站台網址以後台 site.url 為準
+ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL NEXT_PUBLIC_APP_ENV=production API_INTERNAL_URL=http://127.0.0.1:3000
+RUN npm run build -w @sitekit/shared && npm run build -w @sitekit/db && npm run build -w @sitekit/core && npm run build -w @sitekit/api && npm run build -w @sitekit/web && npm run build -w @sitekit/server
+
+FROM node:22-alpine
+WORKDIR /app
+ENV NODE_ENV=production APP_ENV=production PORT=3000 SITEKIT_DATA_DIR=/data
+COPY --from=build /app ./
+VOLUME ["/data"]
+EXPOSE 3000
+# 啟動：套用遷移（依 DATABASE_URL 選 SQLite／PostgreSQL）→ 補預設設定與模板 → 單一程序
+CMD ["node", "apps/server/bin/sitekit.mjs", "start"]
