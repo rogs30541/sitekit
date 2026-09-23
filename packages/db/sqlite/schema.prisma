@@ -1,0 +1,686 @@
+// ⚠ 自動產生（node packages/db/scripts/gen-sqlite-schema.mjs），勿手改；來源＝apps/api/prisma/schema.prisma
+// SiteKit 核心資料模型（依 docs/全新網站規劃.md 第 03 節）
+generator client {
+  output        = "./client"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String            @id @default(cuid())
+  email           String            @unique
+  passwordHash    String?
+  displayName     String?
+  role            String              @default("user")
+  status          String        @default("active")
+  membershipTier  String?
+  allowedFeatures String          @default("[]")
+  creditBalance   Int               @default(0)
+  creditReserved  Int               @default(0)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  identities      Identity[]
+  sessions        Session[]
+  orders          Order[]
+  entitlements    Entitlement[]
+  ledger          CreditLedger[]
+  jobs            AiJob[]
+  progress        ChapterProgress[]
+  apiKeys         UserApiKey[]
+  passwordResets  PasswordReset[]
+  questions       CourseQuestion[]
+
+  @@map("users")
+}
+
+/// 伺服器端 session：cookie 只存 id，權限以 DB 為準，登出即失效
+model Session {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+  userAgent String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+/// 後台管理員：與前台會員（users）完全分離；獨立登入頁 /admin/login、獨立 cookie sk_admin
+model AdminUser {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  passwordHash String
+  displayName  String?
+  role         String           @default("admin")
+  status       String     @default("active")
+  lastLoginAt  DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  sessions     AdminSession[]
+
+  @@map("admin_users")
+}
+
+/// 後台註冊 Email 驗證碼（6 碼、15 分鐘、最多 5 次嘗試；只存 SHA-256）
+model AdminVerification {
+  id        String   @id @default(cuid())
+  email     String
+  codeHash  String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@map("admin_verifications")
+}
+
+model AdminSession {
+  id        String    @id
+  adminId   String
+  expiresAt DateTime
+  userAgent String?
+  createdAt DateTime  @default(now())
+  admin     AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@map("admin_sessions")
+}
+
+/// 忘記密碼：一次性 token（只存 SHA-256），1 小時到期
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_resets")
+}
+
+/// 課程問答：學員提問、管理員回覆；isPublic＝其他學員可見
+model CourseQuestion {
+  id         String    @id @default(cuid())
+  courseId   String
+  chapterId  String?
+  userId     String
+  body       String
+  answer     String?
+  answeredAt DateTime?
+  answeredBy String?
+  isPublic   Boolean   @default(true)
+  status     String    @default("open")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  course     Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  chapter    Chapter?  @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([courseId, createdAt])
+  @@map("course_questions")
+}
+
+/// 課程公告
+model CourseAnnouncement {
+  id          String   @id @default(cuid())
+  courseId    String
+  title       String
+  body        String
+  isPublished Boolean  @default(true)
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId, publishedAt])
+  @@map("course_announcements")
+}
+
+model Identity {
+  id          String @id @default(cuid())
+  userId      String
+  provider    String
+  providerUid String
+  user        User   @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerUid])
+  @@map("identities")
+}
+
+/// 商品與課程共用 SKU 模型；type=course 時對應一筆 Course
+model Product {
+  id           String        @id @default(cuid())
+  type         String
+  sku          String        @unique
+  name         String
+  description  String?
+  coverUrl     String?
+  price        Int
+  isActive     Boolean       @default(true)
+  /// 庫存：null＝不追蹤（課程／點數包）；實體商品下單即扣、取消／失敗／退款回補（交易鎖不超賣）
+  stock        Int?
+  sortOrder    Int           @default(0)
+  /// 商品分類（自由字串；前台可依分類篩選）
+  category     String?
+  /// 特價與排程（saleStartsAt／saleEndsAt 空＝立即／永久）；effectivePrice 決定實際售價
+  salePrice    Int?
+  saleStartsAt DateTime?
+  saleEndsAt   DateTime?
+  tags         String      @default("[]")
+  /// 隱藏：不出現在列表，仍可由網址直接訪問（與下架不同）
+  hidden       Boolean       @default(false)
+  /// 規格定義 [{name:'顏色', values:['黑','白']}]；組合在 variants
+  specs        String?
+  variants     ProductVariant[]
+  course       Course?
+  items        OrderItem[]
+  entitlements Entitlement[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([type, isActive, sortOrder])
+  @@map("products")
+}
+
+/// 折扣碼：percent（value＝折扣百分比）或 fixed（value＝折抵元）；usedCount 於付款成功時累加
+model Coupon {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  type      String    @default("percent")
+  value     Int
+  minAmount Int       @default(0)
+  maxUses   Int?
+  usedCount Int       @default(0)
+  startsAt  DateTime?
+  expiresAt DateTime?
+  isActive  Boolean   @default(true)
+  note      String?
+  /// 適用範疇：shop（電商）／course（課程）／all
+  scope     String    @default("shop")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("coupons")
+}
+
+/// 課程：封面影片／試看影片為銷售頁公開素材；觀看期限決定購買後授權到期
+model Course {
+  id                   String    @id @default(cuid())
+  productId            String    @unique
+  slug                 String    @unique
+  summary              String?
+  isPublished          Boolean   @default(false)
+  coverVideoProvider   String?
+  coverVideoId         String?
+  previewVideoProvider String?
+  previewVideoId       String?
+  accessMode           String    @default("unlimited")
+  accessDays           Int?
+  accessUntil          DateTime?
+  /// 發布時間（影響列表排序）、講師、購買備註、購買按鈕文字
+  publishedAt          DateTime?
+  instructorName       String?
+  instructorBio        String?
+  purchaseNote         String?
+  buttonText           String?
+  product              Product   @relation(fields: [productId], references: [id])
+  chapters             Chapter[]
+  questions            CourseQuestion[]
+  announcements        CourseAnnouncement[]
+
+  @@map("courses")
+}
+
+/// 章節：parentId 為 null 是根層（可當「單元」容器），有 parentId 是子章節；order 為同層排序
+model Chapter {
+  id              String            @id @default(cuid())
+  courseId        String
+  parentId        String?
+  order           Int
+  title           String
+  body            String?
+  videoProvider   String            @default("youtube")
+  videoProviderId String?
+  durationSec     Int?
+  isPreview       Boolean           @default(false)
+  isPublished     Boolean           @default(true)
+  course          Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  parent          Chapter?          @relation("ChapterTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children        Chapter[]         @relation("ChapterTree")
+  questions       CourseQuestion[]
+  progress        ChapterProgress[]
+
+  @@index([courseId, parentId, order])
+  @@map("chapters")
+}
+
+/// 觀看進度：每人每章一筆；completedAt 有值＝已完成
+model ChapterProgress {
+  id          String    @id @default(cuid())
+  userId      String
+  chapterId   String
+  positionSec Int       @default(0)
+  completedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chapter     Chapter   @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, chapterId])
+  @@map("chapter_progress")
+}
+
+/// 影片庫：後台匯入的 YouTube（或其他來源）影片，章節從這裡選
+model VideoAsset {
+  id           String   @id @default(cuid())
+  provider     String
+  externalId   String
+  title        String
+  thumbnailUrl String?
+  author       String?
+  durationSec  Int?
+  createdAt    DateTime @default(now())
+
+  @@unique([provider, externalId])
+  @@map("video_assets")
+}
+
+/// 訂單狀態機：pending → paid | failed | canceled；paid → refunded。授權只在 markPaid 寫入。
+model Order {
+  id              String         @id @default(cuid())
+  merchantOrderNo String         @unique
+  userId          String
+  status          String    @default("pending")
+  /// 訂單範疇：shop（電商）／course（課程）——兩者購物車、訂單、折扣碼、報表各自獨立
+  scope           String         @default("shop")
+  /// amount＝應付總額＝subtotal − discount ＋ shippingFee
+  amount          Int
+  subtotal        Int            @default(0)
+  discount        Int            @default(0)
+  couponCode      String?
+  shippingFee     Int            @default(0)
+  shippingName    String?
+  shippingPhone   String?
+  shippingAddress String?
+  /// 物流狀態：null＝無需出貨；pending → shipped → delivered；returned
+  shippingStatus  String?
+  carrier         String?
+  trackingNo      String?
+  shippedAt       DateTime?
+  /// 配送方式（logistics.methods 之一：UNIMARTC2C／FAMIC2C／HILIFEC2C／OKMARTC2C／TCAT／ECAN／manual）
+  shippingMethod  String?
+  cvsStoreId      String?
+  cvsStoreName    String?
+  cvsStoreAddress String?
+  /// 物流商單號（綠界 AllPayLogisticsID）與超商寄件代碼／驗證碼、物流商狀態碼
+  logisticsId     String?
+  logisticsPaymentNo String?
+  logisticsValidationNo String?
+  logisticsStatus String?
+  /// 發票資訊：type personal|mobile|citizen|company|donate；載具號碼／統編／抬頭／愛心碼
+  invoiceType     String?
+  invoiceCarrierNum String?
+  invoiceTaxId    String?
+  invoiceTitle    String?
+  invoiceLoveCode String?
+  provider        String?
+  providerTradeNo String?
+  paymentType     String?
+  paidAt          DateTime?
+  virtualAccount  String?
+  expireAt        DateTime?
+  refundStatus    String?
+  refundReason    String?
+  refundedAt      DateTime?
+  note            String?
+  user            User           @relation(fields: [userId], references: [id])
+  items           OrderItem[]
+  events          PaymentEvent[]
+  invoices        Invoice[]
+  entitlements    Entitlement[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([shippingStatus])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  variantId String?
+  name      String
+  qty       Int     @default(1)
+  unitPrice Int
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@map("order_items")
+}
+
+/// 多規格：每個組合可有自己的 SKU／價格（null＝沿用主商品）／庫存（null＝不追蹤）
+model ProductVariant {
+  id        String      @id @default(cuid())
+  productId String
+  product   Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String
+  sku       String
+  price     Int?
+  stock     Int?
+  isActive  Boolean     @default(true)
+  sortOrder Int         @default(0)
+  options   String        @default("{}")
+  items     OrderItem[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([productId, sku])
+  @@index([productId, sortOrder])
+  @@map("product_variants")
+}
+
+/// 金流回呼原始紀錄：驗章通過才寫；同 tradeNo+type 冪等
+model PaymentEvent {
+  id        String   @id @default(cuid())
+  orderId   String
+  provider  String
+  type      String
+  tradeNo   String?
+  payload   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@map("payment_events")
+}
+
+model Invoice {
+  id          String    @id @default(cuid())
+  orderId     String
+  provider    String
+  number      String?
+  status      String
+  amount      Int
+  invoiceDate String?
+  randomCode  String?
+  invalidAt   DateTime?
+  payload     String?
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@map("invoices")
+}
+
+/// 課程／商品授權：唯一可寫入者是後端（金流回呼、免費訂單、管理員手動）；expiresAt 由課程觀看期限決定
+model Entitlement {
+  id        String    @id @default(cuid())
+  userId    String
+  productId String
+  orderId   String?
+  source    String    @default("purchase")
+  grantedAt DateTime  @default(now())
+  expiresAt DateTime?
+  user      User      @relation(fields: [userId], references: [id])
+  product   Product   @relation(fields: [productId], references: [id])
+  order     Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, productId])
+  @@map("entitlements")
+}
+
+model CreditLedger {
+  id           String   @id @default(cuid())
+  userId       String
+  type         String
+  amount       Int
+  balanceAfter Int
+  jobId        String?
+  reason       String?
+  createdBy    String?
+  user         User     @relation(fields: [userId], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@map("credit_ledger")
+}
+
+/// AI 生成任務：點數在建立時保留、完成結算、失敗釋放；BYOK 不扣點
+model AiJob {
+  id          String      @id @default(cuid())
+  userId      String
+  kind        String      @default("image")
+  status      String   @default("queued")
+  templateId  String?
+  prompt      String
+  inputs      String?
+  quality     String      @default("standard")
+  size        String      @default("1024x1024")
+  provider    String?
+  byok        Boolean     @default(false)
+  costPoints  Int         @default(0)
+  costTwd     Decimal?
+  resultUrl   String?
+  error       String?
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  user        User        @relation(fields: [userId], references: [id])
+  template    AiTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@map("ai_jobs")
+}
+
+/// AI 模板：systemPrompt 只在後台回傳；公開端只回名稱、欄位與點數
+model AiTemplate {
+  id             String   @id @default(cuid())
+  key            String   @unique
+  name           String
+  category       String   @default("general")
+  description    String?
+  coverUrl       String?
+  systemPrompt   String
+  inputFields    String     @default("[]")
+  defaultSize    String   @default("1024x1024")
+  costPoints     Int      @default(5)
+  highCostPoints Int      @default(15)
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(100)
+  jobs           AiJob[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("ai_templates")
+}
+
+/// BYOK：用戶自帶金鑰（AES-256-GCM 加密存放，只回 last4）
+model UserApiKey {
+  id        String   @id @default(cuid())
+  userId    String
+  provider  String
+  encrypted String
+  last4     String
+  enabled   Boolean  @default(true)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, provider])
+  @@map("user_api_keys")
+}
+
+/// 正規化內容模型（canonical content）：外站搬運與自建內容共用
+model Content {
+  id           String        @id @default(cuid())
+  source       String
+  externalId   String
+  type         String        @default("post")
+  title        String
+  slug         String        @unique
+  body         String?
+  excerpt      String?
+  coverUrl     String?
+  author       String?
+  tags         String      @default("[]")
+  canonicalUrl String?
+  originalUrl  String?
+  status       String @default("draft")
+  publishedAt  DateTime?
+  raw          String?
+  /// 設計器文件（線上版）；null＝傳統 HTML body
+  design       String?
+  /// 線上版本號（每次發佈 +1；0＝從未經發佈流程）
+  version      Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  menuItems    MenuItem[]
+  draft        ContentDraft?
+  revisions    ContentRevision[]
+
+  @@unique([source, externalId])
+  @@index([status, publishedAt])
+  @@map("contents")
+}
+
+/// 網站架構樹＝前台導覽選單：兩層、拖曳排序；kind page（綁內容頁）｜route（站內路徑）｜link（外部網址）
+model MenuItem {
+  id        String     @id @default(cuid())
+  parentId  String?
+  order     Int        @default(0)
+  location  String     @default("header")
+  label     String
+  kind      String     @default("route")
+  contentId String?
+  href      String?
+  isVisible Boolean    @default(true)
+  newTab    Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  parent    MenuItem?  @relation("MenuTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  MenuItem[] @relation("MenuTree")
+  content   Content?   @relation(fields: [contentId], references: [id], onDelete: SetNull)
+
+  @@index([location, parentId, order])
+  @@map("menu_items")
+}
+
+model Redirect {
+  id       String  @id @default(cuid())
+  fromPath String  @unique
+  toPath   String
+  code     Int     @default(301)
+  source   String?
+
+  @@map("redirects")
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  isSecret  Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actor     String
+  action    String
+  params    String?
+  ok        Boolean
+  error     String?
+  result    String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+/// 每個內容一份工作草稿：新增／修改一律先進這裡，沙盒預覽讀這裡，發佈確認後才複製到 Content（線上）。
+model ContentDraft {
+  id        String   @id @default(cuid())
+  contentId String   @unique
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  title     String
+  slug      String
+  excerpt   String?
+  coverUrl  String?
+  body      String?
+  design    String?
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("content_drafts")
+}
+
+/// 發佈前的線上版本備份（防呆／回滾）：restore 只還原到草稿，不直接改線上。
+model ContentRevision {
+  id        String   @id @default(cuid())
+  contentId String
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  version   Int
+  title     String
+  slug      String
+  excerpt   String?
+  coverUrl  String?
+  body      String?
+  design    String?
+  status    String
+  note      String?
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@unique([contentId, version])
+  @@index([contentId, createdAt])
+  @@map("content_revisions")
+}
+
+/// 一頁式銷售頁：draft＝草稿文件、live＝發佈快照；發佈需確認並備份版本。
+model SalesPage {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  /// 訂單編號前綴（1–3 碼英數）
+  code        String    @default("SP")
+  status      String    @default("draft")
+  draft       String
+  live        String?
+  version     Int       @default(0)
+  publishedAt DateTime?
+  updatedBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  revisions   SalesPageRevision[]
+
+  @@map("sales_pages")
+}
+
+model SalesPageRevision {
+  id        String    @id @default(cuid())
+  pageId    String
+  page      SalesPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  version   Int
+  title     String
+  slug      String
+  snapshot  String
+  note      String?
+  createdBy String?
+  createdAt DateTime  @default(now())
+
+  @@unique([pageId, version])
+  @@map("sales_page_revisions")
+}

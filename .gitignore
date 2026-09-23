@@ -13,3 +13,9 @@ apps/api/prisma/*.db
 .wrangler/
 .dev.vars
 /apps/api/storage/
+# SQLite 產生的 client 與本機資料庫
+packages/db/sqlite/client/
+packages/db/sqlite/.shadow.db
+data/
+*.db
+*.db-journal

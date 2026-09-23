@@ -1,0 +1,28 @@
+{
+  "json": [
+    "design",
+    "draft",
+    "inputFields",
+    "inputs",
+    "live",
+    "options",
+    "params",
+    "payload",
+    "raw",
+    "result",
+    "snapshot",
+    "specs"
+  ],
+  "array": [
+    "allowedFeatures",
+    "tags"
+  ],
+  "enums": [
+    "Role",
+    "UserStatus",
+    "ProductType",
+    "OrderStatus",
+    "JobStatus",
+    "ContentStatus"
+  ]
+}

@@ -5,10 +5,10 @@
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { createPrisma } from '@sitekit/db';
 
-const prisma = new PrismaClient();
+const prisma = createPrisma();
 const isProd = process.env.APP_ENV === 'production';
 const demo = process.env.SEED_DEMO === '1';
 const here = dirname(fileURLToPath(import.meta.url));

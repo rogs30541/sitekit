@@ -146,6 +146,7 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 ## P5 營運化＋後台分離（2026-09-21，v0.4.0）
 
+- **一份模型、兩種資料庫（v0.20.0，M2）**：`packages/db` 由 `apps/api/prisma/schema.prisma`（PostgreSQL＝單一真相源）自動產生 SQLite 版 schema（`packages/db/sqlite/schema.prisma`，禁止手改；enum→String、Json→String、String[]→String、去 `@db.*`）與獨立的 sqlite migrations。`createPrisma()` 依 `DATABASE_URL` 選 client：`postgresql://…` 用預設 client；`file:/絕對路徑/sitekit.db` 用 SQLite client＋執行期轉換層（Proxy 在呼叫點把 Json／陣列／`Prisma.JsonNull` 轉成字串或 NULL，query extension 把讀出的字串 parse 回物件；`tags: { has }` 改 `contains`、`mode: 'insensitive'` 移除）。**core 與 api 零改動**，同一套 21 支 e2e 在兩種資料庫都全綠，CI 兩個 job 分別跑。指令：`npm run db:generate`（產兩個 client）、`npm run db:migrate`（依 URL 選 schema）、`npm run db:diff:sqlite <name>`（改模型後重產 sqlite schema＋migration）。SQLite 的 `file:` 相對路徑是相對 schema 檔，一律用絕對路徑。這是單體模式（任何有 Node 的主機）與 Cloudflare D1 的共同地基。
 - **交付化地基（v0.19.0）**：任何人獨自部署第一天要用的四件事。①**安裝精靈 `/setup`**：admin_users 為空時 middleware 把所有頁面導到精靈；第一步免 Email 驗證直接建立超級管理員（`POST /api/setup/admin`，只在為空時允許；之後一律登入頁／白名單註冊），接著站名與網址、儲存（本機或 R2）、Email（Resend）、金流（可跳過），完成後顯示 MCP 用的 OPS token 並標記 `setup.completedAt`（後台未完成時顯示提示）。②**機密自動產生**：`SESSION_SECRET`／`OPS_TOKEN` 未由環境變數提供時，api 啟動（`SystemModule.onModuleInit`）自動產生並存進 settings（`system.sessionSecret`／`system.opsToken`，重啟不變）；OperatorTokenGuard 改讀 core env。③**去示範資料、去品牌化**：`db:seed` 一律只建設定預設與 22 組產圖模板（`apps/api/prisma/image-templates.json`，封面 `/templates/<key>.jpg` 靜態檔），`SEED_DEMO=1` 才建 admin@example.com／示範內容（本機與 CI 用）；`BRAND` 預設改中性（SiteKit／我的網站），品牌由精靈或網站設定填。④**健康檢查與支援包**：`GET /api/admin/system/health`（DB、儲存寫讀、Email、公開網址、發佈即清快取、付款方式、機密來源）、`GET /api/admin/system/support-bundle`（機密遮蔽的設定＋最近 50 筆稽核＋健康檢查）、superadmin 的 `GET/POST /api/admin/system/ops-token[/rotate]`；後台「系統設定 → 健康檢查與支援」面板。
 - **後台首頁 /admin 500 修正**（v0.16.5）：`ADMIN_NAV` 搬到純資料模組 `components/admin-nav-data.ts`——server component 從 `'use client'` 模組 import 非元件常數會拿到 client reference（`.map is not a function`），線上 digest 2174542681。鐵律：client 模組只 export 元件，資料常數另放無 `'use client'` 的檔案。
 - **後台圖片上傳上限 1MB＋Logo 可直接上傳＋模板庫版型切換**（v0.16.3）：`/api/admin/content/upload` 上限由 5MB 改 1MB（`UPLOAD_MAX_BYTES`），前端 `lib/upload-image.ts` 先擋並提示目前大小；網站設定「Logo 圖片網址」旁加「上傳圖片（≤1MB）」按鈕（上傳後填入網址、顯示縮圖）；AI 工作站模板庫可切換單行（橫向捲動）／兩行／三行／清單（純文字、不預覽圖片；v0.16.4），偏好記在瀏覽器；**「API 產圖」分頁移除，產圖工作站整合進指令台的「商品製圖」工作項目**（點該項目右欄即為模板庫／生成記錄／生成配置，對話指令收進下方可展開區）。
@@ -172,6 +173,7 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 ```
 packages/shared   共用型別、品牌設定、設定鍵名、OPS_ACTIONS（單一真相源）、設計文件／銷售頁／追蹤碼 schema
+packages/db       ★ v0.20.0（M2）資料庫層：一份模型產生 postgres／sqlite client；createPrisma() 依 DATABASE_URL 選用＋SQLite 轉換層
 packages/core     ★ v0.18.0（M1）業務核心：所有 service／金流物流發票 adapter／AI 供應商／匯入連接器，純 TypeScript、零 NestJS 依賴
                   compat.ts＝HttpError 家族＋no-op Injectable＋Logger；env.ts＝configureCore() 注入；三個殼共用
 apps/api          NestJS 11 薄殼：只剩 controller／module／guard／filter；服務全部 `import from '@sitekit/core'`

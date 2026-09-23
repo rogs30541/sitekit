@@ -1,16 +1,16 @@
 {
   "name": "@sitekit/api",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "private": true,
   "main": "dist/main.js",
   "scripts": {
     "dev": "nest start --watch",
     "build": "nest build",
     "start": "node dist/main.js",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate deploy",
+    "db:generate": "node ../../packages/db/scripts/prisma.mjs generate",
+    "db:migrate": "node ../../packages/db/scripts/prisma.mjs migrate",
     "db:seed": "node prisma/seed.mjs",
-    "db:validate": "prisma validate"
+    "db:validate": "node ../../packages/db/scripts/prisma.mjs validate"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
@@ -24,7 +24,8 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "zod": "^3.23.8",
-    "@sitekit/core": "*"
+    "@sitekit/core": "*",
+    "@sitekit/db": "*"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",

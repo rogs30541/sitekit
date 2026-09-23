@@ -1,0 +1,4 @@
+client/
+.shadow.db
+*.db
+*.db-journal

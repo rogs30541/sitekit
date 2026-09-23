@@ -1,13 +1,4 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
-@Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  async onModuleInit() {
-    await this.$connect();
-  }
-
-  async onModuleDestroy() {
-    await this.$disconnect();
-  }
-}
+/** 只作為注入 token 與型別；實例由 PrismaModule 的工廠（@sitekit/db createPrisma）提供 */
+export class PrismaService extends PrismaClient {}
