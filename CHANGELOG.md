@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.25.0（2026-09-23）
+
+- 前台 i18n（1.3）：gettext 風格 t('原文')＋字典（packages/shared/src/i18n、en 235 條）、site.locale 全站語言設定（網站設定下拉）、root layout setLocale＋I18nProvider＋html lang；前台 38 頁 9 元件字串抽離；scripts/i18n-keys.mjs 列未翻 key；e2e p30
+
 ## v0.24.0（2026-09-23）
 
 - 完整匯出／備份／還原：ExportService（DMMF 通用整庫 JSON、拓撲排序匯入、SQLite↔PostgreSQL 搬家）、備份目錄＋每日自動備份＋保留份數、superadmin 端點（export／import／backups）、OPS export_site／import_site／list_backups、CLI export／import、後台「備份與還原」面板；e2e p29
