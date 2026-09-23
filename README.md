@@ -237,7 +237,7 @@ npm run ci                      # build + prisma validate（與 .github/workflow
 主網域指向 `web`，`web` 以 `API_INTERNAL_URL` 把 `/api/*` 反向代理到 `api`；**注意 Next.js rewrites 在建置時定案**，所以 `API_INTERNAL_URL`（與 `NEXT_PUBLIC_*`）要以建置參數餵進 `Dockerfile.web`（已宣告 `ARG`，Zeabur 會把服務環境變數當 build arg 傳入；預設 `http://api.zeabur.internal:8080`）。
 藍新的 NotifyURL／ReturnURL 都是 `<site.url>/api/payments/newebpay/*`，必須是公開可達的 HTTPS。
 
-詳細架構與分期見 `docs/架構.md` 與 `docs/全新網站規劃.md`。
+詳細架構與分期見 `docs/架構.md` 與 `docs/全新網站規劃.md`；**雙平台（Zeabur 容器／Cloudflare Workers＋D1＋R2＋Resend）部署架構與遷移路線見 `docs/雙平台部署架構.md`**（一核心兩薄殼：packages/core 業務邏輯共用、apps/api＝Nest 殼、apps/worker＝Hono 殼）。
 
 ### Zeabur 實際部署（2026-09-21 上線）
 
