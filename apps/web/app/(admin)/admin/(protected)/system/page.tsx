@@ -2,8 +2,9 @@ import { fmtDateTime } from '@/lib/api-public';
 import Link from 'next/link';
 import { OPS_ACTIONS } from '@sitekit/shared';
 import { Section } from '@/components/Section';
-import { apiServer } from '@/lib/api-server';
+import { apiServer, getAdminMe } from '@/lib/api-server';
 import { AdminAiPanel } from '../AdminAiPanel';
+import { SystemHealthPanel } from './SystemHealthPanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +28,7 @@ interface Audit {
 
 /** 系統設定：總覽數字、AI API 路徑（直接執行維運動作，含系統功能）、維運稽核。原「總覽」內容移到這裡。 */
 export default async function AdminSystemPage() {
-  const [overview, audit] = await Promise.all([apiServer<Overview>('/api/admin/overview'), apiServer<Audit[]>('/api/admin/audit?limit=15')]);
+  const [overview, audit, me] = await Promise.all([apiServer<Overview>('/api/admin/overview'), apiServer<Audit[]>('/api/admin/audit?limit=15'), getAdminMe()]);
   const stats = overview
     ? [
         ['用戶', overview.users],
@@ -69,6 +70,9 @@ export default async function AdminSystemPage() {
           下方「AI API 路徑」可直接執行任何維運動作（含部署、遷移、設定、管理員等系統功能）；一般工作請改用 AI 工作站指令台（自然語言、寫入需確認）。
         </p>
         <AdminAiPanel />
+      </Section>
+      <Section title="健康檢查與支援" group="(admin)">
+        <SystemHealthPanel isSuperadmin={me?.admin?.role === 'superadmin'} />
       </Section>
       <Section title="維運稽核（MCP 與 AI API 兩路徑共用）" group="(admin)">
         <table className="w-full text-left text-xs">

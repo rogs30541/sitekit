@@ -37,7 +37,8 @@
     ],
     "defaultSize": "1024x1024",
     "sortOrder": 1,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": "/templates/product-white-bg.jpg"
   },
   {
     "key": "marketplace-main-image",
@@ -95,7 +96,8 @@
     ],
     "defaultSize": "1024x1024",
     "sortOrder": 2,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": "/templates/marketplace-main-image.jpg"
   },
   {
     "key": "product-detail-infographic",
@@ -159,7 +161,8 @@
     ],
     "defaultSize": "1024x1536",
     "sortOrder": 3,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": "/templates/product-detail-infographic.jpg"
   },
   {
     "key": "new-product-launch",
@@ -223,7 +226,8 @@
     ],
     "defaultSize": "1024x1536",
     "sortOrder": 4,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": "/templates/new-product-launch.jpg"
   },
   {
     "key": "flash-sale-poster",
@@ -294,7 +298,8 @@
     ],
     "defaultSize": "1024x1536",
     "sortOrder": 5,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": "/templates/flash-sale-poster.jpg"
   },
   {
     "key": "bundle-offer",
@@ -358,7 +363,8 @@
     ],
     "defaultSize": "1024x1536",
     "sortOrder": 6,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": "/templates/bundle-offer.jpg"
   },
   {
     "key": "festival-campaign-poster",
@@ -422,7 +428,8 @@
     ],
     "defaultSize": "1024x1536",
     "sortOrder": 7,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": "/templates/festival-campaign-poster.jpg"
   },
   {
     "key": "membership-loyalty",
@@ -486,7 +493,8 @@
     ],
     "defaultSize": "1024x1536",
     "sortOrder": 8,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": "/templates/membership-loyalty.jpg"
   },
   {
     "key": "restock-notice",
@@ -547,7 +555,8 @@
     ],
     "defaultSize": "1024x1536",
     "sortOrder": 9,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": "/templates/restock-notice.jpg"
   },
   {
     "key": "product_white_bg",
@@ -573,7 +582,8 @@
     ],
     "defaultSize": "1024x1024",
     "sortOrder": 10,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": null
   },
   {
     "key": "brand-story-poster",
@@ -630,7 +640,8 @@
     ],
     "defaultSize": "1024x1536",
     "sortOrder": 10,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": "/templates/brand-story-poster.jpg"
   },
   {
     "key": "social-lifestyle-post",
@@ -694,7 +705,8 @@
     ],
     "defaultSize": "1024x1024",
     "sortOrder": 11,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": "/templates/social-lifestyle-post.jpg"
   },
   {
     "key": "reel-cover",
@@ -751,7 +763,8 @@
     ],
     "defaultSize": "1024x1536",
     "sortOrder": 12,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": "/templates/reel-cover.jpg"
   },
   {
     "key": "testimonial-social-proof",
@@ -815,7 +828,8 @@
     ],
     "defaultSize": "1024x1536",
     "sortOrder": 13,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": "/templates/testimonial-social-proof.jpg"
   },
   {
     "key": "event-announcement",
@@ -876,7 +890,8 @@
     ],
     "defaultSize": "1024x1536",
     "sortOrder": 14,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": "/templates/event-announcement.jpg"
   },
   {
     "key": "workshop-enrollment",
@@ -937,7 +952,8 @@
     ],
     "defaultSize": "1024x1536",
     "sortOrder": 15,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": "/templates/workshop-enrollment.jpg"
   },
   {
     "key": "lead-magnet-ad",
@@ -1001,7 +1017,8 @@
     ],
     "defaultSize": "1024x1536",
     "sortOrder": 16,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": "/templates/lead-magnet-ad.jpg"
   },
   {
     "key": "store-opening",
@@ -1065,7 +1082,8 @@
     ],
     "defaultSize": "1024x1536",
     "sortOrder": 17,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": "/templates/store-opening.jpg"
   },
   {
     "key": "menu-service-list",
@@ -1129,7 +1147,8 @@
     ],
     "defaultSize": "1024x1536",
     "sortOrder": 18,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": "/templates/menu-service-list.jpg"
   },
   {
     "key": "before-after-service",
@@ -1193,7 +1212,8 @@
     ],
     "defaultSize": "1024x1536",
     "sortOrder": 19,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": "/templates/before-after-service.jpg"
   },
   {
     "key": "social_post",
@@ -1218,7 +1238,8 @@
     ],
     "defaultSize": "1024x1024",
     "sortOrder": 20,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": null
   },
   {
     "key": "thank-you-card",
@@ -1282,6 +1303,7 @@
     ],
     "defaultSize": "1024x1536",
     "sortOrder": 20,
-    "isActive": true
+    "isActive": true,
+    "coverUrl": "/templates/thank-you-card.jpg"
   }
 ]

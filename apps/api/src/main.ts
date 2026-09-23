@@ -11,9 +11,10 @@ import { DEFAULT_RULES, rateLimit } from './common/rate-limit';
 import { ZodExceptionFilter } from './common/zod-exception.filter';
 import { HttpErrorFilter } from './common/http-error.filter';
 import { configureCore } from '@sitekit/core';
+import { VERSION } from './config/version';
 
 async function bootstrap() {
-  configureCore(env);
+  configureCore({ ...env, APP_VERSION: VERSION });
   const app = await NestFactory.create(AppModule, { bodyParser: false });
   // 反向代理（Zeabur／Cloudflare）後面：取正確來源 IP 與協定
   app.getHttpAdapter().getInstance().set('trust proxy', 1);

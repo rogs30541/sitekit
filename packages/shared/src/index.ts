@@ -1,8 +1,8 @@
 /** 品牌設定：換品牌只改這裡（之後改為從 settings 表讀取） */
 export const BRAND = {
-  name: 'AIGC創客',
-  siteName: 'AIGC創客架站套件',
-  description: '電商開店／線上課程／品牌網站通用骨架',
+  name: 'SiteKit',
+  siteName: '我的網站',
+  description: '電商開店／線上課程／品牌網站',
   locale: 'zh-Hant',
 } as const;
 

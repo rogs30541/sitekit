@@ -5,6 +5,7 @@ import { ADMIN_ROLES } from '@sitekit/shared';
 import { env } from '../config/env';
 import { ADMIN_COOKIE, AdminAuthService } from '@sitekit/core';
 import { SESSION_COOKIE, SessionService, type ResolvedSession } from '@sitekit/core';
+import { env as coreEnv } from '@sitekit/core';
 
 type CookieRequest = Request & { cookies?: Record<string, string> };
 export interface AuthedRequest extends Request {
@@ -19,10 +20,10 @@ export interface AuthedRequest extends Request {
 export class OperatorTokenGuard implements CanActivate {
   canActivate(ctx: ExecutionContext): boolean {
     const req = ctx.switchToHttp().getRequest<Request>();
-    if (!env.OPS_TOKEN) throw new ForbiddenException('OPS_TOKEN not configured; MCP path is closed');
+    if (!coreEnv.OPS_TOKEN) throw new ForbiddenException('OPS_TOKEN not configured; MCP path is closed');
     const auth = req.headers.authorization ?? '';
     if (!auth.startsWith('Bearer ')) throw new UnauthorizedException('operator token missing');
-    if (auth.slice(7) !== env.OPS_TOKEN) throw new UnauthorizedException('operator token invalid');
+    if (auth.slice(7) !== coreEnv.OPS_TOKEN) throw new UnauthorizedException('operator token invalid');
     return true;
   }
 }

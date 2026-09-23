@@ -46,7 +46,7 @@ jobs:
       - run: npm run build -w @sitekit/web
       - run: node --check mcp/server.mjs
       - name: migrate + seed
-        run: npm run db:migrate -w @sitekit/api && npm run db:seed -w @sitekit/api
+        run: npm run db:migrate -w @sitekit/api && SEED_DEMO=1 npm run db:seed -w @sitekit/api
       - name: start api
         run: (cd apps/api && PORT=4000 nohup node dist/main.js > /tmp/api.log 2>&1 &) && for i in $(seq 1 30); do curl -sf http://localhost:4000/api/health && break; sleep 2; done
       - name: start web

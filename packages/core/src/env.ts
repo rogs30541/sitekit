@@ -30,5 +30,8 @@ export const env = {
   get STORAGE_DIR(): string | undefined {
     return read('STORAGE_DIR') || undefined;
   },
+  get APP_VERSION() {
+    return read('APP_VERSION', '0.0.0');
+  },
 };
 export const isProd = () => env.APP_ENV === 'production';
