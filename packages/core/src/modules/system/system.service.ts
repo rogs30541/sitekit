@@ -7,6 +7,7 @@ import { RevalidateService } from '../settings/revalidate.service';
 import { StorageService } from '../storage/storage.service';
 import { NotifyService } from '../notify/notify.service';
 import { AdminAuthService } from '../admin-auth/admin-auth.service';
+import { events, pluginRegistry } from '../../plugins';
 
 /** 系統層設定鍵（不進 SETTING_KEYS：不給後台表單改） */
 export const SYSTEM_KEYS = { sessionSecret: 'system.sessionSecret', opsToken: 'system.opsToken', setupCompletedAt: 'setup.completedAt' } as const;
@@ -90,6 +91,7 @@ export class SystemService {
     await this.prisma.setting.upsert({ where: { key: SYSTEM_KEYS.setupCompletedAt }, update: { value: at }, create: { key: SYSTEM_KEYS.setupCompletedAt, value: at, isSecret: false } });
     this.settings.invalidate();
     await this.prisma.auditLog.create({ data: { actor, action: 'setup_complete', ok: true, params: {}, result: { at } } });
+    void events.emit('setup.completed', { at, actor });
     return { ok: true, completedAt: at };
   }
 
@@ -162,6 +164,11 @@ export class SystemService {
       health,
       audit,
     };
+  }
+
+  /** 已載入外掛（後台「外掛」頁） */
+  plugins() {
+    return { plugins: pluginRegistry.list() };
   }
 
   /* ---------- 版本更新檢查（GitHub Releases；6 小時快取；失敗靜默） ---------- */

@@ -9,11 +9,14 @@ COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY apps/edge/package.json apps/edge/
 COPY mcp/package.json mcp/
+COPY plugins/webhook/package.json plugins/webhook/
 RUN npm ci --no-audit --no-fund
 COPY packages/shared packages/shared
 COPY packages/core packages/core
 COPY packages/db packages/db
 COPY apps/api apps/api
+COPY plugins plugins
+COPY sitekit.config.mjs ./
 # 不 prune：啟動時的 prisma migrate deploy 需要 prisma CLI（devDependency）
 RUN npm run build -w @sitekit/shared && npm run build -w @sitekit/db && npm run db:generate -w @sitekit/api && npm run build -w @sitekit/core && npm run build -w @sitekit/api
 

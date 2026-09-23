@@ -55,6 +55,11 @@ export class SystemController {
     if (req.session?.user.role !== 'superadmin') throw new ForbiddenException('只有超級管理員可以檢視或更換 OPS token');
   }
 
+  @Get('plugins')
+  plugins() {
+    return this.system.plugins();
+  }
+
   @Get('update-check')
   updateCheck(@Query('force') force?: string) {
     return this.system.updateCheck(force === '1');

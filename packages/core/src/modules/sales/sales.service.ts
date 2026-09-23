@@ -8,6 +8,7 @@ import { PrismaClient } from '@prisma/client';
 import { SettingsService } from '../settings/settings.service';
 import { RevalidateService } from '../settings/revalidate.service';
 import { sanitizeHtml, slugify } from '../migration/normalize';
+import { events } from '../../plugins';
 
 const createInput = z.object({ title: z.string().trim().min(1).max(200), slug: z.string().trim().max(120).optional(), code: z.string().trim().regex(/^[A-Z0-9]{0,3}$/).optional() });
 const PREVIEW_TTL_MS = 2 * 60 * 60 * 1000;
@@ -191,6 +192,7 @@ export class SalesService {
       return { version, backedUpVersion: hadLive ? p.version : null, slug: u.slug };
     });
     this.reval.trigger('sales');
+    void events.emit('sales_page.published', { id: p.id, slug: r.slug, version: r.version, actor });
     return { id: p.id, ...r, url: `/s/${r.slug}`, warnings: this.lint(doc).filter((l) => l.level === 'warn') };
   }
   async unpublish(idOrSlug: string) {

@@ -22,6 +22,7 @@ import { DesignService } from '../content/design.service';
 import { getProvider } from '../studio/providers';
 import { composeTemplatePrompt, StudioService } from '../studio/studio.service';
 import { SalesService } from '../sales/sales.service';
+import { pluginRegistry } from '../../plugins';
 import { MembersService } from '../admin/members.service';
 
 const SECRET_KEY = /secret|key|token|password|hashiv|hash_iv|signing/i;
@@ -56,10 +57,24 @@ export class OpsService {
   ) {}
 
   listActions() {
-    return OPS_ACTION_KEYS.map((k) => ({ action: k, ...OPS_ACTIONS[k] }));
+    return [...OPS_ACTION_KEYS.map((k) => ({ action: k, ...OPS_ACTIONS[k] })), ...[...pluginRegistry.actions.entries()].map(([action, d]) => ({ action, desc: d.desc, mutating: d.mutating, plugin: d.plugin }))];
   }
 
   async run(action: string, params: Record<string, unknown> | undefined, actor: string): Promise<OpsResult> {
+    const pluginAction = pluginRegistry.actions.get(action);
+    if (pluginAction) {
+      const base = { action, actor, at: new Date().toISOString(), plugin: pluginAction.plugin };
+      const p = params ?? {};
+      try {
+        const data = await pluginAction.handler(p, actor);
+        if (pluginAction.mutating) await this.log(actor, action, p, true, data);
+        return { ok: true, ...base, data } as OpsResult;
+      } catch (e) {
+        const error = e instanceof Error ? e.message : String(e);
+        await this.log(actor, action, p, false, undefined, error);
+        return { ok: false, ...base, error } as OpsResult;
+      }
+    }
     if (!OPS_ACTION_KEYS.includes(action as OpsAction)) throw new BadRequestException('unknown action: ' + action);
     const a = action as OpsAction;
     const base = { action: a, actor, at: new Date().toISOString() };

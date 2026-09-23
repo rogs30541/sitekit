@@ -13,6 +13,7 @@ import { VERSION } from './config/version';
 import { DEFAULT_RULES, rateLimit } from './common/rate-limit';
 import { ZodExceptionFilter } from './common/zod-exception.filter';
 import { HttpErrorFilter } from './common/http-error.filter';
+import { loadPlugins } from './plugins';
 
 /**
  * 建立並初始化 Nest 應用（不 listen）：
@@ -39,5 +40,6 @@ export async function createApiApp(): Promise<{ app: INestApplication; express: 
   app.use('/api/assets', express.static(storageDir, { maxAge: '1d', index: false }));
   app.enableCors({ origin: env.FRONTEND_URL, credentials: true });
   await app.init();
+  await loadPlugins(app);
   return { app, express: ex };
 }

@@ -13,9 +13,12 @@ COPY apps/web/package.json apps/web/
 COPY apps/server/package.json apps/server/
 COPY apps/edge/package.json apps/edge/
 COPY mcp/package.json mcp/
+COPY plugins/webhook/package.json plugins/webhook/
 RUN npm ci --no-audit --no-fund
 COPY packages packages
 COPY apps/api apps/api
+COPY plugins plugins
+COPY sitekit.config.mjs ./
 COPY apps/web apps/web
 COPY apps/server apps/server
 # 單體殼：前台呼叫 api 走同程序；NEXT_PUBLIC_SITE_URL 只影響 metadataBase，站台網址以後台 site.url 為準

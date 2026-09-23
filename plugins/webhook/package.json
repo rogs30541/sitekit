@@ -1,0 +1,10 @@
+{
+  "name": "@sitekit/plugin-webhook",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SiteKit 官方外掛：站台事件以簽章 JSON webhook 推送到指定網址",
+  "type": "module",
+  "main": "index.mjs",
+  "exports": "./index.mjs",
+  "sitekit": { "plugin": true }
+}

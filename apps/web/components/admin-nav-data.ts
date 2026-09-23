@@ -58,6 +58,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     items: [
       { href: '/admin/system', label: '系統設定', desc: '總覽數字／AI API 路徑／維運稽核' },
       { href: '/admin/integrations', label: '儲存與通知' },
+      { href: '/admin/plugins', label: '外掛', desc: '已載入的外掛、設定與動作' },
       { href: '/admin/accounts', label: '管理員' },
     ],
   },

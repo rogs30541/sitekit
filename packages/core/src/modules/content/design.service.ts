@@ -8,6 +8,7 @@ import { PrismaClient } from '@prisma/client';
 import { SettingsService } from '../settings/settings.service';
 import { RevalidateService } from '../settings/revalidate.service';
 import { sanitizeHtml, slugify } from '../migration/normalize';
+import { events } from '../../plugins';
 
 const draftInput = z.object({
   title: z.string().trim().min(1).max(200).optional(),
@@ -175,6 +176,7 @@ export class DesignService {
       return { version, backedUpVersion: backedUp, updated };
     });
     this.reval.trigger('content');
+    void events.emit('content.published', { id: c.id, slug: result.updated.slug, type: c.type, version: result.version, actor });
     return { id: c.id, slug: result.updated.slug, version: result.version, backedUpVersion: result.backedUpVersion, url: c.type === 'page' ? (result.updated.slug === 'home' ? '/' : `/p/${result.updated.slug}`) : `/blog/${result.updated.slug}`, warnings: lint.filter((l) => l.level === 'warn') };
   }
 

@@ -9,6 +9,7 @@ COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY apps/edge/package.json apps/edge/
 COPY mcp/package.json mcp/
+COPY plugins/webhook/package.json plugins/webhook/
 RUN npm ci --no-audit --no-fund
 COPY packages/shared packages/shared
 COPY apps/web apps/web

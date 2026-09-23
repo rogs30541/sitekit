@@ -8,6 +8,7 @@ import { NotifyService } from '../notify/notify.service';
 import { SettingsService } from '../settings/settings.service';
 import { buildCreateParams, buildMapForm, buildPrintForm, isCvs, logisticsCheckMac, mapRtnCode, parseCreateResponse } from './ecpay-logistics';
 import { buildNwpStoreMapForm, isNwp, mapNwpRetId, nwpCall, nwpDecrypt, nwpForm, NWP_SHIP_TYPES, type NwpCfg } from './newebpay-logistics';
+import { events } from '../../plugins';
 
 export interface LogisticsMethod {
   id: string;
@@ -215,7 +216,10 @@ export class LogisticsService {
     await this.prisma.order.update({ where: { id: order.id }, data: { logisticsStatus: String(d.RetId ?? d.Retld ?? ''), ...(d.LgsNo ? { logisticsPaymentNo: String(d.LgsNo), trackingNo: String(d.LgsNo) } : {}), ...(mapped && mapped !== order.shippingStatus ? { shippingStatus: mapped, ...(mapped === 'shipped' && !order.shippedAt ? { shippedAt: new Date() } : {}) } : {}) } });
     if (mapped && mapped !== order.shippingStatus && (mapped === 'shipped' || mapped === 'delivered')) {
       const full = await this.prisma.order.findUnique({ where: { id: order.id }, include: { items: true, user: { select: { email: true, displayName: true } } } });
-      if (full) this.notifier.orderShipped(full).catch(() => undefined);
+      if (full) {
+        this.notifier.orderShipped(full).catch(() => undefined);
+        void events.emit('order.shipped', { id: full.id, merchantOrderNo: full.merchantOrderNo, userId: full.userId, shippingStatus: full.shippingStatus, carrier: full.carrier, trackingNo: full.trackingNo });
+      }
     }
     return 'SUCCESS';
   }
@@ -244,7 +248,10 @@ export class LogisticsService {
     await this.prisma.order.update({ where: { id: order.id }, data: { logisticsStatus: params.RtnCode ?? null, ...(params.AllPayLogisticsID && !order.logisticsId ? { logisticsId: params.AllPayLogisticsID } : {}), ...(params.CVSPaymentNo ? { logisticsPaymentNo: params.CVSPaymentNo, trackingNo: params.CVSPaymentNo } : {}), ...(params.CVSValidationNo ? { logisticsValidationNo: params.CVSValidationNo } : {}), ...(mapped && mapped !== order.shippingStatus ? { shippingStatus: mapped, ...(mapped === 'shipped' && !order.shippedAt ? { shippedAt: new Date() } : {}) } : {}) } });
     if (mapped && mapped !== order.shippingStatus && (mapped === 'shipped' || mapped === 'delivered')) {
       const full = await this.prisma.order.findUnique({ where: { id: order.id }, include: { items: true, user: { select: { email: true, displayName: true } } } });
-      if (full) this.notifier.orderShipped(full).catch(() => undefined);
+      if (full) {
+        this.notifier.orderShipped(full).catch(() => undefined);
+        void events.emit('order.shipped', { id: full.id, merchantOrderNo: full.merchantOrderNo, userId: full.userId, shippingStatus: full.shippingStatus, carrier: full.carrier, trackingNo: full.trackingNo });
+      }
     }
     return '1|OK';
   }

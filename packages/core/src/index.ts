@@ -44,3 +44,4 @@ export * from './modules/studio/studio.service';
 export * from './modules/videos/videos.service';
 export type { Gateway, GatewayConfig, NotifyOutcome } from './modules/payments/gateways/types';
 export * from './modules/system/system.service';
+export * from './plugins';

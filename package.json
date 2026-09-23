@@ -6,7 +6,8 @@
   "workspaces": [
     "packages/*",
     "apps/*",
-    "mcp"
+    "mcp",
+    "plugins/*"
   ],
   "scripts": {
     "dev:web": "npm run dev -w @sitekit/web",

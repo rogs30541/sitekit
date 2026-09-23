@@ -9,6 +9,7 @@ import { SettingsService } from '../settings/settings.service';
 import { CouponsService } from './coupons.service';
 import { LogisticsService } from '../logistics/logistics.service';
 import { NotifyService } from '../notify/notify.service';
+import { events } from '../../plugins';
 
 const shippingInput = z.object({
   method: z.string().trim().max(20).optional(),
@@ -230,6 +231,7 @@ export class OrdersService implements OnModuleInit {
     }
     if (order.status === 'paid' && info.provider !== undefined) {
       this.notify.orderPaid(order).catch((e) => this.log.warn(`notify paid failed: ${e instanceof Error ? e.message : e}`));
+      void events.emit('order.paid', { id: order.id, merchantOrderNo: order.merchantOrderNo, userId: order.userId, amount: order.amount, scope: order.scope, provider: order.provider, items: order.items.map((i) => ({ productId: i.productId, name: i.name, qty: i.qty, unitPrice: i.unitPrice })) });
     }
     return order;
   }
@@ -296,6 +298,7 @@ export class OrdersService implements OnModuleInit {
     this.invoice.invalidateForOrder(orderId).catch(() => undefined);
     if (order.status === 'refunded') {
       this.prisma.order.findUnique({ where: { id: orderId }, include: ORDER_INCLUDE }).then((full) => (full ? this.notify.orderRefunded(full) : undefined)).catch(() => undefined);
+      void events.emit('order.refunded', { id: order.id, merchantOrderNo: order.merchantOrderNo, userId: order.userId, amount: order.amount, scope: order.scope });
     }
     return order;
   }
@@ -311,7 +314,10 @@ export class OrdersService implements OnModuleInit {
       data: { shippingStatus: d.status, ...(d.carrier !== undefined ? { carrier: d.carrier } : {}), ...(d.trackingNo !== undefined ? { trackingNo: d.trackingNo } : {}), ...(d.status === 'shipped' && !o.shippedAt ? { shippedAt: new Date() } : {}) },
       include: ORDER_INCLUDE,
     });
-    if ((d.status === 'shipped' || d.status === 'delivered') && o.shippingStatus !== d.status) this.notify.orderShipped(updated).catch(() => undefined);
+    if ((d.status === 'shipped' || d.status === 'delivered') && o.shippingStatus !== d.status) {
+      this.notify.orderShipped(updated).catch(() => undefined);
+      void events.emit('order.shipped', { id: updated.id, merchantOrderNo: updated.merchantOrderNo, userId: updated.userId, shippingStatus: updated.shippingStatus, carrier: updated.carrier, trackingNo: updated.trackingNo });
+    }
     return updated;
   }
 

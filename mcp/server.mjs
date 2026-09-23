@@ -188,5 +188,20 @@ server.tool('sitekit_delete_admin', '刪除管理員（不可刪最後一位 sup
 server.tool('sitekit_send_test_notification', '寄測試信（to 可選）並推 LINE 給管理員，驗證通知設定', { to: z.string().email().optional() }, async (p) => asText(await ops('send_test_notification', p)));
 server.tool('sitekit_storage_status', '物件儲存（local／R2）與通知中心設定狀態、最近通知紀錄', {}, async () => asText(await ops('storage_status')));
 
+// 外掛動作：啟動時向 api 問清單，動態註冊為工具（sitekit_<action>；參數以 params 物件傳）
+if (TOKEN) {
+  try {
+    const r = await fetch(`${API}/api/ops/actions`, { headers: { authorization: `Bearer ${TOKEN}` }, signal: AbortSignal.timeout(5000) });
+    if (r.ok) {
+      for (const a of await r.json()) {
+        if (!a.plugin) continue;
+        server.tool(`sitekit_${a.action}`, `[外掛 ${a.plugin}] ${a.desc}`, { params: z.record(z.any()).optional() }, async (p) => asText(await ops(a.action, p.params ?? {})));
+      }
+    }
+  } catch {
+    /* api 未啟動時略過外掛工具 */
+  }
+}
+
 const transport = new StdioServerTransport();
 await server.connect(transport);

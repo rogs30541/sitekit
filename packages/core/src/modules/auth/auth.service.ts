@@ -5,6 +5,7 @@ import type { User } from '@prisma/client';
 import { FEATURES } from '@sitekit/shared';
 import { PrismaClient } from '@prisma/client';
 import { NotifyService } from '../notify/notify.service';
+import { events } from '../../plugins';
 
 const credentials = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -42,6 +43,7 @@ export class AuthService {
       },
     });
     this.notify.welcome(user.email, user.displayName).catch(() => undefined);
+    void events.emit('user.registered', { id: user.id, email: user.email, displayName: user.displayName });
     return toPublic(user);
   }
 
