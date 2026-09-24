@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v0.26.0（2026-09-24）
+
+- db：MySQL 模式把 PostgreSQL client 的 JsonNull/DbNull/AnyNull 哨兵換成 MySQL client 自己的（否則存成 {}，hasDesign 誤判）
+- db：MySQL 讀回 JSON null 統一成 JS null（hasDesign 誤判 true）；p10 失敗附 api 首頁區塊與 html 尾段
+- e2e p10/p13 失敗附細節、CI mysql 失敗時傾印 site 與首頁；README 去 ACME_EMAIL
+- compose：Caddyfile 去掉需 email 的全域區塊（空值害 Caddy 起不來）；e2e p10/p13 失敗附細節、CI mysql 失敗時傾印 site 與首頁
+- deploy/cloudflare：Containers 路線設定檔與說明；docs §12 各平台實測狀態與阻礙
+- MySQL 支援（第三種資料庫）＋部署設定檔：deploy/compose（Caddy 自動 HTTPS＋單體＋Postgres，CI compose-smoke 實測）、railway.json／render.yaml／fly.toml、README 各平台一頁步驟；e2e 藍新測試金鑰改假值
+
 ## v0.25.1（2026-09-24）
 
 - 字樣改「伺服器硬碟」並附實際路徑（精靈／後台／共用標籤／i18n／文件）
