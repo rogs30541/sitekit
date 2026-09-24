@@ -124,6 +124,13 @@ server.tool(
   { sections: z.array(z.record(z.any())) },
   async (p) => asText(await ops('set_home_sections', p)),
 );
+server.tool('sitekit_list_site_templates', '列出快速套版（五大分類 × 10 套）：id、名稱、風格、主題、子頁；category 可過濾 image|shop|course|brand|service', { category: z.string().optional() }, async (p) => asText(await ops('list_site_templates', p)));
+server.tool(
+  'sitekit_apply_site_template',
+  '套用版型（confirm 必須 true）：覆寫主題、首頁區塊、選單並建立同名子頁；不動商品／課程／文章／品牌資料。restore=true 還原上一份',
+  { id: z.string(), confirm: z.boolean().default(false), restore: z.boolean().optional(), pages: z.boolean().optional(), menu: z.boolean().optional() },
+  async (p) => asText(await ops('apply_site_template', p)),
+);
 server.tool(
   'sitekit_set_menu',
   '整棵覆寫網站架構樹（兩層）。kind=page 綁 contentId（用 sitekit_list_content 取得）、route 填站內路徑 href、link 填外部網址',

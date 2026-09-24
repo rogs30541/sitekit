@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v0.28.0（2026-09-25）
+
+- 快速套版：五大分類（形象／電商／課程／品牌／專業服務）× 10 ＝ 50 套版型（`packages/shared/src/site-templates`；結構取自指定三站＋Wix 分類法＋15 參考站，只取版面骨架），每套＝主題（theme.*）＋主選單／頁尾＋首頁區塊＋子頁區塊（about／services／contact／faq…）
+- 區塊 schema 擴為 20 種 kind（hero／banner／stats／features／split／gallery／testimonials／faq／pricing／steps／team／logos／video／cta／contact／categories／courses／products／posts／html，各有 variant＋tone／背景圖／緊湊），首頁區塊與「區塊頁」（Content.design.kind='sections'）共用；`PUT /api/admin/site/home` 同一 schema
+- core `SiteTemplateService`：apply（confirm 必填；備份只在第一次套版前建立、restore 一律回到套版前）／restore／list／current；OPS `list_site_templates`／`apply_site_template`；MCP `sitekit_list_site_templates`／`sitekit_apply_site_template`
+- 前台：`SectionRenderer` 取代 HomeSections（全部 kind／variant、滿版色帶、深色／圖片底）；root layout 把 theme 轉 CSS 變數（--accent／--on-accent／--font／--radius／--container、data-theme 深色）；SiteNav 5 種頁首、SiteFooter 3 種頁尾；`/p/[slug]` 渲染區塊頁；`GET /api/content/site` 帶 theme
+- 後台：「網站 → 套版庫」（分類頁籤、線框縮圖、套用／還原）、首頁版面編輯器改 20 種 kind（文字欄逐欄、清單欄 JSON）；安裝精靈新增「版型」步驟（站名之後，可略過）
+- e2e p31（50 套、confirm 保護、套用後 settings／選單／子頁／首頁 HTML、冪等、restore、MCP 名單）
+
 ## v0.27.0（2026-09-24）
 
 - Cloudflare Workers＋D1 殼（apps/worker，M3 路線 B）：Hono＋nest-bridge 掛既有 187 條 Nest 路由、迷你 DI 容器、D1 driver adapter；本機 D1 14 檔 API e2e 全綠、正式 D1 部署上線

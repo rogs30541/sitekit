@@ -6,12 +6,36 @@
   --muted: #6b7280;
   --card: #ffffff;
   --line: #e5e7eb;
+  --soft: #f3f4f6;
+  --accent: #171717;
+  --accent-2: var(--accent);
+  --on-accent: #ffffff;
+  --font: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --radius: 12px;
+  --container: 72rem;
+  --heading-weight: 600;
 }
+html[data-theme="dark"] { color-scheme: dark; }
+html { overflow-x: clip; } /* 滿版色帶 100vw 含捲軸寬會多出幾 px，裁掉避免水平捲動 */
 
 body {
   background: var(--bg);
   color: var(--fg);
+  font-family: var(--font);
+  overflow-x: clip; /* 滿版色帶用 100vw，含捲軸寬時避免水平捲動 */
 }
+
+/* 套版區塊：標題階層、滿版色帶（脫離主框限寬）、內容容器 */
+.sk-h1 { font-size: clamp(2rem, 5vw, 3.25rem); line-height: 1.15; font-weight: var(--heading-weight); letter-spacing: -0.01em; }
+.sk-h1-xl { font-size: clamp(2.5rem, 7vw, 4.5rem); line-height: 1.05; }
+.sk-h2 { font-size: clamp(1.5rem, 3vw, 2.125rem); line-height: 1.2; font-weight: var(--heading-weight); }
+.sk-stat { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }
+html[data-heading="display"] .sk-h1, html[data-heading="display"] .sk-h2 { letter-spacing: -0.03em; }
+.sk-full { width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); padding-left: 1rem; padding-right: 1rem; }
+.sk-container { max-width: var(--container); margin: 0 auto; }
+.sk-sections > .sk-full:first-child { margin-top: -2rem; }
+.sk-carousel { scrollbar-width: none; }
+.sk-carousel::-webkit-scrollbar { display: none; }
 
 /* 內容編輯器輸出的基本排版（零相依的 prose） */
 .prose h2 { font-size: 1.375rem; font-weight: 700; margin: 1.25rem 0 0.5rem; }

@@ -12,9 +12,22 @@ export function SiteFooter({ site, items }: { site: SiteConfig; items: NavItem[]
     ['YouTube', b.social.youtube],
   ].filter(([, u]) => u);
   const flat = items.flatMap((n) => [n, ...n.children]);
+  const v = site.theme?.footer ?? 'simple';
+  if (v === 'minimal')
+    return (
+      <footer className="mt-12 border-t" style={{ borderColor: 'var(--line)' }}>
+        <div className="sk-container flex flex-wrap items-center justify-between gap-3 px-4 py-6 text-xs" style={{ color: 'var(--muted)' }}>
+          <span>© {new Date().getFullYear()} {b.name}{b.footerText ? ` · ${b.footerText}` : ''}</span>
+          <span className="flex flex-wrap gap-3">
+            {flat.map((n) => (n.href.startsWith('/') ? <Link key={n.id} href={n.href} className="hover:underline">{n.label}</Link> : <a key={n.id} href={n.href} className="hover:underline" rel="noopener">{n.label}</a>))}
+            {social.map(([label, href]) => (<a key={label} href={href} target="_blank" rel="noopener" className="underline">{label}</a>))}
+          </span>
+        </div>
+      </footer>
+    );
   return (
     <footer className="mt-12 border-t" style={{ borderColor: 'var(--line)', background: 'var(--card)' }}>
-      <div className="mx-auto grid max-w-5xl gap-6 px-4 py-8 text-sm sm:grid-cols-3">
+      <div className={`sk-container grid gap-6 px-4 py-8 text-sm ${v === 'columns' ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
         <div>
           <p className="font-bold">{b.siteName}</p>
           {b.tagline ? (
@@ -24,7 +37,7 @@ export function SiteFooter({ site, items }: { site: SiteConfig; items: NavItem[]
           ) : null}
           {b.footerText ? <p className="mt-2 whitespace-pre-wrap text-xs">{b.footerText}</p> : null}
         </div>
-        <div>
+        <div className={v === 'columns' ? 'sm:col-span-2 sm:columns-2' : ''}>
           {flat.length ? (
             <ul className="space-y-1">
               {flat.map((n) =>

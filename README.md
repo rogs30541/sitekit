@@ -28,6 +28,14 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 **P3 產品化（完成）**：點數帳本（保留再結算、失敗釋放）、AI Provider 抽象層（mock／OpenAI、平台金鑰或 BYOK）、程序內任務佇列（可換 BullMQ）、`/studio` AI 創作工作站、`/admin/studio` 模板管理與點數調整、MCP／AI API 的 `adjust_credits`。
 
+## 快速套版（2026-09-25，v0.28.0）
+
+- **套版庫**（`/admin/site/templates`、精靈「版型」步驟、MCP `sitekit_list_site_templates`／`sitekit_apply_site_template`）：五大分類（形象／電商／課程／品牌／專業服務）× 10 ＝ 50 套，資料在 `packages/shared/src/site-templates/templates/<category>.ts`；結構來源見 `docs/套版研究筆記.md`（三個指定成品站＋Wix 分類法＋各分類 3 個參考站，只取版面骨架，不含任何文案／圖片／程式）。
+- **一套版型＝**主題（`theme.*`：mode／accent／accent2／font／radius／header／footer／container／heading）＋主選單與頁尾選單＋首頁區塊＋子頁（Content type=page、`design: { kind: 'sections', sections }`、slug 冪等、直接上線、body 為後備 HTML）。**不動**商品／課程／文章／會員／訂單／品牌名稱與聯絡資料。
+- **套用需 `confirm=true`**；第一次套版前自動備份主題／首頁／選單到 settings `template.backup`（之後換版型不覆蓋），`restore=true` 一律回到套版前（子頁保留）。
+- **區塊 schema**（`packages/shared/src/site-templates/sections.ts`）20 種 kind，首頁區塊（`set_home_sections`／`PUT /api/admin/site/home`）與區塊頁共用；每種有 `variant`、`tone`（default／muted／accent／dark／image）、`bgImageUrl`、`compact`。前台 `components/SectionRenderer.tsx` 一次渲染；主題在 root layout 轉 CSS 變數（`--accent`／`--on-accent`／`--font`／`--radius`／`--container`、`data-theme="dark"`），`SiteNav` 5 種頁首、`SiteFooter` 3 種頁尾。
+- 想做新版型：在對應分類檔加一筆 `SiteTemplate`（id 用 `<category>-<name>`），`node -e` 跑 `sectionsInputSchema.parse` 驗證，e2e p31 會檢查 50 套與五分類各 10。
+
 ## P15 課程編輯對標 Power Course、工作站對標 inShow、AI 模型自動偵測（2026-09-22，v0.14.0）
 
 - **課程編輯分頁**（`/admin/courses/[id]`，對標 Power Course）：課程描述（課程發佈：網址 slug／在前台列表中隱藏（仍可直連）／發布時間；描述：名稱／分類／標籤／簡短描述／內容／封面圖上傳／封面影片／試看影片；講師名稱與簡介）、課程定價（原價／特價／特價排程／免費／購買按鈕文字／購買備註／觀看時間限制）、章節、問答與公告、影片庫；「儲存為草稿／儲存並發布」。資料：`courses.publishedAt/instructorName/instructorBio/purchaseNote/buttonText`、`products.salePrice/saleStartsAt/saleEndsAt/tags/hidden`。

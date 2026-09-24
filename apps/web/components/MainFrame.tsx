@@ -6,5 +6,5 @@ import { usePathname } from 'next/navigation';
 export function MainFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '';
   const admin = pathname.startsWith('/admin');
-  return <main className={admin ? 'sk-admin mx-auto w-full max-w-[1800px] px-3 py-3 text-[15px]' : 'mx-auto max-w-5xl px-4 py-8'}>{children}</main>;
+  return <main className={admin ? 'sk-admin mx-auto w-full max-w-[1800px] px-3 py-3 text-[15px]' : 'sk-container px-4 py-8'}>{children}</main>;
 }

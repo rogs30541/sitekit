@@ -17,4 +17,5 @@ import type { SiteTemplate, TemplateCategory } from './common';
 
 export const SITE_TEMPLATES: SiteTemplate[] = [...IMAGE_TEMPLATES, ...SHOP_TEMPLATES, ...COURSE_TEMPLATES, ...BRAND_TEMPLATES, ...SERVICE_TEMPLATES];
 export const getSiteTemplate = (id: string) => SITE_TEMPLATES.find((t) => t.id === id);
-export const listSiteTemplates = (category?: TemplateCategory) => SITE_TEMPLATES.filter((t) => !category || t.category === category).map(({ id, category, name, style, tagline, tags, source, theme, pages }) => ({ id, category, name, style, tagline, tags, source, theme, pages: pages.map((p) => p.slug) }));
+export const listSiteTemplates = (category?: TemplateCategory) => SITE_TEMPLATES.filter((t) => !category || t.category === category).map(({ id, category, name, style, tagline, tags, source, theme, pages, home, menu }) => ({ id, category, name, style, tagline, tags, source, theme, pages: pages.map((p) => p.slug), homeKinds: home.map((s) => `${s.kind}${'variant' in s && s.variant ? ':' + s.variant : ''}${'tone' in s && s.tone && s.tone !== 'default' ? '@' + s.tone : ''}`), headerMenu: menu.header.map((m) => m.label) }));
+export type SiteTemplateSummary = ReturnType<typeof listSiteTemplates>[number];

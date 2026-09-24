@@ -1,23 +1,14 @@
 import { Injectable } from '../../compat';
-import { BRAND, SETTING_KEYS, normalizeLocale, normalizeTracking, type TrackingConfig } from '@sitekit/shared';
+import { BRAND, SETTING_KEYS, normalizeLocale, normalizeTracking, sectionsInputSchema, themeFromSettings, type Section, type TrackingConfig } from '@sitekit/shared';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
 import { SettingsService } from '../settings/settings.service';
 import { sanitizeHtml } from '../migration/normalize';
 import { MenuService } from './menu.service';
 
-const url = z.string().max(500).refine((s) => s === '' || s.startsWith('/') || /^https?:\/\//.test(s), '需為 / 開頭的站內路徑或 http(s) 網址');
-const sectionSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('hero'), title: z.string().max(120), subtitle: z.string().max(400).optional().default(''), ctaText: z.string().max(40).optional().default(''), ctaHref: url.optional().default(''), imageUrl: url.optional().default(''), align: z.enum(['left', 'center']).optional().default('center') }),
-  z.object({ kind: z.literal('features'), title: z.string().max(120).optional().default(''), items: z.array(z.object({ title: z.string().max(80), text: z.string().max(400).optional().default(''), icon: z.string().max(8).optional().default('') })).max(12) }),
-  z.object({ kind: z.literal('courses'), title: z.string().max(120).optional().default('精選課程'), limit: z.number().int().min(1).max(12).optional().default(3) }),
-  z.object({ kind: z.literal('products'), title: z.string().max(120).optional().default('熱門商品'), limit: z.number().int().min(1).max(12).optional().default(3) }),
-  z.object({ kind: z.literal('posts'), title: z.string().max(120).optional().default('最新文章'), limit: z.number().int().min(1).max(12).optional().default(3) }),
-  z.object({ kind: z.literal('html'), title: z.string().max(120).optional().default(''), html: z.string().max(100_000) }),
-  z.object({ kind: z.literal('cta'), title: z.string().max(120), text: z.string().max(400).optional().default(''), buttonText: z.string().max(40).optional().default(''), buttonHref: url.optional().default('') }),
-]);
-export type HomeSection = z.infer<typeof sectionSchema>;
-const sectionsInput = z.object({ sections: z.array(sectionSchema).max(20) });
+// 首頁區塊 schema 與套版共用（packages/shared/site-templates/sections.ts：20 種 kind）
+const sectionsInput = sectionsInputSchema;
+export type HomeSection = Section;
 
 export const BRAND_FIELDS = [
   { key: SETTING_KEYS.brandName, label: '品牌名稱', def: BRAND.name },
@@ -111,7 +102,9 @@ export class SiteService {
   async publicSite() {
     const [brand, header, footer, sections] = await Promise.all([this.brand(), this.menu.tree(true, 'header'), this.menu.tree(true, 'footer'), this.homeSections()]);
     const tracking = await this.tracking();
-    return { tracking, brand, menus: { header, footer }, home: { sections } };
+    const all = await this.settings.all();
+    const theme = themeFromSettings((k) => all.get(k));
+    return { tracking, brand, theme, menus: { header, footer }, home: { sections } };
   }
 
   /** 後台編輯用：目前值（settings 原值）＋欄位定義＋首頁區塊 */

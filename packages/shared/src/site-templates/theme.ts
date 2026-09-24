@@ -50,12 +50,22 @@ export const FONT_STACKS: Record<Theme['font'], string> = {
 };
 export const RADIUS_PX: Record<Theme['radius'], string> = { none: '0px', sm: '6px', md: '12px', xl: '20px', full: '999px' };
 
+/** accent 上的文字色：依相對亮度選黑／白（WCAG 對比） */
+export function onAccent(hex: string): string {
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  if (!m) return '#ffffff';
+  const lin = (c: string) => { const v = parseInt(c, 16) / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+  const L = 0.2126 * lin(m[1]) + 0.7152 * lin(m[2]) + 0.0722 * lin(m[3]);
+  return L > 0.45 ? '#111111' : '#ffffff';
+}
+
 /** 主題色相關 CSS 變數（light／dark 兩套底色＋accent） */
 export function themeCssVars(t: Theme): Record<string, string> {
   const dark = t.mode === 'dark';
   return {
     '--accent': t.accent,
     '--accent-2': t.accent2 || t.accent,
+    '--on-accent': onAccent(t.accent),
     '--bg': dark ? '#0b0b0d' : '#fafafa',
     '--fg': dark ? '#f2f2f3' : '#171717',
     '--muted': dark ? '#a1a1aa' : '#6b7280',

@@ -1,3 +1,4 @@
+import { isSectionsDoc } from '@sitekit/shared';
 import { Controller, Get, NotFoundException, Param, Query } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -43,6 +44,8 @@ export class ContentController {
     });
     if (!item) throw new NotFoundException('page not found');
     const { design, ...rest } = item;
+    // 區塊頁（套版產生）：回 sections 給前台 SectionRenderer，hasDesign=false（body 為後備 HTML）
+    if (isSectionsDoc(design)) return { ...rest, hasDesign: false, sections: design.sections, tracking: (design as { settings?: { tracking?: unknown } }).settings?.tracking ?? null };
     const tracking = design && typeof design === 'object' && (design as { settings?: { tracking?: unknown } }).settings?.tracking ? (design as { settings: { tracking: unknown } }).settings.tracking : null;
     return { ...rest, hasDesign: !!design, tracking };
   }

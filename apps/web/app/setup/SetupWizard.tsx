@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { t as tr } from '@/lib/i18n';
+import { TemplateGallery } from '@/components/TemplateGallery';
 
 type Status = { needsSetup: boolean; completed: boolean; version: string; env?: string; localDisk?: { dir: string; persistent: boolean | null } };
 // 機密欄位不用 type=password：Chrome 會把「文字欄＋密碼欄」當登入表單自動填入帳密（正式站曾把管理員帳密填進 R2 金鑰欄）
@@ -29,10 +30,10 @@ const errText = (b: unknown) => {
 /**
  * 安裝精靈（對齊 WordPress「5 分鐘安裝」）：
  * 1 建立第一位超級管理員（admin_users 為空時免 Email 驗證；建立即登入）
- * 2 站名與網址 → 3 儲存（本機或 R2）→ 4 Email（Resend）→ 5 金流（可跳過）→ 6 完成（顯示 OPS token）
+ * 2 站名與網址 → 3 版型（套版庫，可略過）→ 4 儲存（伺服器硬碟或 R2）→ 5 Email（Resend）→ 6 金流（可跳過）→ 7 完成（顯示 OPS token）
  */
 export function SetupWizard() {
-  const STEPS = [tr('管理員'), tr('站名與網址'), tr('儲存'), 'Email', tr('金流'), tr('完成')];
+  const STEPS = [tr('管理員'), tr('站名與網址'), tr('版型'), tr('儲存'), 'Email', tr('金流'), tr('完成')];
   const [status, setStatus] = useState<Status | null>(null);
   const [admin, setAdmin] = useState<{ email: string; role: string } | null>(null);
   const [step, setStep] = useState(0);
@@ -109,7 +110,7 @@ export function SetupWizard() {
       } else await save({ 'storage.driver': 'local' });
       const h = (await j<{ storage?: { ok: boolean; driver: string; error?: string } }>('/api/admin/system/health')).body;
       if (h.storage && !h.storage.ok) throw new Error(`儲存測試失敗（${h.storage.driver}）：${h.storage.error ?? ''}`);
-      setStep(3);
+      setStep(4);
       return `儲存測試通過（${h.storage?.driver}）`;
     });
   const saveMail = () =>
@@ -120,11 +121,11 @@ export function SetupWizard() {
         const t = await act('send_test_notification', { to: mail.adminTo });
         const ok = (t.body.data as { mail?: { ok?: boolean; error?: string } } | undefined)?.mail?.ok;
         if (!ok) throw new Error(`測試信寄送失敗：${(t.body.data as { mail?: { error?: string } } | undefined)?.mail?.error ?? t.body.error ?? ''}`);
-        setStep(4);
+        setStep(5);
         return `測試信已寄到 ${mail.adminTo}`;
       }
       await save({ 'notify.emailProvider': 'log', 'mail.adminTo': mail.adminTo });
-      setStep(4);
+      setStep(5);
       return tr('先用 log 模式（不寄信）；之後可到「儲存與通知」補 Resend');
     });
   const finish = () =>
@@ -133,7 +134,7 @@ export function SetupWizard() {
       if (r.status >= 400) throw new Error(errText(r.body));
       const t = await j<{ token?: string | null }>('/api/admin/system/ops-token');
       setToken(t.status === 200 ? (t.body.token ?? null) : null);
-      setStep(5);
+      setStep(6);
     });
 
   if (!status) return <p className="text-sm">{tr('載入中…')}</p>;
@@ -143,7 +144,7 @@ export function SetupWizard() {
     <div className="rounded-xl border p-6" style={{ ...line, background: 'var(--card)' }}>
       <h1 className="text-xl font-bold">{tr('SiteKit 安裝精靈')}</h1>
       <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>
-        版本 {status.version}。像 WordPress 一樣，五步驟把站台建好；每一步之後都可以在後台再改。
+        版本 {status.version}。像 WordPress 一樣，幾個步驟把站台建好；每一步之後都可以在後台再改。
       </p>
       <ol className="my-4 flex flex-wrap gap-2 text-xs">
         {STEPS.map((s, i) => (
@@ -203,6 +204,21 @@ export function SetupWizard() {
       ) : null}
 
       {step === 2 && admin ? (
+        <div className="space-y-3 text-sm">
+          <p style={{ color: 'var(--muted)' }}>{tr('挑一個版型當起點：五大分類（形象／電商／課程／品牌／專業服務）各 10 套，套用後主題、首頁區塊、選單與子頁一次到位，之後都能在後台微調或一鍵還原。也可以略過，先用預設版面。')}</p>
+          <TemplateGallery compact onApplied={() => setStep(3)} />
+          <div className="flex gap-2">
+            <button disabled={busy} onClick={() => setStep(3)} className="rounded border px-3 py-2" style={line}>
+              {tr('略過，先用預設版面')}
+            </button>
+            <button disabled={busy} onClick={() => setStep(1)} className="rounded border px-3 py-2" style={line}>
+              {tr('上一步')}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {step === 3 && admin ? (
         <div className="space-y-2 text-sm">
           <p style={{ color: 'var(--muted)' }}>{tr('上傳的圖片、商品封面與 AI 產圖存在哪裡。部署在哪個平台就用該平台的硬碟：容器平台（Zeabur 等）把硬碟掛到資料夾即可用伺服器硬碟；沒有持久硬碟的環境才需要 Cloudflare R2／S3。')}</p>
           {status?.localDisk?.persistent === false ? (
@@ -229,14 +245,14 @@ export function SetupWizard() {
             <button disabled={busy} onClick={() => void saveStorage()} className="rounded bg-black px-4 py-2 text-white disabled:opacity-50">
               {tr('儲存並測試')}
             </button>
-            <button disabled={busy} onClick={() => setStep(1)} className="rounded border px-3 py-2" style={line}>
+            <button disabled={busy} onClick={() => setStep(2)} className="rounded border px-3 py-2" style={line}>
               {tr('上一步')}
             </button>
           </div>
         </div>
       ) : null}
 
-      {step === 3 && admin ? (
+      {step === 4 && admin ? (
         <div className="space-y-2 text-sm">
           <p style={{ color: 'var(--muted)' }}>{tr('管理員註冊驗證碼、忘記密碼、訂單通知都靠 Email。沒有寄信服務時先選 log（只寫日誌），之後再補。')}</p>
           <label className="flex items-center gap-2">
@@ -259,14 +275,14 @@ export function SetupWizard() {
             <button disabled={busy} onClick={() => void saveMail()} className="rounded bg-black px-4 py-2 text-white disabled:opacity-50">
               {mail.provider === 'resend' ? tr('儲存並寄測試信') : tr('下一步')}
             </button>
-            <button disabled={busy} onClick={() => setStep(2)} className="rounded border px-3 py-2" style={line}>
+            <button disabled={busy} onClick={() => setStep(3)} className="rounded border px-3 py-2" style={line}>
               {tr('上一步')}
             </button>
           </div>
         </div>
       ) : null}
 
-      {step === 4 && admin ? (
+      {step === 5 && admin ? (
         <div className="space-y-2 text-sm">
           <p style={{ color: 'var(--muted)' }}>{tr('金流、物流、電子發票各家商店參數在後台「帳務」填；現在可以先跳過，站台照樣能瀏覽與管理內容（結帳會提示尚未啟用付款方式）。')}</p>
           <div className="flex flex-wrap gap-2">
@@ -276,14 +292,14 @@ export function SetupWizard() {
             <button disabled={busy} onClick={() => void finish()} className="rounded bg-black px-4 py-2 text-white disabled:opacity-50">
               {tr('完成安裝')}
             </button>
-            <button disabled={busy} onClick={() => setStep(3)} className="rounded border px-3 py-2" style={line}>
+            <button disabled={busy} onClick={() => setStep(4)} className="rounded border px-3 py-2" style={line}>
               {tr('上一步')}
             </button>
           </div>
         </div>
       ) : null}
 
-      {step === 5 && admin ? (
+      {step === 6 && admin ? (
         <div className="space-y-3 text-sm">
           <p className="rounded bg-green-50 p-2 text-green-800">{tr('安裝完成。前台與後台都可以使用了。')}</p>
           {token ? (

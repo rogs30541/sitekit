@@ -16,6 +16,7 @@ import { AdminAuthService } from '../admin-auth/admin-auth.service';
 import { sanitizeHtml } from '../migration/normalize';
 import { MenuService, parseLocation } from '../content/menu.service';
 import { SiteService } from '../content/site.service';
+import { SiteTemplateService } from '../content/site-template.service';
 import { LogisticsService } from '../logistics/logistics.service';
 import { InvoiceService } from '../invoice/invoice.service';
 import { DesignService } from '../content/design.service';
@@ -48,6 +49,7 @@ export class OpsService {
     private readonly storage: StorageService,
     private readonly admins: AdminAuthService,
     private readonly menu: MenuService,
+    private readonly siteTemplates: SiteTemplateService,
     private readonly site: SiteService,
     private readonly logistics: LogisticsService,
     private readonly invoice: InvoiceService,
@@ -370,6 +372,10 @@ export class OpsService {
       }
       case 'set_home_sections':
         return this.site.setHomeSections({ sections: p.sections ?? [] });
+      case 'list_site_templates':
+        return { ...this.siteTemplates.list(p.category ? String(p.category) : undefined), current: await this.siteTemplates.current() };
+      case 'apply_site_template':
+        return this.siteTemplates.apply(String(p.id ?? ''), actor, { confirm: p.confirm === true || p.confirm === 'true', restore: p.restore === true || p.restore === 'true', pages: p.pages !== false, menu: p.menu !== false });
       case 'list_questions': {
         const course = p.slug ? await this.prisma.course.findUnique({ where: { slug: String(p.slug) }, select: { id: true } }) : null;
         const courseId = p.courseId ? String(p.courseId) : course?.id;

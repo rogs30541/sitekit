@@ -15,6 +15,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     label: '網站',
     items: [
       { href: '/admin/site', label: '網站設定', desc: '品牌／SEO／追蹤設定（全站）／首頁區塊' },
+      { href: '/admin/site/templates', label: '套版庫', desc: '五大分類 × 10 套快速套版：主題／首頁區塊／選單／子頁一鍵套用' },
       { href: '/admin/menu', label: '網站架構', desc: '主選單／頁尾選單（拖曳）' },
       { href: '/admin/content', label: '新增網頁', desc: '視覺設計器／草稿／沙盒預覽／發佈／版本' },
       { href: '/admin/sales', label: '一頁式網頁', desc: '通知／倒數／內文／產品與課程區塊／表單／順序／追蹤' },

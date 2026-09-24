@@ -3,9 +3,10 @@ import { notFound } from 'next/navigation';
 import { Section } from '@/components/Section';
 import { apiPublic } from '@/lib/api-public';
 import { DesignBody } from '@/components/DesignBody';
+import { SectionRenderer } from '@/components/SectionRenderer';
 import { Tracking } from '@/components/Tracking';
 import { getSite } from '@/lib/site';
-import type { TrackingConfig } from '@sitekit/shared';
+import type { Section as SectionDoc, TrackingConfig } from '@sitekit/shared';
 import { t } from '@/lib/i18n';
 
 export const revalidate = 60;
@@ -20,6 +21,8 @@ interface PageDoc {
   hasDesign?: boolean;
   version?: number;
   tracking?: Partial<TrackingConfig> | null;
+  /** 套版產生的區塊頁（design.kind='sections'） */
+  sections?: SectionDoc[];
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -35,6 +38,13 @@ export default async function SitePage({ params }: { params: Promise<{ slug: str
   if (!page) notFound();
   const site = await getSite();
   const track = <Tracking config={page.tracking ?? null} site={site.tracking} scope="page" page={{ id: page.slug, title: page.title, type: 'page' }} />;
+  if (page.sections?.length)
+    return (
+      <>
+        {track}
+        <SectionRenderer sections={page.sections} />
+      </>
+    );
   if (page.hasDesign)
     return (
       <>

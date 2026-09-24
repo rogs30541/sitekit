@@ -22,7 +22,7 @@ export const DEFAULT_NAV: NavItem[] = [
 ];
 
 /** 前台導覽：讀後台維護的網站架構樹（兩層，子項以下拉顯示）；不含後台入口（後台走 /admin/login）。 */
-export function SiteNav({ items, siteName, logoUrl }: { items?: NavItem[]; siteName?: string; logoUrl?: string }) {
+export function SiteNav({ items, siteName, logoUrl, variant = 'solid' }: { items?: NavItem[]; siteName?: string; logoUrl?: string; variant?: 'solid' | 'transparent' | 'centered' | 'minimal' | 'bar' }) {
   const pathname = usePathname();
   if (pathname?.startsWith('/admin')) return null;
   const nav = items && items.length ? items : DEFAULT_NAV;
@@ -37,13 +37,13 @@ export function SiteNav({ items, siteName, logoUrl }: { items?: NavItem[]; siteN
       </a>
     );
   return (
-    <header className="border-b" style={{ borderColor: 'var(--line)', background: 'var(--card)' }}>
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-4 py-3">
-        <Link href="/" className="flex items-center gap-2 font-bold">
+    <header className={variant === 'transparent' ? '' : variant === 'bar' ? 'border-b-2' : 'border-b'} style={variant === 'transparent' ? { background: 'transparent' } : variant === 'bar' ? { borderColor: 'var(--accent)', background: 'var(--card)' } : { borderColor: 'var(--line)', background: 'var(--card)' }}>
+      <div className={`sk-container flex flex-wrap items-center gap-2 px-4 ${variant === 'centered' ? 'flex-col justify-center py-4' : variant === 'minimal' ? 'justify-between py-2' : 'justify-between py-3'}`}>
+        <Link href="/" className={`flex items-center gap-2 font-bold ${variant === 'centered' ? 'text-lg' : ''}`}>
           {logoUrl ? <img src={logoUrl} alt="" className="h-7 w-auto" /> : null}
           {siteName ?? BRAND.siteName}
         </Link>
-        <nav className="flex flex-wrap gap-4 text-sm">
+        <nav className={`flex flex-wrap gap-4 text-sm ${variant === 'centered' ? 'justify-center' : ''} ${variant === 'minimal' ? 'uppercase tracking-wider text-xs' : ''}`}>
           {nav.map((n) =>
             n.children.length ? (
               <details key={n.id} className="group relative">
