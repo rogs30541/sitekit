@@ -1,8 +1,5 @@
-# DOMAIN 設成你的網域（DNS A 記錄先指到這台主機）：Caddy 會自動向 Let's Encrypt 申請並續期憑證
+# DOMAIN 設成你的網域（DNS A 記錄先指到這台主機）：Caddy 會自動向 Let's Encrypt 申請並續期憑證（不需要填 email）
 # DOMAIN=localhost 時 Caddy 改簽本機自簽憑證（用來冒煙測試，curl -k）
-{
-	email {$ACME_EMAIL}
-}
 {$DOMAIN} {
 	encode zstd gzip
 	reverse_proxy sitekit:3000
