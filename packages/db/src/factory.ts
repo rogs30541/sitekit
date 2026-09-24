@@ -28,6 +28,9 @@ const isNullSentinel = (v: unknown): boolean => {
   const name = typeof (v as { _getName?: () => string })._getName === 'function' ? (v as { _getName: () => string })._getName() : (v as object).constructor?.name;
   return name === 'JsonNull' || name === 'DbNull' || name === 'AnyNull';
 };
+/** MySQL 模式：core 拿的是 PostgreSQL client 的 Prisma.JsonNull／DbNull／AnyNull，MySQL client 是另一個模組實例、認不得（會當成普通物件存成 {}），寫入前換成 MySQL client 自己的哨兵 */
+let mapSentinel: ((v: unknown) => unknown) | null = null;
+const sentinelName = (v: unknown): string => (typeof (v as { _getName?: () => string })._getName === 'function' ? (v as { _getName: () => string })._getName() : (v as object).constructor?.name ?? '');
 const isPlain = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v) && Object.getPrototypeOf(v) === Object.prototype;
 
 /** 寫入端：data／create／update 內的 json／array 欄位 → JSON 字串；where 端：陣列篩選改 contains、去掉 mode */
@@ -37,6 +40,10 @@ function convertArgs(args: unknown, ctx: 'root' | 'write' | 'read'): unknown {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(args)) {
     if (ctx === 'read' && k === 'mode') continue; // SQLite LIKE 對 ASCII 本就不分大小寫
+    if (mapSentinel && isNullSentinel(v)) {
+      out[k] = mapSentinel(v);
+      continue;
+    }
     if (ctx === 'read' && ARRAY_FIELDS.has(k) && isPlain(v)) {
       const f = v as Record<string, unknown>;
       if ('has' in f) {
@@ -137,7 +144,8 @@ export function createPrisma(opts: CreatePrismaOptions = {}): PrismaClient {
     JSON_FIELDS = new Set();
     CONVERT = new Set(ARRAY_FIELDS);
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { PrismaClient: My } = require('../mysql/client') as { PrismaClient: new (o?: unknown) => { $extends: (ext: unknown) => unknown } };
+    const { PrismaClient: My, Prisma: MyPrisma } = require('../mysql/client') as { PrismaClient: new (o?: unknown) => { $extends: (ext: unknown) => unknown }; Prisma: { JsonNull: unknown; DbNull: unknown; AnyNull: unknown } };
+    mapSentinel = (v) => ({ JsonNull: MyPrisma.JsonNull, DbNull: MyPrisma.DbNull, AnyNull: MyPrisma.AnyNull } as Record<string, unknown>)[sentinelName(v)] ?? v;
     const base = new My({ datasources: { db: { url } }, ...(opts.log ? { log: opts.log } : {}) });
     const extended = base.$extends({
       name: 'sitekit-mysql-array',
