@@ -28,7 +28,7 @@ export class StorageService {
   constructor(private readonly settings: SettingsService) {}
 
   /**
-   * 本機磁碟持久性偵測：容器平台（Zeabur／Railway／Docker）只有「掛了 volume 的資料夾」在重新部署後還在。
+   * 伺服器硬碟（local driver）持久性偵測：容器平台（Zeabur／Railway／Docker）只有「掛了 volume 的資料夾」在重新部署後還在。
    * Linux 上資料夾（或其最近的既存上層）與 `/` 的 st_dev 不同＝掛載點＝持久；相同＝容器暫存層＝重新部署會清掉。
    * 非 Linux（開發機、VPS 直跑）一律視為持久。回 null 表示無法判斷。
    */

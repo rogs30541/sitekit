@@ -113,7 +113,7 @@ export class SystemService {
         const put = await this.storage.put('system/health-probe.txt', Buffer.from(probe), 'text/plain');
         const back = await this.storage.fetchAsset(put.url, 1024 * 64);
         const ok = !!back && back.bytes.toString('utf8') === probe;
-        return { ok, driver: cfg.driver, s3Ready: cfg.s3Ready, url: put.url, ...(ok ? {} : { error: back ? '讀回內容不符' : '寫入後讀不回（本機磁碟路徑或 R2 公開網址設定有誤）' }) };
+        return { ok, driver: cfg.driver, s3Ready: cfg.s3Ready, url: put.url, ...(ok ? {} : { error: back ? '讀回內容不符' : '寫入後讀不回（伺服器硬碟路徑或 R2 公開網址設定有誤）' }) };
       } catch (e) {
         return { ok: false, driver: cfg.driver, s3Ready: cfg.s3Ready, error: e instanceof Error ? e.message : String(e) };
       }

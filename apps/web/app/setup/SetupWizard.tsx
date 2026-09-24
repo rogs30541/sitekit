@@ -204,14 +204,14 @@ export function SetupWizard() {
 
       {step === 2 && admin ? (
         <div className="space-y-2 text-sm">
-          <p style={{ color: 'var(--muted)' }}>{tr('上傳的圖片、商品封面與 AI 產圖存在哪裡。部署在哪個平台就用該平台的硬碟：容器平台（Zeabur 等）把硬碟掛到資料夾即可用本機磁碟；沒有持久硬碟的環境才需要 Cloudflare R2／S3。')}</p>
+          <p style={{ color: 'var(--muted)' }}>{tr('上傳的圖片、商品封面與 AI 產圖存在哪裡。部署在哪個平台就用該平台的硬碟：容器平台（Zeabur 等）把硬碟掛到資料夾即可用伺服器硬碟；沒有持久硬碟的環境才需要 Cloudflare R2／S3。')}</p>
           {status?.localDisk?.persistent === false ? (
-            <p className="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-amber-800">{tr('目前的儲存資料夾不在持久硬碟上（重新部署會清掉上傳檔）。請到平台把硬碟掛到這個資料夾再選本機磁碟，或改用 R2／S3：')} {status.localDisk.dir}</p>
+            <p className="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-amber-800">{tr('目前的儲存資料夾不在持久硬碟上（重新部署會清掉上傳檔）。請到平台把硬碟掛到這個資料夾再選伺服器硬碟，或改用 R2／S3：')} {status.localDisk.dir}</p>
           ) : status?.localDisk?.persistent === true ? (
             <p className="text-xs" style={{ color: 'var(--muted)' }}>{tr('已偵測到持久硬碟：')} {status.localDisk.dir}</p>
           ) : null}
           <label className="flex items-center gap-2">
-            <input type="radio" checked={st.driver === 'local'} onChange={() => setSt({ ...st, driver: 'local' })} /> {tr('本機磁碟（預設）')}
+            <input type="radio" checked={st.driver === 'local'} onChange={() => setSt({ ...st, driver: 'local' })} /> {tr('伺服器硬碟（預設）')}{status?.localDisk?.dir ? <span className="text-xs" style={{ color: 'var(--muted)' }}>{status.localDisk.dir}</span> : null}
           </label>
           <label className="flex items-center gap-2">
             <input type="radio" checked={st.driver === 's3'} onChange={() => setSt({ ...st, driver: 's3' })} /> {tr('Cloudflare R2／S3 相容')}

@@ -161,7 +161,7 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 - **網站架構樹拖曳排序**（v0.16.0 修正）：列改以函式渲染（內嵌元件每次 setState 重建＝拖曳中來源被 remount、拖曳立即中斷）；整列皆為放置區（上半＝放前、下半＝放後、主選單列右側 1/4＝成為子選單），另加 ▲▼ 上下移按鈕。
 - **後台帳號與前台會員分離**：管理員存 `admin_users`（獨立 cookie `sk_admin`、SameSite=Strict、12 小時），前台會員 `users` 一律 role=user；後台獨立登入頁 `/admin/login`（前台導覽不顯示、不索引），`admin_users` 為空時登入頁自動變成「建立第一位超級管理員」；之後由 `/admin/accounts` 或 MCP `create_admin`／`update_admin`／`delete_admin` 管理。遷移會把既有 admin/superadmin 會員複製成管理員並把會員角色降為 user。
 - **內容編輯器**：`/admin/content` 官網頁面（type=page → `/p/<slug>`；slug=home 取代首頁）與文章（type=post → `/blog/<slug>`）所見即所得編輯（標題／清單／引言／連結／圖片上傳／HTML 原始碼）、草稿／發布／下架、SEO 摘要與封面；API `/api/admin/content`、上傳 `/api/admin/content/upload`（走物件儲存）；MCP `upsert_content`／`list_content`。
-- **物件儲存**：`storage.driver=local|s3`（Cloudflare R2／S3 相容，SigV4 免 SDK）；AI 生成結果、編輯器上傳、搬運器媒體落地都走 StorageService。本機磁碟在 Zeabur 重新部署後不保留，正式環境請設 R2。
+- **物件儲存**：`storage.driver=local|s3`（Cloudflare R2／S3 相容，SigV4 免 SDK）；AI 生成結果、編輯器上傳、搬運器媒體落地都走 StorageService。伺服器硬碟在 Zeabur 重新部署後不保留，正式環境請設 R2。
 - **通知中心**：Email（`notify.emailProvider=log|resend`）＋ LINE Messaging API 推播管理員；事件＝註冊歡迎、付款成功（買家＋管理員）、ATM 取號、出貨／送達、退款完成；MCP／後台 `send_test_notification`、`storage_status`；設定頁 `/admin/integrations`。
 - **搬運器媒體落地**：`import_content` 加 `landMedia=true` 會把內文 `<img>` 與封面下載到本站儲存並改寫網址（同網址只下載一次、失敗保留原網址）。
 - zod 驗證錯誤統一回 400（全域 filter）。
@@ -286,7 +286,7 @@ node tests/e2e/run.mjs p25      # 只跑指定檔
    - 「編輯原始環境變數」貼入：`DATABASE_URL`（見下）、`FRONTEND_URL` 與 `NEXT_PUBLIC_SITE_URL`＝公開網址、`APP_ENV=production`、`PORT=3000`、`SITEKIT_DATA_DIR=/data`（`SESSION_SECRET`／`OPS_TOKEN` 可不填，首次啟動自動產生）；
    - 「進階設定 → Dockerfile」貼入 repo 的 `Dockerfile.monolith` 全文（`ARG NEXT_PUBLIC_SITE_URL` 預設可改成正式網址）→ 下一步 → 部署。
 3. 服務「網路」：開放新連線埠 **HTTP 3000**、刪掉預設的 8080（刪除要輸入 `8080` 確認），再「綁定 Zeabur 子網域」到 `:3000`。
-4. 服務「硬碟」：掛載 ID `data` → 目錄 `/data`（上傳與 SQLite 才會持久化；**部署在 Zeabur 就用 Zeabur 這顆硬碟當本機磁碟，不需要 Cloudflare R2**。精靈第 3 步會偵測 `/data` 是否為掛載的持久硬碟：是→本機磁碟為預設；否→警告要先掛硬碟或改 R2）。
+4. 服務「硬碟」：掛載 ID `data` → 目錄 `/data`（上傳與 SQLite 才會持久化；**部署在 Zeabur 就用 Zeabur 這顆硬碟當伺服器硬碟，不需要 Cloudflare R2**。精靈第 3 步會偵測 `/data` 是否為掛載的持久硬碟：是→伺服器硬碟為預設；否→警告要先掛硬碟或改 R2）。
 5. 建置約 5 分鐘（映像約 480MB），期間網域回 502 屬正常；完成後開網址即進 `/setup` 精靈。
 
 **陷阱**：`DATABASE_URL=${POSTGRES_CONNECTION_STRING}` 在「刪掉舊 postgres 再建新 postgres」的專案裡會展開成**舊服務**的主機名（`service-<舊id>:5432`），啟動時 `P1001 Can't reach database server` 崩潰重試；請改填明確值 `postgresql://<user>:<pass>@postgresql-hess.zeabur.internal:5432/<db>`（帳密到 postgres 服務首頁「Connection String → Show」看），存檔後按「重新部署」才生效。舊制 web／api 分離部署的說明如下，僅供對照。

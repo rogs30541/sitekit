@@ -249,7 +249,7 @@ export const QUESTION_STATUS_LABELS: Record<string, string> = { open: '待回覆
 export const CONTENT_STATUS_LABELS: Record<string, string> = { draft: '草稿', published: '已發布', archived: '封存' };
 export const CONTENT_SOURCE_LABELS: Record<string, string> = { admin: '後台編輯', wordpress: 'WordPress 搬運', csv: 'CSV 匯入', seed: '示範資料' };
 export const LEDGER_TYPE_LABELS: Record<string, string> = { grant: '贈點', consume: '扣點', adjust: '調整', purchase: '購買', refund: '退還' };
-export const STORAGE_DRIVER_LABELS: Record<string, string> = { local: '本機磁碟', s3: 'Cloudflare R2／S3' };
+export const STORAGE_DRIVER_LABELS: Record<string, string> = { local: '伺服器硬碟', s3: 'Cloudflare R2／S3' };
 export const EMAIL_PROVIDER_LABELS: Record<string, string> = { log: '只記 log（不寄信）', resend: 'Resend' };
 /** 付款方式顯示：供應商＋付款型態，例「藍新金流・信用卡」 */
 export const paymentLabel = (provider?: string | null, paymentType?: string | null) => {

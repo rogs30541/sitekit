@@ -78,11 +78,11 @@ export function IntegrationsForm({ status }: { status: IntegrationsStatus }) {
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <span className="font-semibold">物件儲存</span>
           <select value={driver} onChange={(e) => setDriver(e.target.value as 'local' | 's3')} className="rounded border px-2 py-1" style={{ borderColor: 'var(--line)' }}>
-            <option value="local">本機磁碟（STORAGE_DIR）</option>
+            <option value="local">伺服器硬碟（{status.storage.localDir}）</option>
             <option value="s3">Cloudflare R2／S3 相容</option>
           </select>
           {badge(status.storage.s3Ready, 'R2 已設定', 'R2 未設定')}
-          {status.storage.localPersistent === false ? <span className="rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800">本機磁碟未掛持久硬碟</span> : status.storage.localPersistent === true ? badge(true, '持久硬碟') : null}
+          {status.storage.localPersistent === false ? <span className="rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800">伺服器硬碟未掛持久硬碟</span> : status.storage.localPersistent === true ? badge(true, '持久硬碟') : null}
           <span className="text-xs" style={{ color: 'var(--muted)' }}>
             目前使用：{STORAGE_DRIVER_LABELS[status.storage.driver] ?? status.storage.driver}
             {status.storage.bucket ? ` · ${status.storage.bucket}` : ''}
