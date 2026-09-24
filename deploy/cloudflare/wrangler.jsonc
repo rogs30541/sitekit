@@ -1,0 +1,30 @@
+// Cloudflare 部署（路線 A：Cloudflare Containers 跑同一個 Dockerfile.monolith 映像；免改程式）
+//   前提：Workers Paid 方案（Containers 需要）、wrangler >= 4.20、已 `wrangler login`
+//   1. 資料庫：Containers 沒有持久硬碟 → 用外部 PostgreSQL（Neon／Supabase／Hyperdrive 皆可）：wrangler secret put DATABASE_URL
+//   2. 上傳檔：沒有持久硬碟 → 精靈第 3 步選 Cloudflare R2（wrangler r2 bucket create sitekit-uploads，在精靈填 endpoint／金鑰／公開網址）
+//   3. 部署：cd deploy/cloudflare && wrangler deploy（首次會建映像並推到 Cloudflare 的登錄）→ 開 https://sitekit.<你的子網域>.workers.dev/setup
+//   路線 B（Workers＋D1 無伺服器殼，免容器）＝路線圖 M3，需 Hono 殼重寫 api 187 條路由＋OpenNext 前台，尚未開工。
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sitekit",
+  "main": "worker.ts",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "containers": [
+    {
+      "class_name": "SiteKitContainer",
+      "image": "../../Dockerfile.monolith",
+      "max_instances": 1,
+      "instance_type": "standard"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "SITEKIT", "class_name": "SiteKitContainer" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SiteKitContainer"] }],
+  "vars": {
+    "APP_ENV": "production",
+    "PORT": "3000",
+    "SITEKIT_DATA_DIR": "/data"
+  }
+}
