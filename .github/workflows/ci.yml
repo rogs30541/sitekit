@@ -113,3 +113,68 @@ jobs:
       - name: logs on failure
         if: failure()
         run: tail -n 150 /tmp/mono.log
+
+  e2e-mysql:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: sitekit
+          MYSQL_USER: sitekit
+          MYSQL_PASSWORD: sitekit
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      DATABASE_URL: mysql://sitekit:sitekit@127.0.0.1:3306/sitekit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build -w @sitekit/shared
+      - run: npm run build -w @sitekit/db
+      - run: npm run db:validate -w @sitekit/api
+      - run: npm run build -w @sitekit/core
+      - run: npm run build -w @sitekit/api
+      - run: npm run build -w @sitekit/web
+      - name: migrate + seed（MySQL）
+        run: npm run db:migrate -w @sitekit/api && SEED_DEMO=1 npm run db:seed -w @sitekit/api
+      - name: start api
+        run: (cd apps/api && PORT=4000 nohup node dist/main.js > /tmp/api.log 2>&1 &) && for i in $(seq 1 30); do curl -sf http://localhost:4000/api/health && break; sleep 2; done
+      - name: start web
+        run: (cd apps/web && nohup npx next start -p 3000 > /tmp/web.log 2>&1 &) && for i in $(seq 1 30); do curl -sf -o /dev/null http://localhost:3000/ && break; sleep 2; done
+      - name: e2e
+        run: node tests/e2e/run.mjs
+      - name: logs on failure
+        if: failure()
+        run: tail -n 120 /tmp/api.log; tail -n 60 /tmp/web.log
+
+  # deploy/compose：Caddy（自簽 localhost）＋單體映像＋Postgres 從原始碼建起，經 Caddy 走 HTTPS 打 /api/health 與 /setup
+  compose-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: compose up
+        working-directory: deploy/compose
+        run: |
+          DOMAIN=localhost POSTGRES_PASSWORD=ci docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build
+          for i in $(seq 1 60); do curl -skf https://localhost/api/health && break; sleep 5; done
+      - name: smoke
+        run: |
+          curl -sk https://localhost/api/health | tee /tmp/h.json | grep -q '"db":"ok"'
+          curl -sk https://localhost/api/setup/status | tee /tmp/s.json | grep -q '"persistent":true'
+          curl -sk -o /dev/null -w '%{http_code}
+' https://localhost/setup | grep -q 200
+      - name: logs on failure
+        if: failure()
+        working-directory: deploy/compose
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml logs --tail 150
+

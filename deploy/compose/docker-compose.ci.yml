@@ -1,0 +1,7 @@
+# CI／本機從原始碼建置（取代 GHCR 映像）：docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build
+services:
+  sitekit:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.monolith
+    image: sitekit:local

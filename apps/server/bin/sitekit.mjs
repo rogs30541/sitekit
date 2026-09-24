@@ -8,7 +8,7 @@
  *   sitekit export [--out FILE] [--no-secrets]           整庫匯出 JSON（預設含機密，搬家用）
  *   sitekit import FILE --confirm                        從匯出檔還原（清空後覆蓋，不可逆）
  * 環境變數（都有預設值，全新主機不用設）：
- *   PORT（3000）、SITEKIT_DATA_DIR（./data）、DATABASE_URL（file:<data>/sitekit.db；也可 postgresql://…）、
+ *   PORT（3000）、SITEKIT_DATA_DIR（./data）、DATABASE_URL（file:<data>/sitekit.db；也可 postgresql://… 或 mysql://…）、
  *   STORAGE_DIR（<data>/storage）、FRONTEND_URL（http://localhost:<port>；正式請設公開網址或到後台填 site.url）、
  *   APP_ENV（production）、SESSION_SECRET／OPS_TOKEN（不設＝首次啟動自動產生存資料庫）
  */

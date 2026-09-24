@@ -3,18 +3,23 @@
  * - postgresql://… → apps/api/prisma/schema.prisma 產生的預設 client（@prisma/client）
  * - file:… → packages/db/sqlite/schema.prisma 產生的 client（本機檔案；Cloudflare D1 之後同一份 schema）
  *   SQLite 沒有 Json／String[]／enum，執行期用 $extends 依欄位名自動 parse／stringify，core 的程式碼零改動。
+ * - mysql://… → packages/db/mysql/schema.prisma 產生的 client：enum／Json 原生，只有 String[] 走 JSON 字串轉換；
+ *   where 的 mode:'insensitive' 拿掉（utf8mb4_unicode_ci 本就不分大小寫）。
  * 回傳型別統一宣告為 Postgres 版 PrismaClient（core 以它編譯）；SQLite 版在執行期結構相容。
  */
 import { Prisma, type PrismaClient } from '@prisma/client';
 import fieldsJson from './json-fields.json';
 
-const JSON_FIELDS = new Set<string>(fieldsJson.json);
+const JSON_FIELDS_ALL = new Set<string>(fieldsJson.json);
 const ARRAY_FIELDS = new Set<string>(fieldsJson.array);
-const CONVERT = new Set<string>([...JSON_FIELDS, ...ARRAY_FIELDS]);
+// 目前作用中的轉換集合：sqlite＝json＋array；mysql＝只有 array（createPrisma 時設定；同一程序只會用一種資料庫）
+let JSON_FIELDS = JSON_FIELDS_ALL;
+let CONVERT = new Set<string>([...JSON_FIELDS_ALL, ...ARRAY_FIELDS]);
 const WRITE_KEYS = new Set(['data', 'create', 'update', 'upsert', 'connectOrCreate', 'createMany', 'updateMany']);
 const READ_KEYS = new Set(['where', 'select', 'include', 'orderBy', 'cursor', 'distinct', 'having', 'by']);
 
 export const isSqliteUrl = (url: string) => /^file:/i.test(url);
+export const isMysqlUrl = (url: string) => /^mysql:/i.test(url);
 
 /** Prisma.JsonNull／DbNull／AnyNull：可能來自不同 client 實例，用形狀判斷（_getName 或 constructor 名） */
 const isNullSentinel = (v: unknown): boolean => {
@@ -122,7 +127,19 @@ function wrapClient<T extends object>(base: T): T {
 
 export function createPrisma(opts: CreatePrismaOptions = {}): PrismaClient {
   const url = opts.url ?? process.env.DATABASE_URL ?? '';
-  if (!url) throw new Error('DATABASE_URL is required（postgresql://… 或 file:/absolute/path/sitekit.db）');
+  if (!url) throw new Error('DATABASE_URL is required（postgresql://…、mysql://… 或 file:/absolute/path/sitekit.db）');
+  if (isMysqlUrl(url)) {
+    JSON_FIELDS = new Set();
+    CONVERT = new Set(ARRAY_FIELDS);
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { PrismaClient: My } = require('../mysql/client') as { PrismaClient: new (o?: unknown) => { $extends: (ext: unknown) => unknown } };
+    const base = new My({ datasources: { db: { url } }, ...(opts.log ? { log: opts.log } : {}) });
+    const extended = base.$extends({
+      name: 'sitekit-mysql-array',
+      query: { $allModels: { async $allOperations({ args, query }: { args: unknown; query: (a: unknown) => Promise<unknown> }) { return parseResult(await query(args)); } } },
+    }) as object;
+    return wrapClient(extended) as PrismaClient;
+  }
   if (!isSqliteUrl(url)) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PrismaClient: Pg } = require('@prisma/client') as { PrismaClient: new (o?: unknown) => PrismaClient };
@@ -145,6 +162,6 @@ export function createPrisma(opts: CreatePrismaOptions = {}): PrismaClient {
 }
 
 /** 給殼層判斷要跑哪套 migration */
-export function databaseKind(url = process.env.DATABASE_URL ?? ''): 'sqlite' | 'postgresql' {
-  return isSqliteUrl(url) ? 'sqlite' : 'postgresql';
+export function databaseKind(url = process.env.DATABASE_URL ?? ''): 'sqlite' | 'postgresql' | 'mysql' {
+  return isSqliteUrl(url) ? 'sqlite' : isMysqlUrl(url) ? 'mysql' : 'postgresql';
 }

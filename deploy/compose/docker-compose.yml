@@ -1,0 +1,60 @@
+# SiteKit 正式部署（任何有 Docker 的 VPS）：Caddy 自動 HTTPS ＋ SiteKit 單體殼 ＋ PostgreSQL
+#   cp .env.example .env（填 DOMAIN、POSTGRES_PASSWORD）→ docker compose up -d → 開 https://<DOMAIN> 進 /setup
+#   更新版本：docker compose pull && docker compose up -d（資料庫遷移自動套用）
+#   要用 SQLite 免 Postgres：把 DATABASE_URL 留空並移除 depends_on／postgres 服務即可（資料在 sitekit-data volume 的 /data/sitekit.db）
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [sitekit]
+  sitekit:
+    image: ${SITEKIT_IMAGE:-ghcr.io/rogs30541/sitekit:latest}
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      PORT: "3000"
+      SITEKIT_DATA_DIR: /data
+      FRONTEND_URL: ${SITE_URL:-https://${DOMAIN:-localhost}}
+      NEXT_PUBLIC_SITE_URL: ${SITE_URL:-https://${DOMAIN:-localhost}}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://sitekit:${POSTGRES_PASSWORD:-change-me}@postgres:5432/sitekit}
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      OPS_TOKEN: ${OPS_TOKEN:-}
+    volumes:
+      - sitekit-data:/data
+    expose: ["3000"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sitekit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_DB: sitekit
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sitekit"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+volumes:
+  sitekit-data:
+  pgdata:
+  caddy-data:
+  caddy-config:

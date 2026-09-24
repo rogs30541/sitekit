@@ -1,1 +1,1 @@
-export { createPrisma, databaseKind, isSqliteUrl, type CreatePrismaOptions } from './factory';
+export { createPrisma, databaseKind, isSqliteUrl, isMysqlUrl, type CreatePrismaOptions } from './factory';

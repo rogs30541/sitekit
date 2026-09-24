@@ -2,12 +2,13 @@
   "name": "@sitekit/db",
   "version": "0.1.0",
   "private": true,
-  "description": "SiteKit 資料庫層：一份模型（apps/api/prisma/schema.prisma）產生 postgres／sqlite 兩個 Prisma client；createPrisma() 依 DATABASE_URL 選用並在 SQLite 上自動轉換 Json／陣列／enum",
+  "description": "SiteKit 資料庫層：一份模型（apps/api/prisma/schema.prisma）產生 postgres／sqlite／mysql 三個 Prisma client；createPrisma() 依 DATABASE_URL 選用，SQLite 自動轉換 Json／陣列／enum、MySQL 轉換陣列",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "node scripts/gen-sqlite-schema.mjs && node scripts/prisma.mjs generate && tsc -p tsconfig.json",
-    "gen:sqlite": "node scripts/gen-sqlite-schema.mjs"
+    "build": "node scripts/gen-sqlite-schema.mjs && node scripts/gen-mysql-schema.mjs && node scripts/prisma.mjs generate && tsc -p tsconfig.json",
+    "gen:sqlite": "node scripts/gen-sqlite-schema.mjs",
+    "gen:mysql": "node scripts/gen-mysql-schema.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0"
