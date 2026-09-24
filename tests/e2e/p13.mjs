@@ -105,7 +105,7 @@ ok('OPS publish 未 confirm → 拒絕', !pubNo.body.ok && String(pubNo.body.err
 const pubYes = await act('publish_content', { idOrSlug: `ops-${RUN}`, confirm: true });
 ok('OPS publish confirm → v1 上線', pubYes.body.ok && pubYes.body.data.version === 1);
 const opsLive2 = await j(`/api/content/pages/ops-${RUN}`);
-ok('OPS 頁上線（傳統 HTML、hasDesign false）', opsLive2.status === 200 && opsLive2.body.hasDesign === false && opsLive2.body.body.includes('OPS 內文'));
+ok('OPS 頁上線（傳統 HTML、hasDesign false）', opsLive2.status === 200 && opsLive2.body.hasDesign === false && opsLive2.body.body.includes('OPS 內文'), `${opsLive2.status} ${JSON.stringify(opsLive2.body).slice(0, 300)}`);
 const up2 = await act('upsert_content', { slug: `ops-${RUN}`, body: '<h2>OPS 內文 v2</h2>' });
 const opsLive3 = await j(`/api/content/pages/ops-${RUN}`);
 ok('OPS 再改：線上仍 v1 內容、回 dirty', up2.body.data.dirty === true && opsLive3.body.body.includes('OPS 內文') && !opsLive3.body.body.includes('v2'));

@@ -274,7 +274,7 @@ node tests/e2e/run.mjs p25      # 只跑指定檔
 
 | 平台 | 設定檔（已在 repo） | 步驟 | 實測 |
 |---|---|---|---|
-| **VPS＋Docker（Caddy 自動 HTTPS）** | `deploy/compose/`（docker-compose.yml、Caddyfile、.env.example） | DNS 先指到主機 → `cd deploy/compose && cp .env.example .env`（填 DOMAIN／ACME_EMAIL／POSTGRES_PASSWORD）→ `docker compose up -d` → 開 https://DOMAIN。更新：`docker compose pull && docker compose up -d` | CI `compose-smoke`：從原始碼建映像＋Caddy 自簽 localhost＋Postgres，經 HTTPS 打 /api/health、/setup、持久硬碟偵測＝true |
+| **VPS＋Docker（Caddy 自動 HTTPS）** | `deploy/compose/`（docker-compose.yml、Caddyfile、.env.example） | DNS 先指到主機 → `cd deploy/compose && cp .env.example .env`（填 DOMAIN／POSTGRES_PASSWORD）→ `docker compose up -d` → 開 https://DOMAIN。更新：`docker compose pull && docker compose up -d` | CI `compose-smoke`：從原始碼建映像＋Caddy 自簽 localhost＋Postgres，經 HTTPS 打 /api/health、/setup、持久硬碟偵測＝true |
 | **Railway** | `railway.json` | New Project → Deploy from GitHub → 選 repo（自動讀 railway.json 用 Dockerfile.monolith）→ 服務 Settings → Volumes 新增掛到 `/data` → Variables：`FRONTEND_URL`、`NEXT_PUBLIC_SITE_URL`＝Railway 給的網址（要 Postgres 就 New → Database → Postgres，`DATABASE_URL=${{Postgres.DATABASE_URL}}`）→ Networking 產生網域（埠 3000） | 待實測（需 Railway 帳號登入） |
 | **Render** | `render.yaml`（Blueprint） | Dashboard → New → Blueprint → 選 repo → Apply：自動建 web 服務（Docker）＋5GB 硬碟掛 `/data`＋PostgreSQL，網址由 `RENDER_EXTERNAL_URL` 自動填入 | 待實測（需 Render 帳號登入） |
 | **Fly.io** | `fly.toml` | `fly launch --copy-config --no-deploy`（改 app 名）→ `fly volumes create sitekit_data --size 3 --region nrt` → `fly secrets set FRONTEND_URL=https://<app>.fly.dev NEXT_PUBLIC_SITE_URL=https://<app>.fly.dev` → `fly deploy`。預設 SQLite 在 volume；要 Postgres：`fly postgres create` 後 `fly secrets set DATABASE_URL=…` | 待實測（需 flyctl 登入） |

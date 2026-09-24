@@ -155,7 +155,11 @@ jobs:
         run: node tests/e2e/run.mjs
       - name: logs on failure
         if: failure()
-        run: tail -n 120 /tmp/api.log; tail -n 60 /tmp/web.log
+        run: |
+          tail -n 120 /tmp/api.log; tail -n 60 /tmp/web.log
+          echo '== /api/content/site =='; curl -s http://localhost:4000/api/content/site | head -c 1500; echo
+          echo '== / head =='; curl -s http://localhost:3000/ | tr -s ' 
+' ' ' | head -c 1200; echo
 
   # deploy/compose：Caddy（自簽 localhost）＋單體映像＋Postgres 從原始碼建起，經 Caddy 走 HTTPS 打 /api/health 與 /setup
   compose-smoke:
