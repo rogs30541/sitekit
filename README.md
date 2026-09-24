@@ -276,7 +276,22 @@ node tests/e2e/run.mjs p25      # 只跑指定檔
 
 詳細架構與分期見 `docs/架構.md` 與 `docs/全新網站規劃.md`；**雙平台（Zeabur 容器／Cloudflare Workers＋D1＋R2＋Resend）部署架構與遷移路線見 `docs/雙平台部署架構.md`**（一核心兩薄殼：packages/core 業務邏輯共用、apps/api＝Nest 殼、apps/worker＝Hono 殼）。
 
-### Zeabur 實際部署（2026-09-21 上線）
+### Zeabur 實際部署（2026-09-24 改為單體殼；實測步驟）
+
+2026-09-24 已把舊的四服務（web／api／redis／postgresql）全部刪除，改成 **兩個服務**：`postgresql-hess`（marketplace PostgreSQL，postgres:18）＋ `sitekit`（GitHub `rogs30541/sitekit` main，用 `Dockerfile.monolith`）。上線後 `/api/health` 回 `version 0.25.0、db ok`，首頁自動導到 `/setup`。
+
+1. 建立服務 → 資料庫 → PostgreSQL（不用改任何設定）。
+2. 建立服務 → GitHub → `rogs30541/sitekit` → `main` → 建置方案預覽按「配置」：
+   - 服務名稱 `sitekit`、根目錄 `/`；
+   - 「編輯原始環境變數」貼入：`DATABASE_URL`（見下）、`FRONTEND_URL` 與 `NEXT_PUBLIC_SITE_URL`＝公開網址、`APP_ENV=production`、`PORT=3000`、`SITEKIT_DATA_DIR=/data`（`SESSION_SECRET`／`OPS_TOKEN` 可不填，首次啟動自動產生）；
+   - 「進階設定 → Dockerfile」貼入 repo 的 `Dockerfile.monolith` 全文（`ARG NEXT_PUBLIC_SITE_URL` 預設可改成正式網址）→ 下一步 → 部署。
+3. 服務「網路」：開放新連線埠 **HTTP 3000**、刪掉預設的 8080（刪除要輸入 `8080` 確認），再「綁定 Zeabur 子網域」到 `:3000`。
+4. 服務「硬碟」：掛載 ID `data` → 目錄 `/data`（上傳與 SQLite 才會持久化；**部署在 Zeabur 就用 Zeabur 這顆硬碟當本機磁碟，不需要 Cloudflare R2**。精靈第 3 步會偵測 `/data` 是否為掛載的持久硬碟：是→本機磁碟為預設；否→警告要先掛硬碟或改 R2）。
+5. 建置約 5 分鐘（映像約 480MB），期間網域回 502 屬正常；完成後開網址即進 `/setup` 精靈。
+
+**陷阱**：`DATABASE_URL=${POSTGRES_CONNECTION_STRING}` 在「刪掉舊 postgres 再建新 postgres」的專案裡會展開成**舊服務**的主機名（`service-<舊id>:5432`），啟動時 `P1001 Can't reach database server` 崩潰重試；請改填明確值 `postgresql://<user>:<pass>@postgresql-hess.zeabur.internal:5432/<db>`（帳密到 postgres 服務首頁「Connection String → Show」看），存檔後按「重新部署」才生效。舊制 web／api 分離部署的說明如下，僅供對照。
+
+### （舊制）Zeabur 分離部署（2026-09-21 上線，已於 2026-09-24 移除）
 
 - 專案 `aigc-sitekit`，專用伺服器 Tencent Tokyo 2C/4GB（ZeaburOS）；服務 `postgresql`（postgres:18）、`redis`、`api`、`web`。
 - `api` / `web` 來源都是 GitHub `rogs30541/sitekit`，Dockerfile 貼在服務「設定 → Dockerfile」（內容與 repo 根目錄 `Dockerfile.api` / `Dockerfile.web` 同步；改 Dockerfile 記得兩邊都更新），容器埠 8080。

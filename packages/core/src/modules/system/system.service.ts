@@ -84,7 +84,7 @@ export class SystemService {
   /* ---------- 安裝精靈 ---------- */
   async setupStatus() {
     const [adminCount, completed] = await Promise.all([this.admins.count(), this.settings.get(SYSTEM_KEYS.setupCompletedAt)]);
-    return { needsSetup: adminCount === 0, completed: !!completed, completedAt: completed || null, version: env.APP_VERSION };
+    return { needsSetup: adminCount === 0, completed: !!completed, completedAt: completed || null, version: env.APP_VERSION, env: env.APP_ENV, localDisk: this.storage.localDiskInfo() };
   }
   /** admin_users 為空時才允許（誰先到全新站台誰就是站長，與 WordPress 同）；之後一律走登入頁／白名單註冊 */
   async createFirstAdmin(input: unknown) {

@@ -50,7 +50,13 @@ process.env.FRONTEND_URL ??= `http://localhost:${port}`;
 process.env.API_INTERNAL_URL ??= `http://127.0.0.1:${port}`;
 mkdirSync(process.env.STORAGE_DIR, { recursive: true });
 
-const mask = (k, v) => (/secret|token|password|key/i.test(k) && v ? `****(${v.length})` : v);
+// 連線字串只遮密碼（postgresql://user:****@host/db），其餘機密整串遮
+const mask = (k, v) => {
+  if (!v) return v;
+  if (/secret|token|password|key/i.test(k)) return `****(${v.length})`;
+  if (/_URL$/.test(k)) return v.replace(/^([a-z][a-z0-9+.-]*:\/\/[^:@\/]+:)[^@]+@/i, '$1****@');
+  return v;
+};
 const show = () => {
   for (const k of ['APP_ENV', 'PORT', 'SITEKIT_DATA_DIR', 'DATABASE_URL', 'STORAGE_DIR', 'FRONTEND_URL', 'SESSION_SECRET', 'OPS_TOKEN']) console.log(`${k}=${mask(k, process.env[k] ?? '')}`);
 };

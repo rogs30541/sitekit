@@ -6,7 +6,7 @@ import { STORAGE_DRIVER_LABELS } from '@sitekit/shared';
 import { fmtDateTime } from '@/lib/api-public';
 
 export interface IntegrationsStatus {
-  storage: { driver: 'local' | 's3'; s3Ready: boolean; endpoint: string; bucket: string; publicUrl: string; localDir: string };
+  storage: { driver: 'local' | 's3'; s3Ready: boolean; endpoint: string; bucket: string; publicUrl: string; localDir: string; localPersistent?: boolean | null };
   notify: { emailProvider: string; resendConfigured: boolean; from: string; adminTo: string; lineConfigured: boolean };
   recent: { at: string; kind: string; to: string; result: { channel: string; provider: string; ok: boolean; error?: string; skipped?: string } }[];
 }
@@ -31,7 +31,7 @@ const FIELDS = {
 
 export function IntegrationsForm({ status }: { status: IntegrationsStatus }) {
   const router = useRouter();
-  const [driver, setDriver] = useState(status.storage.driver);
+  const [driver, setDriver] = useState<'local' | 's3'>(status.storage.driver);
   const [emailProvider, setEmailProvider] = useState(status.notify.emailProvider);
   const [values, setValues] = useState<Record<string, string>>({});
   const [testTo, setTestTo] = useState('');
@@ -66,7 +66,7 @@ export function IntegrationsForm({ status }: { status: IntegrationsStatus }) {
       {list.map((f) => (
         <label key={f.key} className="block text-xs">
           {f.label}
-          <input className={input} style={{ borderColor: 'var(--line)' }} type={f.secret ? 'password' : 'text'} autoComplete="off" placeholder={f.secret ? '（留空不變）' : ''} value={values[f.key] ?? ''} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />
+          <input className={input} style={{ borderColor: 'var(--line)', ...(f.secret ? { WebkitTextSecurity: 'disc' } : {}) }} name={f.key.replace(/\./g, '_')} autoComplete="off" data-lpignore="true" data-1p-ignore spellCheck={false} placeholder={f.secret ? '（留空不變）' : ''} value={values[f.key] ?? ''} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />
         </label>
       ))}
     </div>
@@ -82,6 +82,7 @@ export function IntegrationsForm({ status }: { status: IntegrationsStatus }) {
             <option value="s3">Cloudflare R2／S3 相容</option>
           </select>
           {badge(status.storage.s3Ready, 'R2 已設定', 'R2 未設定')}
+          {status.storage.localPersistent === false ? <span className="rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800">本機磁碟未掛持久硬碟</span> : status.storage.localPersistent === true ? badge(true, '持久硬碟') : null}
           <span className="text-xs" style={{ color: 'var(--muted)' }}>
             目前使用：{STORAGE_DRIVER_LABELS[status.storage.driver] ?? status.storage.driver}
             {status.storage.bucket ? ` · ${status.storage.bucket}` : ''}
@@ -89,7 +90,7 @@ export function IntegrationsForm({ status }: { status: IntegrationsStatus }) {
         </div>
         {fields(FIELDS.storage)}
         <p className="mt-2 text-xs" style={{ color: 'var(--muted)' }}>
-          AI 生成結果與搬運器落地的媒體會寫到這裡；本機磁碟在 Zeabur 重新部署後不保留，正式環境請用 R2。
+          AI 生成結果與搬運器落地的媒體會寫到這裡；部署在哪個平台就用該平台的硬碟（Zeabur 把硬碟掛到 /data 即可）；只有沒掛持久硬碟時重新部署才會清掉上傳檔，那種環境改用 R2。目前資料夾：{status.storage.localDir}
         </p>
       </div>
       <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>

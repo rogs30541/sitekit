@@ -17,6 +17,9 @@ ok('logins', !!admin && !!buyer);
 
 const st = await act(admin, 'storage_status');
 ok('storage_status：local driver、log email', st.body.ok && st.body.data.storage.driver === 'local' && st.body.data.notify.emailProvider === 'log', JSON.stringify(st.body.data?.storage));
+ok('storage_status.localPersistent 為布林或 null（持久硬碟偵測）', [true, false, null].includes(st.body.data.storage.localPersistent), String(st.body.data.storage.localPersistent));
+const setupSt = await j('/api/setup/status');
+ok('setup/status 帶 env 與 localDisk{dir,persistent}', setupSt.status === 200 && typeof setupSt.body.env === 'string' && typeof setupSt.body.localDisk?.dir === 'string' && 'persistent' in setupSt.body.localDisk, JSON.stringify(setupSt.body));
 const setR2 = await act(admin, 'update_settings', { settings: { 'storage.driver': 's3', 's3.endpoint': 'https://example.r2.cloudflarestorage.com', 's3.bucket': 'b' } });
 const st2 = await act(admin, 'storage_status');
 ok('R2 缺金鑰 → 仍退回 local（s3Ready=false）', setR2.body.ok && st2.body.data.storage.driver === 'local' && st2.body.data.storage.s3Ready === false);

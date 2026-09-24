@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { t as tr } from '@/lib/i18n';
 
-type Status = { needsSetup: boolean; completed: boolean; version: string };
+type Status = { needsSetup: boolean; completed: boolean; version: string; env?: string; localDisk?: { dir: string; persistent: boolean | null } };
+// 機密欄位不用 type=password：Chrome 會把「文字欄＋密碼欄」當登入表單自動填入帳密（正式站曾把管理員帳密填進 R2 金鑰欄）
+const secretStyle = { WebkitTextSecurity: 'disc' } as React.CSSProperties;
 const input = 'w-full rounded border px-2 py-1.5 text-sm';
 const line = { borderColor: 'var(--line)' } as const;
 
@@ -58,7 +60,7 @@ export function SetupWizard() {
       const settings = (await act('get_settings', {})).body?.data as Record<string, string> | undefined;
       if (settings) {
         setSite({ siteName: settings['brand.siteName'] ?? '', name: settings['brand.name'] ?? '', url: settings['site.url'] ?? window.location.origin });
-        setSt((v) => ({ ...v, driver: settings['storage.driver'] ?? 'local', endpoint: settings['s3.endpoint'] ?? '', bucket: settings['s3.bucket'] ?? '', publicUrl: settings['s3.publicUrl'] ?? '' }));
+        setSt((v) => ({ ...v, driver: settings['storage.driver'] === 's3' ? 's3' : 'local', endpoint: settings['s3.endpoint'] ?? '', bucket: settings['s3.bucket'] ?? '', publicUrl: settings['s3.publicUrl'] ?? '' }));
         setMail((v) => ({ ...v, provider: settings['notify.emailProvider'] ?? 'log', from: settings['mail.from'] ?? '', adminTo: settings['mail.adminTo'] || v.adminTo }));
       } else {
         setSite((v) => ({ ...v, url: window.location.origin }));
@@ -202,7 +204,12 @@ export function SetupWizard() {
 
       {step === 2 && admin ? (
         <div className="space-y-2 text-sm">
-          <p style={{ color: 'var(--muted)' }}>{tr('上傳的圖片、商品封面與 AI 產圖存在哪裡。容器平台（Zeabur 等）重新部署會清掉本機磁碟，建議用 Cloudflare R2；VPS 或有持久磁碟的主機可用本機。')}</p>
+          <p style={{ color: 'var(--muted)' }}>{tr('上傳的圖片、商品封面與 AI 產圖存在哪裡。部署在哪個平台就用該平台的硬碟：容器平台（Zeabur 等）把硬碟掛到資料夾即可用本機磁碟；沒有持久硬碟的環境才需要 Cloudflare R2／S3。')}</p>
+          {status?.localDisk?.persistent === false ? (
+            <p className="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-amber-800">{tr('目前的儲存資料夾不在持久硬碟上（重新部署會清掉上傳檔）。請到平台把硬碟掛到這個資料夾再選本機磁碟，或改用 R2／S3：')} {status.localDisk.dir}</p>
+          ) : status?.localDisk?.persistent === true ? (
+            <p className="text-xs" style={{ color: 'var(--muted)' }}>{tr('已偵測到持久硬碟：')} {status.localDisk.dir}</p>
+          ) : null}
           <label className="flex items-center gap-2">
             <input type="radio" checked={st.driver === 'local'} onChange={() => setSt({ ...st, driver: 'local' })} /> {tr('本機磁碟（預設）')}
           </label>
@@ -213,8 +220,8 @@ export function SetupWizard() {
             <div className="grid gap-2 sm:grid-cols-2">
               <input className={input} style={line} placeholder="Endpoint https://<accountid>.r2.cloudflarestorage.com" value={st.endpoint} onChange={(e) => setSt({ ...st, endpoint: e.target.value })} />
               <input className={input} style={line} placeholder="Bucket" value={st.bucket} onChange={(e) => setSt({ ...st, bucket: e.target.value })} />
-              <input className={input} style={line} placeholder="Access Key ID" autoComplete="off" value={st.accessKeyId} onChange={(e) => setSt({ ...st, accessKeyId: e.target.value })} />
-              <input className={input} style={line} type="password" placeholder="Secret Access Key" autoComplete="off" value={st.secretAccessKey} onChange={(e) => setSt({ ...st, secretAccessKey: e.target.value })} />
+              <input className={input} style={line} name="s3_access_key_id" placeholder="Access Key ID" autoComplete="off" data-lpignore="true" data-1p-ignore value={st.accessKeyId} onChange={(e) => setSt({ ...st, accessKeyId: e.target.value })} />
+              <input className={input} style={{ ...line, ...secretStyle }} name="s3_secret_access_key" placeholder="Secret Access Key" autoComplete="off" data-lpignore="true" data-1p-ignore spellCheck={false} value={st.secretAccessKey} onChange={(e) => setSt({ ...st, secretAccessKey: e.target.value })} />
               <input className={`${input} sm:col-span-2`} style={line} placeholder={tr('公開網址（自訂網域或 https://pub-xxx.r2.dev）')} value={st.publicUrl} onChange={(e) => setSt({ ...st, publicUrl: e.target.value })} />
             </div>
           ) : null}
@@ -240,7 +247,7 @@ export function SetupWizard() {
           </label>
           {mail.provider === 'resend' ? (
             <div className="grid gap-2 sm:grid-cols-2">
-              <input className={input} style={line} type="password" placeholder="Resend API Key" autoComplete="off" value={mail.apiKey} onChange={(e) => setMail({ ...mail, apiKey: e.target.value })} />
+              <input className={input} style={{ ...line, ...secretStyle }} name="resend_api_key" placeholder="Resend API Key" autoComplete="off" data-lpignore="true" data-1p-ignore spellCheck={false} value={mail.apiKey} onChange={(e) => setMail({ ...mail, apiKey: e.target.value })} />
               <input className={input} style={line} placeholder={tr('寄件人，例：小明烘焙坊 <no-reply@你的網域>')} value={mail.from} onChange={(e) => setMail({ ...mail, from: e.target.value })} />
             </div>
           ) : null}

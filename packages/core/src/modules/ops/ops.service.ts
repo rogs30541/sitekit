@@ -455,7 +455,7 @@ export class OpsService {
         return this.notify.sendTest(p.to ? String(p.to) : undefined);
       case 'storage_status': {
         const [st, nc] = await Promise.all([this.storage.config(), this.notify.config()]);
-        return { storage: { driver: st.driver, s3Ready: st.s3Ready, endpoint: st.endpoint, bucket: st.bucket, publicUrl: st.publicUrl, localDir: this.storage.localDir }, notify: { emailProvider: nc.emailProvider, resendConfigured: nc.resendConfigured, from: nc.from, adminTo: nc.adminTo, lineConfigured: nc.lineConfigured }, recent: this.notify.recent.slice(0, 20) };
+        return { storage: { driver: st.driver, s3Ready: st.s3Ready, endpoint: st.endpoint, bucket: st.bucket, publicUrl: st.publicUrl, localDir: this.storage.localDir, localPersistent: this.storage.localDiskInfo().persistent }, notify: { emailProvider: nc.emailProvider, resendConfigured: nc.resendConfigured, from: nc.from, adminTo: nc.adminTo, lineConfigured: nc.lineConfigured }, recent: this.notify.recent.slice(0, 20) };
       }
     }
   }
