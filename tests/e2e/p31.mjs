@@ -91,7 +91,7 @@ ok('PUT 未知 kind 被 zod 擋', badPut.status >= 400);
 const restored = await act('apply_site_template', { id: dark.id, confirm: true, restore: true });
 ok('restore 成功', restored.status < 300 && restored.body?.data?.restored === true, JSON.stringify(restored.body).slice(0, 120));
 const s2 = (await act('get_settings')).body?.data ?? {};
-ok('restore 後 template.current 清空、theme.mode 回復', !s2['template.current'] && (s2['theme.mode'] ?? '') === (before.body?.theme?.mode === 'dark' ? 'dark' : (s2['theme.mode'] ?? '')));
+ok('restore 後 template.current／backup 清空', !s2['template.current'] && !s2['template.backup']);
 const site2 = await j('/api/content/site');
 ok('restore 後首頁區塊數回到套用前', (site2.body?.home?.sections ?? []).length === (before.body?.home?.sections ?? []).length, `${(site2.body?.home?.sections ?? []).length} vs ${(before.body?.home?.sections ?? []).length}`);
 ok('restore 後主選單回到套用前', JSON.stringify((site2.body?.menus?.header ?? []).map((m) => m.label)) === JSON.stringify((before.body?.menus?.header ?? []).map((m) => m.label)));

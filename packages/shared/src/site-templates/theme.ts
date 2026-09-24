@@ -21,11 +21,12 @@ export const THEME_KEYS = {
   mode: 'theme.mode', accent: 'theme.accent', accent2: 'theme.accent2', font: 'theme.font', radius: 'theme.radius', header: 'theme.header', footer: 'theme.footer', container: 'theme.container', heading: 'theme.heading',
 } as const;
 
-/** settings map → Theme（缺值用預設；brand.primaryColor 作 accent 備援） */
+/** settings map → Theme（缺值用預設）。accent 以「網站設定 → 主色」brand.primaryColor 為準（套版時兩者寫成同值，之後站主改主色即生效），沒填才用 theme.accent */
 export function themeFromSettings(get: (key: string) => string | undefined): Theme {
   const raw: Record<string, string | undefined> = {};
   for (const [k, key] of Object.entries(THEME_KEYS)) raw[k] = get(key) || undefined;
-  if (!raw.accent) raw.accent = get('brand.primaryColor') || undefined;
+  const brand = get('brand.primaryColor') || '';
+  if (/^#[0-9a-fA-F]{6}$/.test(brand)) raw.accent = brand;
   const r = themeSchema.safeParse(Object.fromEntries(Object.entries(raw).filter(([, v]) => v !== undefined)));
   return r.success ? r.data : DEFAULT_THEME;
 }
