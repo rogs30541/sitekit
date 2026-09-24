@@ -291,6 +291,12 @@ D1／workerd 的差異都收在 `packages/db`（`wrapSqlite(base, { emulateInter
 
 CI `e2e-workers`：wrangler dev＋本機 D1 跑同一套 API 類 e2e（14 檔全綠；需要 web 的 10 檔跳過）。前台（Next）上 Workers 走 OpenNext 是下一步。
 
+## 部署平台建議（2026-09-25 定案）
+
+- **預設推薦：Zeabur**——功能 100%（外掛、備份、排程、伺服器硬碟）、東京節點對台灣延遲最好、儀表板零維運；專用伺服器約 US$4／月。步驟見下方「Zeabur 實際部署」；一鍵模板 `deploy/zeabur-template.yaml`（映像 `ghcr.io/rogs30541/sitekit` 已公開）。
+- **次要：Cloudflare Workers＋D1＋R2**——零維運、全球邊緣；免費方案 CPU 10ms 不夠跑密碼雜湊，實際建議付費方案（US$5／月）；前台待 OpenNext。見「Cloudflare Workers＋D1 殼」。
+- 其他（VPS＋compose、Render、Railway、Fly、cPanel Node）為可用選項，客戶已有主機時採用；Firebase／Vercel／Netlify 靜態託管與純 PHP 主機不支援。
+
 ## 其他平台一頁部署（單體殼，全部同一個 `Dockerfile.monolith`）
 
 儲存規則：**部署在哪個平台就用該平台的持久硬碟**（精靈第 3 步選「伺服器硬碟」，會顯示實際路徑與是否已掛持久硬碟）；只有沒硬碟的環境才用 R2。所有平台開站後都是開網址 → `/setup`。
