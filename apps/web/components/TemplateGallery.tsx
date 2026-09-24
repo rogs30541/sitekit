@@ -25,8 +25,11 @@ export function Wireframe({ kinds, accent, dark }: { kinds: string[]; accent: st
     <div className="flex h-36 w-full flex-col gap-[3px] overflow-hidden rounded-md border p-1.5" style={{ background: bg, borderColor: dark ? '#26262b' : '#e5e7eb' }} aria-hidden>
       <div className="flex h-2 items-center justify-between px-1"><span className="h-1 w-6 rounded-sm" style={{ background: fg }} /><span className="flex gap-1">{[0, 1, 2].map((i) => <span key={i} className="h-1 w-3 rounded-sm" style={{ background: fg }} />)}</span></div>
       {kinds.slice(0, 7).map((k, i) => {
-        const [kind, rest = ''] = k.split(':');
-        const tone = k.includes('@') ? k.split('@')[1] : rest.includes('@') ? rest.split('@')[1] : '';
+        // homeKinds 形如 kind[:variant][@tone]（例 hero:carousel@dark、cta@accent）
+        const m = /^([a-z]+)(?::([a-z]+))?(?:@([a-z]+))?$/.exec(k);
+        const kind = m?.[1] ?? k;
+        const rest = m?.[2] ?? '';
+        const tone = m?.[3] ?? '';
         const band = tone === 'accent' ? accent : tone === 'dark' || tone === 'image' ? '#0b0b0d' : tone === 'muted' ? soft : 'transparent';
         const dot = tone === 'accent' || tone === 'dark' || tone === 'image' ? 'rgba(255,255,255,.55)' : fg;
         const h = kind === 'hero' ? 'h-9' : kind === 'banner' ? 'h-1.5' : kind === 'cta' || kind === 'stats' || kind === 'logos' ? 'h-3' : 'h-5';
