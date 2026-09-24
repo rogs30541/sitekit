@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v0.27.0（2026-09-24）
+
+- Cloudflare Workers＋D1 殼（apps/worker，M3 路線 B）：Hono＋nest-bridge 掛既有 187 條 Nest 路由、迷你 DI 容器、D1 driver adapter；本機 D1 14 檔 API e2e 全綠、正式 D1 部署上線
+- Dockerfile.monolith 移除 VOLUME（匿名暫存卷害持久硬碟偵測誤判）；README／docs：Render 免費層實測上線
+- deploy/render-free.yaml：Render 免費方案 Blueprint（free web＋free Postgres）；render.yaml FRONTEND_URL 改建立時填值
+- deploy/cloudflare：image 改指公開 GHCR 映像、instance_type standard-1、containers SDK 版本；docs §12 平台實測關卡與 repo 公開完成
+
 ## v0.26.0（2026-09-24）
 
 - db：MySQL 模式把 PostgreSQL client 的 JsonNull/DbNull/AnyNull 哨兵換成 MySQL client 自己的（否則存成 {}，hasDesign 誤判）
