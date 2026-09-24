@@ -19,9 +19,7 @@ services:
       - key: SITEKIT_DATA_DIR
         value: /data
       - key: FRONTEND_URL
-        fromService: { type: web, name: sitekit, envVarKey: RENDER_EXTERNAL_URL }
-      - key: NEXT_PUBLIC_SITE_URL
-        fromService: { type: web, name: sitekit, envVarKey: RENDER_EXTERNAL_URL }
+        sync: false # 建立時填 Render 給的網址（https://<name>.onrender.com），之後可在後台 site.url 改
       - key: DATABASE_URL
         fromDatabase: { name: sitekit-db, property: connectionString }
 databases:
