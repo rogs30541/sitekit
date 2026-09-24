@@ -22,6 +22,10 @@ const admin = (await j('/api/admin/auth/login', { method: 'POST', body: { email:
 ok('admin login', !!admin);
 const act = (action, params = {}) => j('/api/admin/ai/act', { method: 'POST', cookie: admin, body: { action, params } });
 
+// 0) 若環境已套過版型（本機重跑），先還原到套版前，讓 before 是乾淨狀態
+const pre = await act('list_site_templates');
+if (pre.body?.data?.current?.id && pre.body?.data?.current?.hasBackup) await act('apply_site_template', { id: pre.body.data.current.id, confirm: true, restore: true });
+
 // 1) 名單
 const list = await act('list_site_templates');
 const tpls = list.body?.data?.templates ?? [];
@@ -92,6 +96,7 @@ const restored = await act('apply_site_template', { id: dark.id, confirm: true, 
 ok('restore 成功', restored.status < 300 && restored.body?.data?.restored === true, JSON.stringify(restored.body).slice(0, 120));
 const s2 = (await act('get_settings')).body?.data ?? {};
 ok('restore 後 template.current／backup 清空', !s2['template.current'] && !s2['template.backup']);
+ok('restore 後 brand.primaryColor 回到套版前', (s2['brand.primaryColor'] ?? '') === (before.body?.brand?.primaryColor ?? ''), `${s2['brand.primaryColor']} vs ${before.body?.brand?.primaryColor}`);
 const site2 = await j('/api/content/site');
 ok('restore 後首頁區塊數回到套用前', (site2.body?.home?.sections ?? []).length === (before.body?.home?.sections ?? []).length, `${(site2.body?.home?.sections ?? []).length} vs ${(before.body?.home?.sections ?? []).length}`);
 ok('restore 後主選單回到套用前', JSON.stringify((site2.body?.menus?.header ?? []).map((m) => m.label)) === JSON.stringify((before.body?.menus?.header ?? []).map((m) => m.label)));

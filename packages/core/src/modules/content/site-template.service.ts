@@ -71,7 +71,7 @@ export class SiteTemplateService {
     const all = await this.settings.all();
     // 備份只在「尚未套版」時建立：連續換版型或重套同版型都保留最初（站主自己的）狀態，restore 一律回到套版前
     const keepBackup = !!all.get('template.current') && !!all.get('template.backup');
-    const backup = keepBackup ? null : { theme: Object.fromEntries([...all].filter(([k]) => k.startsWith('theme.'))), homeSections: all.get(SETTING_KEYS.homeSections) ?? '', header: await this.menu.tree(false, 'header'), footer: await this.menu.tree(false, 'footer'), at: new Date().toISOString() };
+    const backup = keepBackup ? null : { theme: Object.fromEntries([...all].filter(([k]) => k.startsWith('theme.'))), homeSections: all.get(SETTING_KEYS.homeSections) ?? '', brandPrimary: all.get(SETTING_KEYS.brandPrimaryColor) ?? '', header: await this.menu.tree(false, 'header'), footer: await this.menu.tree(false, 'footer'), at: new Date().toISOString() };
     const theme = themeSchema.parse(t.theme);
     const home = sectionsInputSchema.parse({ sections: t.home }).sections;
     await this.setSettings({ ...themeToSettings(theme), [SETTING_KEYS.brandPrimaryColor]: theme.accent, 'template.current': t.id, 'template.appliedAt': new Date().toISOString(), ...(backup ? { 'template.backup': JSON.stringify(backup) } : {}) });
@@ -108,9 +108,9 @@ export class SiteTemplateService {
     const all = await this.settings.all();
     const raw = all.get('template.backup');
     if (!raw) throw new BadRequestException('沒有可還原的備份');
-    const b = JSON.parse(raw) as { theme: Record<string, string>; homeSections: string; header: unknown[]; footer: unknown[]; at: string };
+    const b = JSON.parse(raw) as { theme: Record<string, string>; homeSections: string; brandPrimary?: string; header: unknown[]; footer: unknown[]; at: string };
     for (const key of [...all.keys()].filter((k) => k.startsWith('theme.'))) await this.prisma.setting.deleteMany({ where: { key } });
-    await this.setSettings({ ...b.theme, 'template.current': '', 'template.appliedAt': '', 'template.backup': '' });
+    await this.setSettings({ ...b.theme, [SETTING_KEYS.brandPrimaryColor]: b.brandPrimary ?? '', 'template.current': '', 'template.appliedAt': '', 'template.backup': '' });
     await this.prisma.setting.upsert({ where: { key: SETTING_KEYS.homeSections }, update: { value: b.homeSections }, create: { key: SETTING_KEYS.homeSections, value: b.homeSections, isSecret: false } });
     const toInput = (nodes: unknown[]): unknown[] => (nodes as { label: string; kind?: string; href: string; contentId?: string; isVisible?: boolean; newTab?: boolean; children?: unknown[] }[]).map((n) => ({ label: n.label, kind: n.kind ?? (n.href?.startsWith('/') ? 'route' : 'link'), href: n.href, ...(n.contentId ? { contentId: n.contentId } : {}), isVisible: n.isVisible ?? true, newTab: n.newTab ?? false, children: n.children?.length ? toInput(n.children) : [] }));
     await this.menu.replace({ items: toInput(b.header) }, 'header');
