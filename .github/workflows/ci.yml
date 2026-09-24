@@ -171,8 +171,7 @@ jobs:
         run: |
           curl -sk https://localhost/api/health | tee /tmp/h.json | grep -q '"db":"ok"'
           curl -sk https://localhost/api/setup/status | tee /tmp/s.json | grep -q '"persistent":true'
-          curl -sk -o /dev/null -w '%{http_code}
-' https://localhost/setup | grep -q 200
+          curl -sk -o /dev/null -w '%{http_code}' https://localhost/setup | grep -q 200
       - name: logs on failure
         if: failure()
         working-directory: deploy/compose
