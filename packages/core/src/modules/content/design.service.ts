@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException, UnauthorizedExcepti
 import { Prisma } from '@prisma/client';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
-import { lintDesign, mapTree, parseDesignDoc, renderDesignDocument, type DesignDoc, type LintIssue } from '@sitekit/shared';
+import { isSectionsDoc, lintDesign, mapTree, parseDesignDoc, parseSectionsDoc, renderDesignDocument, sectionsFallbackHtml, type DesignDoc, type LintIssue, type SectionsDoc } from '@sitekit/shared';
 import { background, env } from '../../env';
 import { PrismaClient } from '@prisma/client';
 import { SettingsService } from '../settings/settings.service';
@@ -48,13 +48,27 @@ export class DesignService {
     return { ...doc, root: mapTree(doc.root, (x) => (x.type === 'richtext' || x.type === 'html' ? { ...x, props: { ...x.props, html: sanitizeHtml(String(x.props.html ?? '')) } } : x)) };
   }
 
-  private designOf(v: Prisma.JsonValue | null | undefined): DesignDoc | null {
+  /** 設計文件：視覺設計器 DesignDoc，或套版產生的區塊頁 SectionsDoc（kind='sections'） */
+  private designOf(v: Prisma.JsonValue | null | undefined): DesignDoc | SectionsDoc | null {
     if (!v || typeof v !== 'object') return null;
+    if (isSectionsDoc(v)) return v;
     try {
       return parseDesignDoc(v);
     } catch {
       return null;
     }
+  }
+  private isSections(d: DesignDoc | SectionsDoc | null): d is SectionsDoc {
+    return !!d && isSectionsDoc(d);
+  }
+  /** 渲染成 HTML（區塊頁＝後備 HTML；前台另以 SectionRenderer 渲染） */
+  private toHtml(d: DesignDoc | SectionsDoc): string {
+    return this.isSections(d) ? sectionsFallbackHtml(d.sections) : renderDesignDocument(d);
+  }
+  private lintOf(d: DesignDoc | SectionsDoc | null): LintIssue[] {
+    if (!d) return [];
+    if (this.isSections(d)) return d.sections.length ? [] : [{ level: 'error', nodeId: 'root', type: 'sections', message: '區塊頁沒有任何區塊' } as LintIssue];
+    return lintDesign(d);
   }
 
   /** 讀草稿；沒有草稿就從線上版複製一份（首次進編輯器） */
@@ -66,7 +80,7 @@ export class DesignService {
 
   private async present(c: Awaited<ReturnType<DesignService['content']>>, draft: NonNullable<Awaited<ReturnType<DesignService['content']>>['draft']>) {
     const design = this.designOf(draft.design);
-    const lint = design ? lintDesign(design) : draft.body?.trim() ? [] : [{ level: 'error', nodeId: 'root', type: 'root', message: '內容為空' } as LintIssue];
+    const lint = design ? this.lintOf(design) : draft.body?.trim() ? [] : [{ level: 'error', nodeId: 'root', type: 'root', message: '內容為空' } as LintIssue];
     const dirty = c.version === 0 || draft.updatedAt.getTime() > c.updatedAt.getTime() || draft.title !== c.title || draft.slug !== c.slug || JSON.stringify(draft.design) !== JSON.stringify(c.design) || (draft.body ?? '') !== (c.body ?? '');
     return {
       content: { id: c.id, type: c.type, title: c.title, slug: c.slug, status: c.status, version: c.version, hasDesign: !!c.design, publishedAt: c.publishedAt, updatedAt: c.updatedAt, url: c.type === 'page' ? (c.slug === 'home' ? '/' : `/p/${c.slug}`) : `/blog/${c.slug}` },
@@ -81,11 +95,11 @@ export class DesignService {
   async saveDraft(idOrSlug: string, input: unknown, actor: string) {
     const c = await this.content(idOrSlug);
     const d = draftInput.parse(input);
-    let design: DesignDoc | null | undefined;
+    let design: DesignDoc | SectionsDoc | null | undefined;
     if (d.design === null) design = null;
     else if (d.design !== undefined) {
       try {
-        design = this.sanitizeDesign(parseDesignDoc(d.design));
+        design = isSectionsDoc(d.design) ? parseSectionsDoc(d.design) : this.sanitizeDesign(parseDesignDoc(d.design));
       } catch (e) {
         throw new BadRequestException(`設計文件無效：${e instanceof Error ? e.message : String(e)}`);
       }
@@ -137,7 +151,7 @@ export class DesignService {
     const draft = c.draft;
     if (!draft) throw new NotFoundException('尚無草稿');
     const design = this.designOf(draft.design);
-    return { id: c.id, type: c.type, title: draft.title, slug: draft.slug, excerpt: draft.excerpt, coverUrl: draft.coverUrl, hasDesign: !!design, body: design ? renderDesignDocument(design) : (draft.body ?? ''), updatedAt: draft.updatedAt, liveVersion: c.version, liveStatus: c.status };
+    return { id: c.id, type: c.type, title: draft.title, slug: draft.slug, excerpt: draft.excerpt, coverUrl: draft.coverUrl, hasDesign: !!design && !this.isSections(design), sections: this.isSections(design) ? design.sections : undefined, body: design ? this.toHtml(design) : (draft.body ?? ''), updatedAt: draft.updatedAt, liveVersion: c.version, liveStatus: c.status };
   }
 
   /* ---------- 發佈（需確認＋備份） ---------- */
@@ -147,13 +161,13 @@ export class DesignService {
     const draft = c.draft;
     if (!draft) throw new BadRequestException('尚無草稿可發佈，請先儲存草稿');
     const design = this.designOf(draft.design);
-    const lint = design ? lintDesign(design) : [];
+    const lint = this.lintOf(design);
     const errors = lint.filter((l) => l.level === 'error');
     if (errors.length) throw new BadRequestException(`發佈前檢測未通過：${errors.map((e) => `[${e.type}] ${e.message}`).join('；')}`);
     if (!design && !draft.body?.trim()) throw new BadRequestException('內容為空，不能發佈');
     const hit = await this.prisma.content.findUnique({ where: { slug: draft.slug } });
     if (hit && hit.id !== c.id) throw new BadRequestException(`slug「${draft.slug}」已被其他內容使用`);
-    const body = design ? renderDesignDocument(design) : sanitizeHtml(draft.body ?? '');
+    const body = design ? this.toHtml(design) : sanitizeHtml(draft.body ?? '');
     const hadLive = c.status === 'published' || c.version > 0 || !!c.body;
     const result = await this.prisma.$transaction(async (tx) => {
       let backedUp: number | null = null;

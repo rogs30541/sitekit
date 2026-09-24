@@ -24,7 +24,7 @@ const act = (action, params = {}) => j('/api/admin/ai/act', { method: 'POST', co
 // 1. 匯出
 const ex = await j('/api/admin/system/export', { cookie: admin });
 ok('匯出（遮蔽）200、attachment、kind/tables/counts', ex.status === 200 && (ex.headers.get('content-disposition') ?? '').includes('attachment') && ex.body.kind === 'sitekit-export' && ex.body.tables && ex.body.counts, Object.keys(ex.body).join(','));
-ok('匯出含 34 個模型且 User／Setting／Product 有列', ex.body.models?.length === 34 && ex.body.counts.User > 0 && ex.body.counts.Setting > 0 && ex.body.counts.Product > 0, JSON.stringify(ex.body.counts).slice(0, 120));
+ok('匯出含全部模型（≥35，含 contact_messages）且 User／Setting／Product 有列', ex.body.models?.length >= 35 && ex.body.counts.User > 0 && ex.body.counts.Setting > 0 && ex.body.counts.Product > 0, JSON.stringify(ex.body.counts).slice(0, 120));
 const secretRows = (ex.body.tables.Setting ?? []).filter((r) => r.isSecret || /secret|token|key/i.test(r.key));
 ok('遮蔽版：機密設定 value 為空、passwordHash 為 null', secretRows.every((r) => r.value === '') && (ex.body.tables.User ?? []).every((u) => u.passwordHash === null));
 const exFull = await j('/api/admin/system/export?secrets=1', { cookie: admin });

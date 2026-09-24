@@ -137,6 +137,9 @@ server.tool(
   { location: z.enum(['header', 'footer']).default('header'), items: z.array(z.object({ label: z.string(), kind: z.enum(['page', 'route', 'link']).default('route'), contentId: z.string().optional(), href: z.string().optional(), isVisible: z.boolean().optional(), newTab: z.boolean().optional(), children: z.array(z.object({ label: z.string(), kind: z.enum(['page', 'route', 'link']).default('route'), contentId: z.string().optional(), href: z.string().optional(), isVisible: z.boolean().optional(), newTab: z.boolean().optional() })).optional() })) },
   async (p) => asText(await ops('set_menu', p)),
 );
+server.tool('sitekit_list_contact_messages', '列出前台聯絡表單訊息（含各狀態計數；status new|read|replied|archived 可選）', { status: z.string().optional(), limit: z.number().optional() }, async (p) => asText(await ops('list_contact_messages', p)));
+server.tool('sitekit_update_contact_message', '更新聯絡表單訊息狀態／備註', { id: z.string(), status: z.enum(['new', 'read', 'replied', 'archived']).optional(), note: z.string().optional() }, async (p) => asText(await ops('update_contact_message', p)));
+server.tool('sitekit_delete_contact_message', '刪除一筆聯絡表單訊息', { id: z.string() }, async (p) => asText(await ops('delete_contact_message', p)));
 server.tool('sitekit_list_questions', '列出課程學員提問（可依課程 slug／狀態篩選）', { slug: z.string().optional(), courseId: z.string().optional(), status: z.enum(['open', 'answered', 'hidden']).optional() }, async (p) => asText(await ops('list_questions', p)));
 server.tool('sitekit_answer_question', '回覆學員提問並通知提問者', { id: z.string(), answer: z.string().min(1), isPublic: z.boolean().optional() }, async (p) => asText(await ops('answer_question', p)));
 server.tool('sitekit_post_announcement', '發布課程公告', { slug: z.string().optional(), courseId: z.string().optional(), title: z.string(), body: z.string() }, async (p) => asText(await ops('post_announcement', p)));

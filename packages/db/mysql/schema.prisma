@@ -626,6 +626,29 @@ model Redirect {
   @@map("redirects")
 }
 
+/// 前台聯絡表單（contact 區塊 showForm）送出的訊息；後台「表單訊息」／OPS list_contact_messages
+model ContactMessage {
+  id        String    @id @default(cuid())
+  name      String @db.Text
+  email     String
+  phone     String? @db.Text
+  subject   String? @db.Text
+  message   String @db.Text
+  page      String? @db.Text
+  status    String    @default("new")
+  note      String? @db.Text
+  ip        String? @db.Text
+  userAgent String? @db.Text
+  repliedAt DateTime?
+  repliedBy String? @db.Text
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([email, createdAt])
+  @@map("contact_messages")
+}
+
 model Setting {
   key       String   @id
   value     String @db.Text

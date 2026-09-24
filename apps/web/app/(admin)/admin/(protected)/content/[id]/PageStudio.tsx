@@ -2,13 +2,14 @@
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BLOCK_MAP, designFromHtml, emptyDesign, renderDesignDocument, type DesignDoc, type LintIssue } from '@sitekit/shared';
+import { BLOCK_MAP, designFromHtml, emptyDesign, isSectionsDoc, renderDesignDocument, sectionsFallbackHtml, type DesignDoc, type LintIssue, type SectionInput, type SectionsDoc } from '@sitekit/shared';
+import { SectionsEditor } from '@/components/admin/SectionsEditor';
 import { DesignEditor } from './DesignEditor';
 import { checkUploadSize } from '@/lib/upload-image';
 
 export interface DraftPayload {
   content: { id: string; type: string; title: string; slug: string; status: 'draft' | 'published' | 'archived'; version: number; hasDesign: boolean; publishedAt: string | null; updatedAt: string; url: string };
-  draft: { title: string; slug: string; excerpt: string | null; coverUrl: string | null; body: string | null; design: DesignDoc | null; updatedAt: string; updatedBy: string | null };
+  draft: { title: string; slug: string; excerpt: string | null; coverUrl: string | null; body: string | null; design: DesignDoc | SectionsDoc | null; updatedAt: string; updatedBy: string | null };
   dirty: boolean;
   lint: LintIssue[];
   preview: { url: string; token: string; expiresAt: string };
@@ -60,8 +61,11 @@ async function uploadImage(file: File): Promise<string> {
 export function PageStudio({ initial }: { initial: DraftPayload }) {
   const router = useRouter();
   const [data, setData] = useState<DraftPayload>(initial);
-  const [mode, setMode] = useState<'design' | 'classic'>(initial.draft.design ? 'design' : 'classic');
-  const [design, setDesign] = useState<DesignDoc>(initial.draft.design ?? emptyDesign());
+  const initSections = isSectionsDoc(initial.draft.design) ? initial.draft.design : null;
+  const [mode, setMode] = useState<'design' | 'classic' | 'sections'>(initSections ? 'sections' : initial.draft.design ? 'design' : 'classic');
+  const [design, setDesign] = useState<DesignDoc>(initial.draft.design && !initSections ? (initial.draft.design as DesignDoc) : emptyDesign());
+  const [sections, setSections] = useState<SectionInput[]>(initSections?.sections ?? []);
+  const [sectionsMeta] = useState<{ template?: string; settings?: Record<string, unknown> }>({ template: initSections?.template, settings: initSections?.settings });
   const [meta, setMeta] = useState({ title: initial.draft.title, slug: initial.draft.slug, excerpt: initial.draft.excerpt ?? '', coverUrl: initial.draft.coverUrl ?? '' });
   const [html, setHtml] = useState(initial.draft.body ?? '');
   const [source, setSource] = useState(false);
@@ -81,7 +85,7 @@ export function PageStudio({ initial }: { initial: DraftPayload }) {
   const saveDraft = useCallback(
     async (quiet = false) => {
       setSaving('saving');
-      const payload = { title: meta.title, slug: meta.slug, excerpt: meta.excerpt || null, coverUrl: meta.coverUrl || null, ...(mode === 'design' ? { design } : { body: source ? html : (editor.current?.innerHTML ?? html), design: null }) };
+      const payload = { title: meta.title, slug: meta.slug, excerpt: meta.excerpt || null, coverUrl: meta.coverUrl || null, ...(mode === 'sections' ? { design: { kind: 'sections', sections, ...(sectionsMeta.template ? { template: sectionsMeta.template } : {}), ...(sectionsMeta.settings ? { settings: sectionsMeta.settings } : {}) } } : mode === 'design' ? { design } : { body: source ? html : (editor.current?.innerHTML ?? html), design: null }) };
       const r = await fetch(`/api/admin/content/${data.content.id}/draft`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) {
@@ -95,7 +99,7 @@ export function PageStudio({ initial }: { initial: DraftPayload }) {
       if (!quiet) setMsg('草稿已儲存（線上頁面未變更）');
       return j as DraftPayload;
     },
-    [data.content.id, design, html, meta, mode, source],
+    [data.content.id, design, html, meta, mode, source, sections, sectionsMeta],
   );
 
   // 自動儲存草稿（1.5 秒）
@@ -111,7 +115,7 @@ export function PageStudio({ initial }: { initial: DraftPayload }) {
       if (timer.current) clearTimeout(timer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [design, meta, html, mode]);
+  }, [design, meta, html, mode, sections]);
 
   const syncFromEditor = () => {
     if (editor.current) setHtml(editor.current.innerHTML);
@@ -149,7 +153,10 @@ export function PageStudio({ initial }: { initial: DraftPayload }) {
     skipAutosave.current = true;
     setData(j);
     setMeta({ title: j.draft.title, slug: j.draft.slug, excerpt: j.draft.excerpt ?? '', coverUrl: j.draft.coverUrl ?? '' });
-    if (j.draft.design) {
+    if (isSectionsDoc(j.draft.design)) {
+      setSections(j.draft.design.sections);
+      setMode('sections');
+    } else if (j.draft.design) {
       setDesign(j.draft.design);
       setMode('design');
     } else {
@@ -174,7 +181,7 @@ export function PageStudio({ initial }: { initial: DraftPayload }) {
     router.refresh();
   }
   function exportJson() {
-    const blob = new Blob([JSON.stringify({ title: meta.title, slug: meta.slug, excerpt: meta.excerpt || null, coverUrl: meta.coverUrl || null, design: mode === 'design' ? design : designFromHtml(html) }, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify({ title: meta.title, slug: meta.slug, excerpt: meta.excerpt || null, coverUrl: meta.coverUrl || null, design: mode === 'sections' ? { kind: 'sections', sections } : mode === 'design' ? design : designFromHtml(html) }, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `${meta.slug || 'page'}.design.json`;
@@ -192,8 +199,25 @@ export function PageStudio({ initial }: { initial: DraftPayload }) {
       setMsg(`匯入失敗：${e instanceof Error ? e.message : String(e)}`);
     }
   }
-  function switchMode(to: 'design' | 'classic') {
+  function switchMode(to: 'design' | 'classic' | 'sections') {
     if (to === mode) return;
+    if (to === 'sections') {
+      if (mode === 'design' && design.root.children?.length && !window.confirm('切到區塊編輯器會改用區塊資料，目前的視覺設計不會帶過去（草稿仍可從「版本」還原）。確定？')) return;
+      setMode('sections');
+      return;
+    }
+    if (mode === 'sections') {
+      if (!window.confirm('離開區塊編輯器會以區塊的後備 HTML 作為內容，區塊結構不再可編輯。確定？')) return;
+      const fallback = sectionsFallbackHtml(sections as never);
+      if (to === 'classic') {
+        setHtml(fallback);
+        setMode('classic');
+      } else {
+        setDesign(designFromHtml(fallback));
+        setMode('design');
+      }
+      return;
+    }
     if (to === 'design') {
       if (!design.root.children?.length && html.trim()) setDesign(designFromHtml(html));
       setMode('design');
@@ -219,6 +243,9 @@ export function PageStudio({ initial }: { initial: DraftPayload }) {
         <span className={`rounded px-2 py-0.5 ${saving === 'error' ? 'bg-red-100 text-red-800' : dirty ? 'bg-amber-100 text-amber-800' : 'bg-neutral-100'}`}>{saving === 'saving' ? '儲存草稿中…' : saving === 'error' ? '草稿儲存失敗' : dirty ? '草稿有未發佈變更' : '草稿＝線上'}</span>
         <span className="ml-auto flex flex-wrap items-center gap-1">
           <span className="rounded border" style={line}>
+            <button onClick={() => switchMode('sections')} className={`px-2 py-1 ${mode === 'sections' ? 'bg-black text-white' : ''}`}>
+              區塊編輯器
+            </button>
             <button onClick={() => switchMode('design')} className={`px-2 py-1 ${mode === 'design' ? 'bg-black text-white' : ''}`}>
               視覺設計器
             </button>
@@ -261,7 +288,14 @@ export function PageStudio({ initial }: { initial: DraftPayload }) {
         </p>
       ) : null}
 
-      {mode === 'design' ? (
+      {mode === 'sections' ? (
+        <div className="rounded-lg border p-3" style={{ ...line, background: 'var(--card)' }}>
+          <p className="mb-2 text-xs" style={{ color: 'var(--muted)' }}>
+            區塊頁（與首頁版面、套版同一套 20 種區塊）。改完會自動存草稿；發佈後前台 /p/{meta.slug} 以區塊渲染。
+          </p>
+          <SectionsEditor value={sections} onChange={setSections} />
+        </div>
+      ) : mode === 'design' ? (
         <DesignEditor doc={design} onChange={setDesign} onUpload={uploadImage} />
       ) : (
         <div className="grid gap-3 lg:grid-cols-[1fr_16rem]">

@@ -20,6 +20,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
       { href: '/admin/content', label: '新增網頁', desc: '視覺設計器／草稿／沙盒預覽／發佈／版本' },
       { href: '/admin/sales', label: '一頁式網頁', desc: '通知／倒數／內文／產品與課程區塊／表單／順序／追蹤' },
       { href: '/admin/posts', label: '文章', desc: '部落格文章（/blog）' },
+      { href: '/admin/messages', label: '表單訊息', desc: '前台「聯絡我們」表單送出的訊息；狀態／備註／Email 回覆' },
     ],
   },
   {

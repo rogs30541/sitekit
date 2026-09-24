@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '../../compat';
 import { Prisma, PrismaClient } from '@prisma/client';
-import { SETTING_KEYS, TEMPLATE_CATEGORIES, getSiteTemplate, listSiteTemplates, sectionsInputSchema, themeSchema, themeToSettings, type Section, type SiteTemplate, type TemplateCategory, type TemplateMenuItem } from '@sitekit/shared';
+import { SETTING_KEYS, TEMPLATE_CATEGORIES, getSiteTemplate, listSiteTemplates, sectionsFallbackHtml, sectionsInputSchema, themeSchema, themeToSettings, type Section, type SiteTemplate, type TemplateCategory, type TemplateMenuItem } from '@sitekit/shared';
 import { SettingsService } from '../settings/settings.service';
 import { MenuService } from './menu.service';
 import { SiteService } from './site.service';
@@ -49,20 +49,6 @@ export class SiteTemplateService {
     return items.map((i) => ({ ...one(i), ...(i.children?.length ? { children: i.children.map(one) } : {}) }));
   }
 
-  /** 區塊頁的後備 HTML（無 JS／RSS／搜尋引擎摘要用；前台以 SectionRenderer 渲染 design.sections） */
-  private fallbackHtml(sections: Section[]): string {
-    const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
-    const parts: string[] = [];
-    for (const s of sections) {
-      const title = 'title' in s && s.title ? `<h2>${esc(s.title)}</h2>` : '';
-      const sub = 'subtitle' in s && s.subtitle ? `<p>${esc(s.subtitle)}</p>` : '';
-      const text = 'text' in s && typeof s.text === 'string' && s.text ? `<p>${esc(s.text)}</p>` : '';
-      const items = 'items' in s && Array.isArray(s.items) ? `<ul>${(s.items as Record<string, string>[]).map((i) => `<li>${esc(i.title ?? i.label ?? i.q ?? i.name ?? i.value ?? '')}${i.text ? `：${esc(i.text)}` : i.a ? `：${esc(i.a)}` : ''}</li>`).join('')}</ul>` : '';
-      parts.push(`<section>${title}${sub}${text}${items}</section>`);
-    }
-    return parts.join('\n');
-  }
-
   /** 套用（confirm 必須為 true）；restore=true 改為還原上一份備份 */
   async apply(id: string, actor: string, opts: { confirm?: boolean; restore?: boolean; pages?: boolean; menu?: boolean } = {}) {
     if (!opts.confirm) throw new BadRequestException('套版會覆寫主題、首頁區塊、選單與同名頁面，請加 confirm=true');
@@ -85,7 +71,7 @@ export class SiteTemplateService {
       for (const p of t.pages) {
         const sections = sectionsInputSchema.parse({ sections: p.sections }).sections;
         const design = { kind: 'sections', sections, template: t.id } as unknown as Prisma.InputJsonValue;
-        const body = this.fallbackHtml(sections);
+        const body = sectionsFallbackHtml(sections);
         const existing = await this.prisma.content.findUnique({ where: { slug: p.slug }, select: { id: true, version: true, type: true } });
         if (existing && existing.type !== 'page') {
           this.log.warn(`slug ${p.slug} 已被 ${existing.type} 使用，略過`);

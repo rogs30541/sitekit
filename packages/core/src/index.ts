@@ -11,6 +11,7 @@ export * from './modules/content/design.service';
 export * from './modules/content/menu.service';
 export * from './modules/content/site.service';
 export * from './modules/content/site-template.service';
+export * from './modules/content/contact.service';
 export * from './modules/credits/credits.service';
 export * from './modules/invoice/amego-invoice';
 export * from './modules/invoice/ecpay-invoice';

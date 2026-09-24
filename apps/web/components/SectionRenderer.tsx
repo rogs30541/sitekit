@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { apiPublic, twd, type CourseSummary, type PostList, type Product } from '@/lib/api-public';
 import type { Section } from '@sitekit/shared';
 import { t } from '@/lib/i18n';
+import { Icon, SectionIcon } from './Icon';
+import { ContactForm } from './ContactForm';
 
 /**
  * 區塊渲染器：首頁（home.sections）與區塊頁（Content.design.kind='sections'）共用。
@@ -121,8 +123,7 @@ function Render({ s, courses, products, posts }: { s: Section; courses: CourseSu
         <div className={`mt-8 grid gap-3 ${cols(Math.min(4, s.highlights.length))}`}>
           {s.highlights.map((h, k) => (
             <Card key={k} className="!p-3 text-left text-sm">
-              <span className="mr-2">{h.icon}</span>
-              <span className="font-semibold">{h.title}</span>
+              <span className="flex items-center gap-2 font-semibold"><SectionIcon icon={h.icon} size={18} style={{ color: 'var(--accent)' }} />{h.title}</span>
               {h.text ? <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>{h.text}</p> : null}
             </Card>
           ))}
@@ -211,12 +212,12 @@ function Render({ s, courses, products, posts }: { s: Section; courses: CourseSu
               <ul className="divide-y" style={{ borderColor: 'var(--line)' }}>
                 {s.items.map((it, k) => (
                   <li key={k} className="flex items-start gap-4 py-5" style={{ borderColor: 'var(--line)' }}>
-                    {it.icon ? <span className="text-2xl">{it.icon}</span> : null}
+                    {it.icon ? <SectionIcon icon={it.icon} size={26} className="mt-0.5 shrink-0" style={{ color: 'var(--accent)' }} /> : null}
                     <div className="flex-1">
                       <p className="text-lg font-semibold">{it.title}</p>
                       {it.text ? <p className="mt-1" style={{ color: 'var(--muted)' }}>{it.text}</p> : null}
                     </div>
-                    {it.href ? <A href={it.href} className="text-sm underline">{it.ctaText || '↗'}</A> : null}
+                    {it.href ? <A href={it.href} className="flex items-center gap-1 text-sm underline">{it.ctaText || <Icon name="arrow-right" size={16} />}</A> : null}
                   </li>
                 ))}
               </ul>
@@ -249,7 +250,7 @@ function Render({ s, courses, products, posts }: { s: Section; courses: CourseSu
               <div className={`grid gap-8 text-center ${cols(s.columns)}`}>
                 {s.items.map((it, k) => (
                   <div key={k}>
-                    <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center text-2xl" style={{ background: 'var(--soft)', borderRadius: 'var(--radius)' }}>{it.icon || '✦'}</div>
+                    <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center" style={{ background: 'var(--soft)', borderRadius: 'var(--radius)', color: 'var(--accent)' }}><SectionIcon icon={it.icon} fallback="sparkles" size={26} /></div>
                     <p className="font-semibold">{it.title}</p>
                     {it.text ? <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>{it.text}</p> : null}
                   </div>
@@ -262,7 +263,7 @@ function Render({ s, courses, products, posts }: { s: Section; courses: CourseSu
                 {s.items.map((it, k) => (
                   <Card key={k} className="flex flex-col">
                     {it.code || it.tag ? <p className="mb-2 text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--accent)' }}>{it.code}{it.tag && !it.code ? it.tag : ''}</p> : null}
-                    {it.icon ? <p className="text-2xl">{it.icon}</p> : null}
+                    {it.icon ? <div className="mb-3 flex h-11 w-11 items-center justify-center" style={{ background: 'var(--soft)', borderRadius: 'var(--radius)', color: 'var(--accent)' }}><SectionIcon icon={it.icon} size={22} /></div> : null}
                     <p className="mt-1 text-lg font-semibold">{it.title}</p>
                     {it.text ? <p className="mt-1 flex-1 text-sm" style={{ color: 'var(--muted)' }}>{it.text}</p> : null}
                     {it.href ? <div className="mt-4"><Btn href={it.href}>{it.ctaText || t('前往')}</Btn></div> : null}
@@ -286,7 +287,7 @@ function Render({ s, courses, products, posts }: { s: Section; courses: CourseSu
                 <ul className="mt-5 space-y-3">
                   {s.bullets.map((b, k) => (
                     <li key={k} className="flex gap-3 border-b pb-3" style={{ borderColor: 'var(--line)' }}>
-                      <span style={{ color: 'var(--accent)' }}>✓</span>
+                      <Icon name="check" size={18} className="mt-1 shrink-0" style={{ color: 'var(--accent)' }} />
                       <span>{b}</span>
                     </li>
                   ))}
@@ -357,7 +358,7 @@ function Render({ s, courses, products, posts }: { s: Section; courses: CourseSu
           <div className="mx-auto max-w-3xl divide-y" style={{ borderColor: 'var(--line)' }}>
             {s.items.map((it, k) => (
               <details key={k} className="group py-4" style={{ borderColor: 'var(--line)' }}>
-                <summary className="cursor-pointer list-none font-semibold">{it.q}<span className="float-right transition group-open:rotate-45">＋</span></summary>
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-semibold">{it.q}<Icon name="plus" size={18} className="shrink-0 transition group-open:rotate-45" style={{ color: 'var(--muted)' }} /></summary>
                 <p className="mt-2 whitespace-pre-line" style={{ color: 'var(--muted)' }}>{it.a}</p>
               </details>
             ))}
@@ -375,7 +376,7 @@ function Render({ s, courses, products, posts }: { s: Section; courses: CourseSu
                 <p className="text-lg font-semibold">{p.name}</p>
                 <p className="mt-2"><span className="sk-stat">{p.price}</span>{p.period ? <span className="text-sm" style={{ color: 'var(--muted)' }}> {p.period}</span> : null}</p>
                 {p.note ? <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>{p.note}</p> : null}
-                {p.features?.length ? <ul className="mt-4 flex-1 space-y-2 text-sm">{p.features.map((f, j) => <li key={j}>✓ {f}</li>)}</ul> : <div className="flex-1" />}
+                {p.features?.length ? <ul className="mt-4 flex-1 space-y-2 text-sm">{p.features.map((f, j) => <li key={j} className="flex items-start gap-2"><Icon name="check" size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--accent)' }} />{f}</li>)}</ul> : <div className="flex-1" />}
                 {p.ctaText && p.ctaHref ? <div className="mt-5"><Btn href={p.ctaHref} ghost={!p.highlight}>{p.ctaText}</Btn></div> : null}
               </Card>
             ))}
@@ -491,17 +492,21 @@ function Render({ s, courses, products, posts }: { s: Section; courses: CourseSu
               {s.items.map((it, k) =>
                 s.variant === 'cards' ? (
                   <Card key={k} className="text-center">
-                    <p className="text-2xl">{it.icon}</p>
-                    <p className="mt-1 text-xs uppercase tracking-widest" style={{ color: 'var(--muted)' }}>{it.label}</p>
+                    <div className="flex justify-center" style={{ color: 'var(--accent)' }}><SectionIcon icon={it.icon} size={26} /></div>
+                    <p className="mt-2 text-xs uppercase tracking-widest" style={{ color: 'var(--muted)' }}>{it.label}</p>
                     <p className="mt-1 font-semibold">{it.href ? <A href={it.href} className="hover:underline">{it.value}</A> : it.value}</p>
                   </Card>
                 ) : (
-                  <p key={k} className="flex gap-3"><span>{it.icon}</span><span className="w-20 shrink-0" style={{ color: 'var(--muted)' }}>{it.label}</span>{it.href ? <A href={it.href} className="underline">{it.value}</A> : <span>{it.value}</span>}</p>
+                  <p key={k} className="flex items-start gap-3"><SectionIcon icon={it.icon} size={18} className="mt-1 shrink-0" style={{ color: 'var(--accent)' }} /><span className="w-20 shrink-0" style={{ color: 'var(--muted)' }}>{it.label}</span>{it.href ? <A href={it.href} className="underline">{it.value}</A> : <span>{it.value}</span>}</p>
                 ),
               )}
-              {s.showForm ? <p className="text-sm" style={{ color: 'var(--muted)' }}>{t('請透過上方方式聯絡我們。')}</p> : null}
             </div>
           </div>
+          {s.showForm ? (
+            <div className={`mx-auto mt-8 ${s.variant === 'map' ? '' : 'max-w-2xl'}`}>
+              <ContactForm />
+            </div>
+          ) : null}
         </Shell>
       );
     case 'categories':
@@ -510,13 +515,13 @@ function Render({ s, courses, products, posts }: { s: Section; courses: CourseSu
           <Heading s={s} />
           {s.variant === 'chips' ? (
             <div className="flex flex-wrap justify-center gap-2">
-              {s.items.map((it, k) => <A key={k} href={it.href || '#'} className="border px-4 py-1.5 text-sm hover:opacity-80" style={{ borderColor: 'var(--line)', background: 'var(--card)', borderRadius: '999px' }}>{it.icon ? `${it.icon} ` : ''}{it.title}{it.count ? <span style={{ color: 'var(--muted)' }}> {it.count}</span> : null}</A>)}
+              {s.items.map((it, k) => <A key={k} href={it.href || '#'} className="inline-flex items-center gap-1.5 border px-4 py-1.5 text-sm hover:opacity-80" style={{ borderColor: 'var(--line)', background: 'var(--card)', borderRadius: '999px' }}><SectionIcon icon={it.icon} size={16} />{it.title}{it.count ? <span style={{ color: 'var(--muted)' }}> {it.count}</span> : null}</A>)}
             </div>
           ) : (
             <div className={`grid gap-4 ${cols(s.columns)}`}>
               {s.items.map((it, k) => (
                 <A key={k} href={it.href || '#'} className="block overflow-hidden border text-center transition hover:opacity-90" style={{ borderColor: 'var(--line)', background: 'var(--card)', borderRadius: 'var(--radius)' }}>
-                  {s.variant === 'tiles' ? <Img url={it.imageUrl} className="aspect-[4/3] w-full !rounded-none" label={it.title} /> : <p className="pt-5 text-3xl">{it.icon || '✦'}</p>}
+                  {s.variant === 'tiles' ? <Img url={it.imageUrl} className="aspect-[4/3] w-full !rounded-none" label={it.title} /> : <div className="flex justify-center pt-6" style={{ color: 'var(--accent)' }}><SectionIcon icon={it.icon} fallback="sparkles" size={30} /></div>}
                   <p className="p-3 font-semibold">{it.title}{it.count ? <span className="ml-1 text-xs" style={{ color: 'var(--muted)' }}>{it.count}</span> : null}</p>
                 </A>
               ))}

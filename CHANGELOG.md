@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## v0.29.0（2026-09-25）
+
+- 套版與後台深度整合（前台每個區塊功能都有後台對應）：
+  - **區塊頁進內容管線**：套版子頁（design.kind='sections'）在「新增網頁」以「區塊編輯器」編輯（PageStudio 第三模式）、自動存草稿、沙盒預覽回 sections、發佈走同一套版本備份；DesignService 認得 SectionsDoc（parseSectionsDoc 驗證、後備 HTML＝sectionsFallbackHtml）——先前開啟套版子頁會被當成 HTML、存檔即丟區塊
+  - **區塊編輯器重做**（`components/admin/SectionsEditor.tsx`，首頁版面與區塊頁共用）：清單欄位逐列表單（不再 JSON）、圖片欄可上傳、圖示名稱挑選＋預覽、錨點 id、版式／底色中文選項、複製區塊、進階 JSON
+  - **外觀主題後台**（網站設定 → 外觀主題）：深淺色／字型／圓角／頁首／頁尾／內容寬度／標題粗細／第二主色，走 update_settings theme.*；主色仍在「網站設定 → 主色」
+  - **聯絡表單真的會收**：contact 區塊「顯示聯絡表單」→ 前台 ContactForm → `POST /api/content/contact`（zod、蜜罐、同 email 60 秒一筆）→ `contact_messages` 表（PG／SQLite／MySQL／D1 遷移）→ 站主 Email 通知（mail.adminTo）→ 事件 contact.submitted（外掛可接）→ 後台「網站 → 表單訊息」（狀態／備註／Email 回覆／刪除）；OPS `list_contact_messages`／`update_contact_message`／`delete_contact_message`＋MCP 同名三工具
+- 圖示改線條 SVG（`packages/shared/site-templates/icons.ts` 79 顆；`components/Icon.tsx`）：50 套版型 173 處 emoji 全部換成圖示名稱，舊資料／使用者貼的 emoji 自動對映，對不到才原樣顯示；渲染器的 ✓／＋／↗／✦ 也改 SVG
+- 版型資料自檢：連結審核（/p/<slug> 必附子頁、錨點必有 id、無空連結）——修 14 處；`withGenericPages` 自動補 about／contact／faq 通用頁，保證套用後沒有死連結
+- e2e p32（聯絡表單全流程、區塊頁草稿→預覽→發佈不丟 sections、主題設定反映到前台、無 emoji）
+
 ## v0.28.0（2026-09-25）
 
 - 快速套版：五大分類（形象／電商／課程／品牌／專業服務）× 10 ＝ 50 套版型（`packages/shared/src/site-templates`；結構取自指定三站＋Wix 分類法＋15 參考站，只取版面骨架），每套＝主題（theme.*）＋主選單／頁尾＋首頁區塊＋子頁區塊（about／services／contact／faq…）

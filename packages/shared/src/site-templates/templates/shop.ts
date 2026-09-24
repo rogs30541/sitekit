@@ -4,7 +4,7 @@ import { MENU, PAGES } from '../common';
 
 const shopNav = (extra: { label: string; href: string }[] = []) => [{ label: '首頁', href: '/' }, { label: '全部商品', href: '/store' }, ...extra, { label: '品牌故事', href: '/p/about' }, { label: '購物須知', href: '/p/faq' }];
 const shopFaq = PAGES.faq([{ q: '運費怎麼算？', a: '滿千免運，未滿收 80 元。' }, { q: '多久出貨？', a: '付款後 1 到 3 個工作天。' }, { q: '可以退換貨嗎？', a: '收到 7 天內未拆封可退換。' }, { q: '有哪些付款方式？', a: '信用卡、ATM、超商代碼、超商取貨付款。' }]);
-const brandStory = (title = '品牌故事'): SiteTemplate['pages'][number] => ({ slug: 'about', title, sections: [{ kind: 'hero', variant: 'center', title, compact: true }, { kind: 'split', title: '為什麼開始', text: '兩三段：起心動念、堅持、現在。', imageSide: 'left' }, { kind: 'features', variant: 'icons', title: '我們的堅持', columns: 3, items: [{ icon: '🌱', title: '堅持一', text: '一句話' }, { icon: '🔬', title: '堅持二', text: '一句話' }, { icon: '🤍', title: '堅持三', text: '一句話' }] }, { kind: 'cta', variant: 'band', title: '逛逛商店', buttonText: '前往商城', buttonHref: '/store' }] });
+const brandStory = (title = '品牌故事'): SiteTemplate['pages'][number] => ({ slug: 'about', title, sections: [{ kind: 'hero', variant: 'center', title, compact: true }, { kind: 'split', title: '為什麼開始', text: '兩三段：起心動念、堅持、現在。', imageSide: 'left' }, { kind: 'features', variant: 'icons', title: '我們的堅持', columns: 3, items: [{ icon: 'sprout', title: '堅持一', text: '一句話' }, { icon: 'flask', title: '堅持二', text: '一句話' }, { icon: 'heart', title: '堅持三', text: '一句話' }] }, { kind: 'cta', variant: 'band', title: '逛逛商店', buttonText: '前往商城', buttonHref: '/store' }] });
 
 export const SHOP_TEMPLATES: SiteTemplate[] = [
   {
@@ -31,7 +31,7 @@ export const SHOP_TEMPLATES: SiteTemplate[] = [
       { kind: 'hero', variant: 'split', kicker: '減法保養', title: '沒有減法，何來精華', subtitle: '一句話主張。', ctaText: '選購', ctaHref: '/store', imageSide: 'right' },
       { kind: 'split', title: '現在，保養從減法開始', text: '兩段講概念。', imageSide: 'left', bullets: ['減一：不必要的成分', '減二：不必要的步驟', '加一：真正有效的精華'] },
       { kind: 'stats', variant: 'row', items: [{ value: '20,000+', label: '真實好評' }, { value: '23', label: '款產品' }, { value: '0', label: '不必要成分' }] },
-      { kind: 'cta', variant: 'split', title: '加入 LINE 官方帳號', text: '肌膚問題直接問。', buttonText: '加入 LINE', buttonHref: '#' },
+      { kind: 'cta', variant: 'split', title: '加入 LINE 官方帳號', text: '肌膚問題直接問。', buttonText: '加入 LINE', buttonHref: 'https://line.me/R/ti/p/@yourbrand' },
       { kind: 'features', variant: 'numbered', title: '三步保養法', columns: 3, items: [{ code: '01', title: '清潔', text: '一句話' }, { code: '02', title: '精華', text: '一句話' }, { code: '03', title: '鎖水', text: '一句話' }] },
       { kind: 'gallery', variant: 'strip', columns: 3, items: [] },
       { kind: 'products', variant: 'grid', title: '全系列', columns: 3, limit: 6, ctaText: '看全部', ctaHref: '/store' },
@@ -59,7 +59,7 @@ export const SHOP_TEMPLATES: SiteTemplate[] = [
     menu: { header: shopNav([{ label: '送禮指南', href: '/blog' }]), footer: MENU.footerShop },
     home: [
       { kind: 'hero', variant: 'center', kicker: '把心意包起來', title: '每一份禮，都有它的故事', subtitle: '一句話。', ctaText: '挑選禮物', ctaHref: '/store', tone: 'muted' },
-      { kind: 'categories', variant: 'icons', title: '送給誰', columns: 4, items: [{ icon: '💐', title: '給她', href: '/store' }, { icon: '🎩', title: '給他', href: '/store' }, { icon: '🧸', title: '給孩子', href: '/store' }, { icon: '🏢', title: '企業贈禮', href: '/p/contact' }] },
+      { kind: 'categories', variant: 'icons', title: '送給誰', columns: 4, items: [{ icon: 'sun', title: '給她', href: '/store' }, { icon: 'crown', title: '給他', href: '/store' }, { icon: 'smile', title: '給孩子', href: '/store' }, { icon: 'building', title: '企業贈禮', href: '/p/contact' }] },
       { kind: 'products', variant: 'featured', title: '精選', columns: 3, limit: 3 },
       { kind: 'products', variant: 'grid', title: '本季熱門', columns: 4, limit: 8 },
       { kind: 'testimonials', variant: 'quotes', items: [{ quote: '一句原話。', name: '顧客' }, { quote: '一句原話。', name: '顧客' }] },
@@ -78,7 +78,7 @@ export const SHOP_TEMPLATES: SiteTemplate[] = [
       { kind: 'split', title: '工藝', text: '材質、製程、檢驗各一段。', imageSide: 'left', ctaText: '了解工藝', ctaHref: '/p/craft' },
       { kind: 'gallery', variant: 'masonry', columns: 3, items: [] },
       { kind: 'testimonials', variant: 'single', items: [{ quote: '一句原話。', name: '顧客', role: '台北' }] },
-      { kind: 'contact', variant: 'columns', title: '預約鑑賞', items: [{ icon: '📍', label: '門市', value: '地址', href: '' }, { icon: '📞', label: '預約', value: '02-0000-0000', href: 'tel:+886200000000' }] },
+      { kind: 'contact', variant: 'columns', title: '預約鑑賞', items: [{ icon: 'map-pin', label: '門市', value: '地址', href: '' }, { icon: 'phone', label: '預約', value: '02-0000-0000', href: 'tel:+886200000000' }] },
     ],
     pages: [{ slug: 'craft', title: '工藝', sections: [{ kind: 'hero', variant: 'center', title: '工藝', compact: true }, { kind: 'steps', variant: 'timeline', items: [{ title: '選材' }, { title: '設計' }, { title: '製作' }, { title: '檢驗' }] }, { kind: 'gallery', variant: 'grid', columns: 3, items: [] }] }, brandStory(), shopFaq, PAGES.contact()],
   },
@@ -103,7 +103,7 @@ export const SHOP_TEMPLATES: SiteTemplate[] = [
     home: [
       { kind: 'hero', variant: 'cover', kicker: '每日現做', title: '好吃，是最基本的事', subtitle: '一句話。', ctaText: '立即訂購', ctaHref: '/store', tone: 'image' },
       { kind: 'products', variant: 'grid', title: '人氣品項', columns: 3, limit: 6 },
-      { kind: 'features', variant: 'icons', title: '三大堅持', columns: 3, items: [{ icon: '🌾', title: '原料', text: '一句話' }, { icon: '👩‍🍳', title: '手作', text: '一句話' }, { icon: '🚚', title: '冷鏈', text: '一句話' }] },
+      { kind: 'features', variant: 'icons', title: '三大堅持', columns: 3, items: [{ icon: 'leaf', title: '原料', text: '一句話' }, { icon: 'chef-hat', title: '手作', text: '一句話' }, { icon: 'truck', title: '冷鏈', text: '一句話' }] },
       { kind: 'steps', id: 'steps', variant: 'numbers', title: '訂購流程', items: [{ title: '選品' }, { title: '結帳' }, { title: '製作' }, { title: '配送' }] },
       { kind: 'faq', items: [{ q: '保存期限？', a: '冷藏 5 天。' }, { q: '可以指定到貨日？', a: '可以，結帳備註。' }] },
       { kind: 'cta', variant: 'card', title: '團購或企業訂購', buttonText: '聯絡我們', buttonHref: '/p/contact' },
@@ -117,7 +117,7 @@ export const SHOP_TEMPLATES: SiteTemplate[] = [
     home: [
       { kind: 'hero', variant: 'split', kicker: '新品', title: '規格說話，價格說服', subtitle: '一句話。', ctaText: '立即購買', ctaHref: '/store', videoUrl: '', tone: 'dark' },
       { kind: 'products', id: 'rank', variant: 'ranking', title: '熱銷排行', columns: 4, limit: 8, tone: 'dark' },
-      { kind: 'features', variant: 'grid', title: '為什麼選我們', columns: 3, items: [{ icon: '🛡️', title: '原廠保固', text: '一句話' }, { icon: '🚀', title: '當日出貨', text: '一句話' }, { icon: '💬', title: '技術客服', text: '一句話' }], tone: 'dark' },
+      { kind: 'features', variant: 'grid', title: '為什麼選我們', columns: 3, items: [{ icon: 'shield', title: '原廠保固', text: '一句話' }, { icon: 'rocket', title: '當日出貨', text: '一句話' }, { icon: 'chat', title: '技術客服', text: '一句話' }], tone: 'dark' },
       { kind: 'stats', variant: 'row', items: [{ value: '50,000+', label: '出貨' }, { value: '4.8', label: '評分' }, { value: '7 天', label: '鑑賞期' }], tone: 'dark' },
       { kind: 'faq', items: [{ q: '保固多久？', a: '一年原廠保固。' }, { q: '可以分期？', a: '信用卡 3、6 期零利率。' }], tone: 'dark' },
     ],
@@ -144,7 +144,7 @@ export const SHOP_TEMPLATES: SiteTemplate[] = [
     home: [
       { kind: 'hero', variant: 'split', kicker: '熱銷 10,000 件', title: '一件解決三個問題', subtitle: '一句話。', ctaText: '立即購買', ctaHref: '/store', imageSide: 'right' },
       { kind: 'stats', variant: 'row', items: [{ value: '10,000+', label: '售出' }, { value: '4.9', label: '評分' }, { value: '98%', label: '回購' }] },
-      { kind: 'features', id: 'features', variant: 'icons', columns: 3, items: [{ icon: '✅', title: '賣點一', text: '一句話' }, { icon: '✅', title: '賣點二', text: '一句話' }, { icon: '✅', title: '賣點三', text: '一句話' }] },
+      { kind: 'features', id: 'features', variant: 'icons', columns: 3, items: [{ icon: 'check-circle', title: '賣點一', text: '一句話' }, { icon: 'check-circle', title: '賣點二', text: '一句話' }, { icon: 'check-circle', title: '賣點三', text: '一句話' }] },
       { kind: 'split', title: '怎麼用', text: '三句。', imageSide: 'left' },
       { kind: 'testimonials', id: 'reviews', variant: 'cards', items: [{ quote: '一句原話。', name: '顧客', metric: '★★★★★' }, { quote: '一句原話。', name: '顧客', metric: '★★★★★' }, { quote: '一句原話。', name: '顧客', metric: '★★★★★' }] },
       { kind: 'pricing', id: 'pricing', plans: [{ name: '單入', price: 'NT$990', ctaText: '購買', ctaHref: '/store' }, { name: '兩入組', price: 'NT$1,780', note: '省 200', ctaText: '購買', ctaHref: '/store', highlight: true }, { name: '家庭組', price: 'NT$3,300', note: '省 660', ctaText: '購買', ctaHref: '/store' }] },

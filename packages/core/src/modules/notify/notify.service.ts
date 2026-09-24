@@ -63,6 +63,14 @@ export class NotifyService {
     if (!result.ok && !result.skipped) this.log.warn(`${kind} → ${to} failed: ${result.error}`);
   }
 
+  /** 前台聯絡表單 → 站主（mail.adminTo）；沒設收件人就略過 */
+  async contactMessage(m: { id: string; name: string; email: string; phone: string | null; subject: string | null; message: string; page: string | null }) {
+    const { site, adminTo } = await this.config();
+    if (!adminTo) return { channel: 'email' as const, provider: 'log', ok: false, skipped: 'no recipient (set mail.adminTo)' };
+    const esc = (x: string) => x.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
+    return this.sendMail('contact_message', { to: adminTo, subject: `【聯絡表單】${m.subject || m.name}`, html: this.layout('新的聯絡表單訊息', `<p><strong>${esc(m.name)}</strong>（<a href="mailto:${esc(m.email)}">${esc(m.email)}</a>${m.phone ? `，${esc(m.phone)}` : ''}）</p>${m.page ? `<p>來源頁：${esc(m.page)}</p>` : ''}<blockquote>${esc(m.message).replace(/\n/g, '<br>')}</blockquote><p><a href="${esc(site)}/admin/messages">前往後台查看</a></p>`, site) });
+  }
+
   async sendMail(kind: string, mail: Mail): Promise<NotifyResult> {
     const cfg = await this.config();
     let result: NotifyResult;

@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { API_INTERNAL_URL } from '@/lib/api-public';
 import { DesignBody } from '@/components/DesignBody';
+import { SectionRenderer } from '@/components/SectionRenderer';
+import type { Section as SectionDoc } from '@sitekit/shared';
 import { Section } from '@/components/Section';
 import { t } from '@/lib/i18n';
 
@@ -16,6 +18,7 @@ interface PreviewDoc {
   excerpt: string | null;
   coverUrl: string | null;
   hasDesign: boolean;
+  sections?: SectionDoc[];
   body: string;
   updatedAt: string;
   liveVersion: number;
@@ -50,7 +53,9 @@ export default async function PreviewPage({ params, searchParams }: { params: Pr
         </span>
         <span className="font-mono">{doc.type === 'page' ? (doc.slug === 'home' ? '/' : `/p/${doc.slug}`) : `/blog/${doc.slug}`}</span>
       </div>
-      {doc.hasDesign ? (
+      {doc.sections?.length ? (
+        <SectionRenderer sections={doc.sections} />
+      ) : doc.hasDesign ? (
         <DesignBody html={doc.body} />
       ) : (
         <Section title={doc.title} group="(marketing)">

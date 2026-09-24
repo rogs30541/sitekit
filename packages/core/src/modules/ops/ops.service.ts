@@ -17,6 +17,7 @@ import { sanitizeHtml } from '../migration/normalize';
 import { MenuService, parseLocation } from '../content/menu.service';
 import { SiteService } from '../content/site.service';
 import { SiteTemplateService } from '../content/site-template.service';
+import { ContactService } from '../content/contact.service';
 import { LogisticsService } from '../logistics/logistics.service';
 import { InvoiceService } from '../invoice/invoice.service';
 import { DesignService } from '../content/design.service';
@@ -50,6 +51,7 @@ export class OpsService {
     private readonly admins: AdminAuthService,
     private readonly menu: MenuService,
     private readonly siteTemplates: SiteTemplateService,
+    private readonly contact: ContactService,
     private readonly site: SiteService,
     private readonly logistics: LogisticsService,
     private readonly invoice: InvoiceService,
@@ -376,6 +378,12 @@ export class OpsService {
         return { ...this.siteTemplates.list(p.category ? String(p.category) : undefined), current: await this.siteTemplates.current() };
       case 'apply_site_template':
         return this.siteTemplates.apply(String(p.id ?? ''), actor, { confirm: p.confirm === true || p.confirm === 'true', restore: p.restore === true || p.restore === 'true', pages: p.pages !== false, menu: p.menu !== false });
+      case 'list_contact_messages':
+        return { counts: await this.contact.counts(), items: await this.contact.list({ status: p.status ? String(p.status) : undefined, limit: p.limit ? Number(p.limit) : undefined }) };
+      case 'update_contact_message':
+        return this.contact.update(String(p.id ?? ''), { ...(p.status !== undefined ? { status: String(p.status) } : {}), ...(p.note !== undefined ? { note: String(p.note) } : {}) }, actor);
+      case 'delete_contact_message':
+        return this.contact.remove(String(p.id ?? ''));
       case 'list_questions': {
         const course = p.slug ? await this.prisma.course.findUnique({ where: { slug: String(p.slug) }, select: { id: true } }) : null;
         const courseId = p.courseId ? String(p.courseId) : course?.id;
