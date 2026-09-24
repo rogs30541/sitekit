@@ -30,7 +30,7 @@ FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production APP_ENV=production PORT=3000 SITEKIT_DATA_DIR=/data
 COPY --from=build /app ./
-VOLUME ["/data"]
+# 不宣告 VOLUME：Dockerfile 的 VOLUME 會讓沒掛硬碟的平台（Render free 等）生成匿名暫存卷，害持久硬碟偵測誤判為 true；持久化一律由平台／compose 明確掛載 /data
 EXPOSE 3000
 # 啟動：套用遷移（依 DATABASE_URL 選 SQLite／PostgreSQL）→ 補預設設定與模板 → 單一程序
 CMD ["node", "apps/server/bin/sitekit.mjs", "start"]
