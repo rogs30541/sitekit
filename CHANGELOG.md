@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.25.1（2026-09-24）
+
+- 字樣改「伺服器硬碟」並附實際路徑（精靈／後台／共用標籤／i18n／文件）
+- 儲存步驟改「用部署平台的硬碟」：本機磁碟持久性偵測（Linux st_dev 比對＝掛了 volume）、精靈／後台依偵測給文案與警告不硬擋、機密欄位防瀏覽器帳密自動填入、CLI env 只遮 DATABASE_URL 密碼、README／架構文件記 Zeabur 單體重佈實測步驟
+
 ## v0.25.0（2026-09-23）
 
 - 前台 i18n（1.3）：gettext 風格 t('原文')＋字典（packages/shared/src/i18n、en 235 條）、site.locale 全站語言設定（網站設定下拉）、root layout setLocale＋I18nProvider＋html lang；前台 38 頁 9 元件字串抽離；scripts/i18n-keys.mjs 列未翻 key；e2e p30
