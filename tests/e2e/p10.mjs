@@ -67,7 +67,7 @@ ok('公開 /api/content/pages', pages.status === 200 && Array.isArray(pages.body
 const sm = await untilHtml(`${W}/sitemap.xml`, (t) => t.includes('/course/') && t.includes('/blog/'));
 ok('sitemap 含 /course/ 與 /blog/', sm.includes('/course/') && sm.includes('/blog/'));
 const html = await untilHtml(`${W}/`, (h) => h.includes(`歡迎 ${RUN}`) && h.includes(`測試站 ${RUN}`) && h.includes('G-TEST1234'));
-ok('首頁渲染區塊（hero／features／cta）', html.includes(`歡迎 ${RUN}`) && html.includes('特色') && html.includes('CTA'), `len=${html.length} hero=${html.includes(`歡迎 ${RUN}`)} site=${html.includes(`測試站 ${RUN}`)} ga=${html.includes('G-TEST1234')} head=${html.replace(/\s+/g, ' ').slice(0, 200)}`);
+ok('首頁渲染區塊（hero／features／cta）', html.includes(`歡迎 ${RUN}`) && html.includes('特色') && html.includes('CTA'), `len=${html.length} hero=${html.includes(`歡迎 ${RUN}`)} site=${html.includes(`測試站 ${RUN}`)} ga=${html.includes('G-TEST1234')} apiHome=${JSON.stringify((await j('/api/content/site')).body.home).slice(0, 300)} body=${html.replace(/\s+/g, ' ').slice(-400)}`);
 ok('首頁 script 被清、HTML 區塊保留', html.includes('自訂') && !html.includes('alert(1)'), `custom=${html.includes('自訂')} script=${html.includes('alert(1)')}`);
 ok('導覽顯示新站名、頁尾有文字／Email／頁尾選單', html.includes(`測試站 ${RUN}`) && html.includes(`頁尾文字 ${RUN}`) && html.includes(`hi-${RUN}@example.com`) && html.includes(`隱私 ${RUN}`));
 ok('GA 與主色注入', html.includes('googletagmanager.com/gtag/js?id=G-TEST1234') && html.includes('--accent:#0b6e77'));

@@ -82,6 +82,11 @@ function parseResult(v: unknown): unknown {
   if (!isPlain(v)) return v;
   const out: Record<string, unknown> = {};
   for (const [k, val] of Object.entries(v)) {
+    // MySQL 把 JSON null（Prisma.JsonNull 寫入）讀回成哨兵物件／'null' 字串而非 JS null，統一成 null（core 以 !!x 判斷有無）
+    if (JSON_FIELDS_ALL.has(k) && (isNullSentinel(val) || val === 'null')) {
+      out[k] = null;
+      continue;
+    }
     if (CONVERT.has(k) && typeof val === 'string') {
       try {
         out[k] = JSON.parse(val);
