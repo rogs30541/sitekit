@@ -3,6 +3,6 @@
   "private": true,
   "type": "module",
   "scripts": { "deploy": "wrangler deploy", "dev": "wrangler dev" },
-  "dependencies": { "@cloudflare/containers": "^0.0.15" },
+  "dependencies": { "@cloudflare/containers": "*" },
   "devDependencies": { "wrangler": "^4.30.0", "@cloudflare/workers-types": "^4.20250901.0" }
 }

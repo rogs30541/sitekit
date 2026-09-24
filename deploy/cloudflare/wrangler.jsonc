@@ -13,9 +13,9 @@
   "containers": [
     {
       "class_name": "SiteKitContainer",
-      "image": "../../Dockerfile.monolith",
+      "image": "ghcr.io/rogs30541/sitekit:0.26.0",
       "max_instances": 1,
-      "instance_type": "standard"
+      "instance_type": "standard-1"
     }
   ],
   "durable_objects": {
