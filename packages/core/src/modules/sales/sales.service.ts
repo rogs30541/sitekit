@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import { lintDesign, mapTree, normalizeSalesDoc, parseDesignDoc, renderDesignDocument, salesPageState, effectivePrice, type DesignDoc, type SalesPageDoc } from '@sitekit/shared';
-import { env } from '../../env';
+import { background, env } from '../../env';
 import { PrismaClient } from '@prisma/client';
 import { SettingsService } from '../settings/settings.service';
 import { RevalidateService } from '../settings/revalidate.service';
@@ -192,7 +192,7 @@ export class SalesService {
       return { version, backedUpVersion: hadLive ? p.version : null, slug: u.slug };
     });
     this.reval.trigger('sales');
-    void events.emit('sales_page.published', { id: p.id, slug: r.slug, version: r.version, actor });
+    background(events.emit('sales_page.published', { id: p.id, slug: r.slug, version: r.version, actor }));
     return { id: p.id, ...r, url: `/s/${r.slug}`, warnings: this.lint(doc).filter((l) => l.level === 'warn') };
   }
   async unpublish(idOrSlug: string) {

@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '../../compat';
 import { createHash, randomBytes, randomInt } from 'node:crypto';
-import bcrypt from 'bcryptjs';
+import { hashPassword, verifyPassword } from '../auth/password';
 import type { AdminSession, AdminUser } from '@prisma/client';
 import { z } from 'zod';
 import { isProd } from '../../env';
@@ -95,7 +95,7 @@ export class AdminAuthService {
     const r = createInput.safeParse(input);
     if (!r.success) throw new BadRequestException(r.error.flatten().fieldErrors);
     if (await this.prisma.adminUser.findUnique({ where: { email: r.data.email } })) throw new ConflictException('admin email already exists');
-    const a = await this.prisma.adminUser.create({ data: { email: r.data.email, passwordHash: await bcrypt.hash(r.data.password, 10), displayName: r.data.displayName ?? r.data.email.split('@')[0], role: r.data.role } });
+    const a = await this.prisma.adminUser.create({ data: { email: r.data.email, passwordHash: await hashPassword(r.data.password), displayName: r.data.displayName ?? r.data.email.split('@')[0], role: r.data.role } });
     return toPublicAdmin(a);
   }
 
@@ -107,7 +107,7 @@ export class AdminAuthService {
     const a = await this.find(idOrEmail);
     const d = z.object({ password: z.string().min(8).max(200).optional(), displayName: z.string().trim().max(60).optional(), role: z.enum(['admin', 'superadmin']).optional(), status: z.enum(['active', 'suspended']).optional() }).parse(input);
     if (d.role && d.role !== 'superadmin' && a.role === 'superadmin' && (await this.prisma.adminUser.count({ where: { role: 'superadmin', status: 'active' } })) <= 1) throw new BadRequestException('cannot demote the last superadmin');
-    const u = await this.prisma.adminUser.update({ where: { id: a.id }, data: { ...(d.password ? { passwordHash: await bcrypt.hash(d.password, 10) } : {}), displayName: d.displayName, role: d.role, status: d.status } });
+    const u = await this.prisma.adminUser.update({ where: { id: a.id }, data: { ...(d.password ? { passwordHash: await hashPassword(d.password) } : {}), displayName: d.displayName, role: d.role, status: d.status } });
     if (d.password || d.status === 'suspended') await this.prisma.adminSession.deleteMany({ where: { adminId: a.id } });
     return toPublicAdmin(u);
   }
@@ -129,7 +129,7 @@ export class AdminAuthService {
     const r = credentials.pick({ email: true, password: true }).safeParse(input);
     if (!r.success) throw new BadRequestException(r.error.flatten().fieldErrors);
     const a = await this.prisma.adminUser.findUnique({ where: { email: r.data.email } });
-    if (!a || !(await bcrypt.compare(r.data.password, a.passwordHash))) throw new UnauthorizedException('invalid email or password');
+    if (!a || !(await verifyPassword(r.data.password, a.passwordHash))) throw new UnauthorizedException('invalid email or password');
     if (a.status !== 'active') throw new UnauthorizedException('admin account is not active');
     return this.prisma.adminUser.update({ where: { id: a.id }, data: { lastLoginAt: new Date() } });
   }
@@ -137,7 +137,7 @@ export class AdminAuthService {
   /** 開發用：確保有 dev 管理員（非 production）。 */
   async ensureDevAdmin(): Promise<AdminUser> {
     if (isProd()) throw new ForbiddenException('development only');
-    return this.prisma.adminUser.upsert({ where: { email: 'dev-admin@local' }, update: {}, create: { email: 'dev-admin@local', passwordHash: await bcrypt.hash(randomBytes(16).toString('hex'), 4), displayName: 'Dev Admin', role: 'superadmin' } });
+    return this.prisma.adminUser.upsert({ where: { email: 'dev-admin@local' }, update: {}, create: { email: 'dev-admin@local', passwordHash: await hashPassword(randomBytes(16).toString('hex')), displayName: 'Dev Admin', role: 'superadmin' } });
   }
 
   // ---- session ----

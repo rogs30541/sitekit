@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, Logger } from '../../compat';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { LOGISTICS_METHOD_LABELS, SETTING_KEYS } from '@sitekit/shared';
 import { Prisma } from '@prisma/client';
-import { env } from '../../env';
+import { background, env } from '../../env';
 import { PrismaClient } from '@prisma/client';
 import { NotifyService } from '../notify/notify.service';
 import { SettingsService } from '../settings/settings.service';
@@ -217,8 +217,8 @@ export class LogisticsService {
     if (mapped && mapped !== order.shippingStatus && (mapped === 'shipped' || mapped === 'delivered')) {
       const full = await this.prisma.order.findUnique({ where: { id: order.id }, include: { items: true, user: { select: { email: true, displayName: true } } } });
       if (full) {
-        this.notifier.orderShipped(full).catch(() => undefined);
-        void events.emit('order.shipped', { id: full.id, merchantOrderNo: full.merchantOrderNo, userId: full.userId, shippingStatus: full.shippingStatus, carrier: full.carrier, trackingNo: full.trackingNo });
+        background(this.notifier.orderShipped(full));
+        background(events.emit('order.shipped', { id: full.id, merchantOrderNo: full.merchantOrderNo, userId: full.userId, shippingStatus: full.shippingStatus, carrier: full.carrier, trackingNo: full.trackingNo }));
       }
     }
     return 'SUCCESS';
@@ -249,8 +249,8 @@ export class LogisticsService {
     if (mapped && mapped !== order.shippingStatus && (mapped === 'shipped' || mapped === 'delivered')) {
       const full = await this.prisma.order.findUnique({ where: { id: order.id }, include: { items: true, user: { select: { email: true, displayName: true } } } });
       if (full) {
-        this.notifier.orderShipped(full).catch(() => undefined);
-        void events.emit('order.shipped', { id: full.id, merchantOrderNo: full.merchantOrderNo, userId: full.userId, shippingStatus: full.shippingStatus, carrier: full.carrier, trackingNo: full.trackingNo });
+        background(this.notifier.orderShipped(full));
+        background(events.emit('order.shipped', { id: full.id, merchantOrderNo: full.merchantOrderNo, userId: full.userId, shippingStatus: full.shippingStatus, carrier: full.carrier, trackingNo: full.trackingNo }));
       }
     }
     return '1|OK';

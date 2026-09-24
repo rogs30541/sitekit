@@ -1,3 +1,4 @@
+import { background } from '../../env';
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, OnModuleInit } from '../../compat';
 import { randomBytes } from 'node:crypto';
 import { Prisma } from '@prisma/client';
@@ -231,7 +232,7 @@ export class OrdersService implements OnModuleInit {
     }
     if (order.status === 'paid' && info.provider !== undefined) {
       this.notify.orderPaid(order).catch((e) => this.log.warn(`notify paid failed: ${e instanceof Error ? e.message : e}`));
-      void events.emit('order.paid', { id: order.id, merchantOrderNo: order.merchantOrderNo, userId: order.userId, amount: order.amount, scope: order.scope, provider: order.provider, items: order.items.map((i) => ({ productId: i.productId, name: i.name, qty: i.qty, unitPrice: i.unitPrice })) });
+      background(events.emit('order.paid', { id: order.id, merchantOrderNo: order.merchantOrderNo, userId: order.userId, amount: order.amount, scope: order.scope, provider: order.provider, items: order.items.map((i) => ({ productId: i.productId, name: i.name, qty: i.qty, unitPrice: i.unitPrice })) }));
     }
     return order;
   }
@@ -247,7 +248,7 @@ export class OrdersService implements OnModuleInit {
 
   async setVirtualAccount(orderId: string, virtualAccount: string, expireAt: Date | null, tradeNo?: string) {
     const o = await this.prisma.order.update({ where: { id: orderId }, data: { virtualAccount, expireAt, providerTradeNo: tradeNo, paymentType: 'VACC' }, include: ORDER_INCLUDE });
-    this.notify.virtualAccountIssued(o).catch(() => undefined);
+    background(this.notify.virtualAccountIssued(o));
     return o;
   }
 
@@ -295,10 +296,10 @@ export class OrdersService implements OnModuleInit {
       await this.releaseStock(tx, orderId);
       return tx.order.update({ where: { id: orderId }, data: { status: 'refunded', refundStatus: 'done', refundedAt: new Date(), note } });
     });
-    this.invoice.invalidateForOrder(orderId).catch(() => undefined);
+    background(this.invoice.invalidateForOrder(orderId));
     if (order.status === 'refunded') {
-      this.prisma.order.findUnique({ where: { id: orderId }, include: ORDER_INCLUDE }).then((full) => (full ? this.notify.orderRefunded(full) : undefined)).catch(() => undefined);
-      void events.emit('order.refunded', { id: order.id, merchantOrderNo: order.merchantOrderNo, userId: order.userId, amount: order.amount, scope: order.scope });
+      background(this.prisma.order.findUnique({ where: { id: orderId }, include: ORDER_INCLUDE }).then((full) => (full ? this.notify.orderRefunded(full) : undefined)));
+      background(events.emit('order.refunded', { id: order.id, merchantOrderNo: order.merchantOrderNo, userId: order.userId, amount: order.amount, scope: order.scope }));
     }
     return order;
   }
@@ -315,8 +316,8 @@ export class OrdersService implements OnModuleInit {
       include: ORDER_INCLUDE,
     });
     if ((d.status === 'shipped' || d.status === 'delivered') && o.shippingStatus !== d.status) {
-      this.notify.orderShipped(updated).catch(() => undefined);
-      void events.emit('order.shipped', { id: updated.id, merchantOrderNo: updated.merchantOrderNo, userId: updated.userId, shippingStatus: updated.shippingStatus, carrier: updated.carrier, trackingNo: updated.trackingNo });
+      background(this.notify.orderShipped(updated));
+      background(events.emit('order.shipped', { id: updated.id, merchantOrderNo: updated.merchantOrderNo, userId: updated.userId, shippingStatus: updated.shippingStatus, carrier: updated.carrier, trackingNo: updated.trackingNo }));
     }
     return updated;
   }

@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import { lintDesign, mapTree, parseDesignDoc, renderDesignDocument, type DesignDoc, type LintIssue } from '@sitekit/shared';
-import { env } from '../../env';
+import { background, env } from '../../env';
 import { PrismaClient } from '@prisma/client';
 import { SettingsService } from '../settings/settings.service';
 import { RevalidateService } from '../settings/revalidate.service';
@@ -176,7 +176,7 @@ export class DesignService {
       return { version, backedUpVersion: backedUp, updated };
     });
     this.reval.trigger('content');
-    void events.emit('content.published', { id: c.id, slug: result.updated.slug, type: c.type, version: result.version, actor });
+    background(events.emit('content.published', { id: c.id, slug: result.updated.slug, type: c.type, version: result.version, actor }));
     return { id: c.id, slug: result.updated.slug, version: result.version, backedUpVersion: result.backedUpVersion, url: c.type === 'page' ? (result.updated.slug === 'home' ? '/' : `/p/${result.updated.slug}`) : `/blog/${result.updated.slug}`, warnings: lint.filter((l) => l.level === 'warn') };
   }
 

@@ -3,6 +3,15 @@
  * 讀取一律經 getter（呼叫時才取值），避免 import 時機問題。
  */
 const store: Record<string, string | undefined> = {};
+/**
+ * 回應之後才需要完成的工作（通知信、事件、前台重新驗證）：Node 直接跑；Cloudflare Workers 由殼層設定
+ * globalThis.__sitekitWaitUntil（ctx.waitUntil），否則請求結束時未完成的 I/O 會被平台中止。
+ */
+export function background(p: Promise<unknown>): void {
+  const w = (globalThis as { __sitekitWaitUntil?: (p: Promise<unknown>) => void }).__sitekitWaitUntil;
+  const safe = p.catch(() => undefined);
+  if (w) w(safe);
+}
 export function configureCore(values: Record<string, string | number | boolean | undefined | null>) {
   for (const [k, v] of Object.entries(values)) store[k] = v === undefined || v === null ? undefined : String(v);
 }

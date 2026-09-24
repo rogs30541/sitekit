@@ -2,6 +2,9 @@
 const B = process.env.API ?? 'http://localhost:4000';
 let fails = 0;
 const ok = (n, c, x = '') => { console.log(`${c ? 'PASS' : 'FAIL'} ${n}${x ? ' — ' + x : ''}`); if (!c) fails++; };
+const W = process.env.E2E_PLATFORM === 'workers';
+const okw = (n, c, x = '') => (W ? console.log(`SKIP ${n}（Workers：無伺服器硬碟／外掛／排程）`) : ok(n, c, x));
+
 const j = async (path, { method = 'GET', body, cookie, headers = {} } = {}) => {
   const r = await fetch(B + path, { method, headers: { 'content-type': 'application/json', ...headers, ...(cookie ? { cookie } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) });
   const t = await r.text(); let b; try { b = JSON.parse(t); } catch { b = t; }
@@ -25,9 +28,9 @@ ok('status.completed=true', st2.body.completed === true);
 // 2. 健康檢查
 const h = await j('/api/admin/system/health', { cookie: admin });
 ok('health 200 且 db.ok', h.status === 200 && h.body.db?.ok === true, JSON.stringify(h.body.db));
-ok('health 儲存寫入後讀回 ok（local）', h.body.storage?.ok === true && h.body.storage.driver === 'local', JSON.stringify(h.body.storage));
+okw('health 儲存寫入後讀回 ok（local）', h.body.storage?.ok === true && h.body.storage.driver === 'local', JSON.stringify(h.body.storage));
 ok('health 含 email／site／revalidate／payment／secrets 區塊', ['email', 'site', 'revalidate', 'payment', 'secrets'].every((k) => h.body[k] && typeof h.body[k] === 'object'), Object.keys(h.body).join(','));
-ok('health site 公開網址可達（本機 FRONTEND_URL）', h.body.site?.ok === true || h.body.site?.status === 200, JSON.stringify(h.body.site));
+okw('health site 公開網址可達（本機 FRONTEND_URL）', h.body.site?.ok === true || h.body.site?.status === 200, JSON.stringify(h.body.site));
 ok('health secrets 來源為 env|generated', ['env', 'generated'].includes(h.body.secrets?.sessionSecret) && ['env', 'generated'].includes(h.body.secrets?.opsToken));
 ok('health 未登入 → 401', (await j('/api/admin/system/health')).status === 401);
 

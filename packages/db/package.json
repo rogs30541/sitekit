@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "node scripts/gen-sqlite-schema.mjs && node scripts/gen-mysql-schema.mjs && node scripts/prisma.mjs generate && tsc -p tsconfig.json",
+    "build": "node scripts/gen-sqlite-schema.mjs && node scripts/gen-mysql-schema.mjs && node scripts/prisma.mjs generate && node scripts/gen-dmmf.mjs && tsc -p tsconfig.json",
     "gen:sqlite": "node scripts/gen-sqlite-schema.mjs",
     "gen:mysql": "node scripts/gen-mysql-schema.mjs"
   },

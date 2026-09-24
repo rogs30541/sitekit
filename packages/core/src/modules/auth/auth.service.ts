@@ -1,5 +1,6 @@
+import { background } from '../../env';
 import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '../../compat';
-import bcrypt from 'bcryptjs';
+import { hashPassword, verifyPassword } from './password';
 import { z } from 'zod';
 import type { User } from '@prisma/client';
 import { FEATURES } from '@sitekit/shared';
@@ -37,13 +38,13 @@ export class AuthService {
       data: {
         email,
         displayName: displayName ?? email.split('@')[0],
-        passwordHash: await bcrypt.hash(password, 10),
+        passwordHash: await hashPassword(password),
         role: 'user',
         allowedFeatures: [],
       },
     });
-    this.notify.welcome(user.email, user.displayName).catch(() => undefined);
-    void events.emit('user.registered', { id: user.id, email: user.email, displayName: user.displayName });
+    background(this.notify.welcome(user.email, user.displayName));
+    background(events.emit('user.registered', { id: user.id, email: user.email, displayName: user.displayName }));
     return toPublic(user);
   }
 
@@ -51,7 +52,7 @@ export class AuthService {
     const parsed = credentials.pick({ email: true, password: true }).safeParse(input);
     if (!parsed.success) throw new BadRequestException(parsed.error.flatten().fieldErrors);
     const user = await this.prisma.user.findUnique({ where: { email: parsed.data.email } });
-    if (!user?.passwordHash || !(await bcrypt.compare(parsed.data.password, user.passwordHash))) {
+    if (!user?.passwordHash || !(await verifyPassword(parsed.data.password, user.passwordHash))) {
       throw new UnauthorizedException('invalid email or password');
     }
     if (user.status !== 'active') throw new UnauthorizedException('account is not active');

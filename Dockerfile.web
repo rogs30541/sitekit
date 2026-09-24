@@ -8,6 +8,7 @@ COPY packages/db/package.json packages/db/
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY apps/edge/package.json apps/edge/
+COPY apps/worker/package.json apps/worker/
 COPY mcp/package.json mcp/
 COPY plugins/webhook/package.json plugins/webhook/
 RUN npm ci --no-audit --no-fund

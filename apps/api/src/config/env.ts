@@ -2,9 +2,10 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { z } from 'zod';
 
-// 開發便利：cwd 下有 .env 就載入（不覆蓋已存在的環境變數；正式環境由平台注入）
-const envFile = resolve(process.cwd(), '.env');
-if (existsSync(envFile)) {
+// 開發便利：cwd 下有 .env 就載入（不覆蓋已存在的環境變數；正式環境由平台注入）；Cloudflare Workers（workerd）沒有檔案系統，跳過
+const isWorkerd = typeof navigator !== 'undefined' && /Cloudflare-Workers/.test(navigator.userAgent ?? '');
+const envFile = isWorkerd ? '' : resolve(process.cwd(), '.env');
+if (envFile && existsSync(envFile)) {
   try {
     process.loadEnvFile(envFile);
   } catch {
@@ -25,7 +26,7 @@ const schema = z.object({
 const parsed = schema.safeParse(process.env);
 if (!parsed.success) {
   console.error('[env] environment validation failed:', parsed.error.flatten().fieldErrors);
-  process.exit(1);
+  if (!isWorkerd) process.exit(1);
 }
-export const env = parsed.data;
+export const env = parsed.success ? parsed.data : schema.parse({ ...process.env, DATABASE_URL: process.env.DATABASE_URL || 'd1' });
 export const isProd = env.APP_ENV === 'production';

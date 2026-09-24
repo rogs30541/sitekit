@@ -2,6 +2,7 @@
 // SiteKit 核心資料模型（依 docs/全新網站規劃.md 第 03 節）
 generator client {
   output        = "./client"
+  previewFeatures = ["driverAdapters"]
   provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }

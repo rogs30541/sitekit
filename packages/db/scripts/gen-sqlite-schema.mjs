@@ -21,7 +21,7 @@ let s = readFileSync(src, 'utf8');
 const enums = [...s.matchAll(/^enum\s+(\w+)\s*\{[\s\S]*?^\}/gm)].map((m) => m[1]);
 s = s.replace(/^enum\s+\w+\s*\{[\s\S]*?^\}\n\n?/gm, '');
 s = s.replace(/provider\s*=\s*"postgresql"/, 'provider = "sqlite"');
-s = s.replace(/generator client \{\n/, 'generator client {\n  output        = "./client"\n');
+s = s.replace(/generator client \{\n/, 'generator client {\n  output        = "./client"\n  previewFeatures = ["driverAdapters"]\n'); // driverAdapters：Cloudflare D1（@prisma/adapter-d1）共用同一份 sqlite client
 
 const json = new Set();
 const array = new Set();

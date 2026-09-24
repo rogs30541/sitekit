@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '../../compat';
 import { Prisma } from '@prisma/client';
 import { OPS_ACTIONS, OPS_ACTION_KEYS, type OpsAction, type OpsResult } from '@sitekit/shared';
-import { env } from '../../env';
+import { background, env } from '../../env';
 import { PrismaClient } from '@prisma/client';
 import { MigrationService } from '../migration/migration.service';
 import { SettingsService } from '../settings/settings.service';
@@ -382,7 +382,7 @@ export class OpsService {
         const q = await this.prisma.courseQuestion.findUnique({ where: { id }, include: { user: { select: { email: true, displayName: true } }, course: { select: { slug: true, product: { select: { name: true } } } } } });
         if (!q) throw new Error('question not found');
         const u = await this.prisma.courseQuestion.update({ where: { id }, data: { answer, answeredAt: new Date(), answeredBy: 'ops', status: 'answered', ...(p.isPublic !== undefined ? { isPublic: !!p.isPublic } : {}) } });
-        this.notify.questionAnswered({ to: q.user.email, name: q.user.displayName, courseName: q.course.product.name, slug: q.course.slug, question: q.body, answer }).catch(() => undefined);
+        background(this.notify.questionAnswered({ to: q.user.email, name: q.user.displayName, courseName: q.course.product.name, slug: q.course.slug, question: q.body, answer }));
         return { id: u.id, status: u.status, answeredAt: u.answeredAt };
       }
       case 'post_announcement': {

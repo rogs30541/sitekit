@@ -3,6 +3,9 @@ const B = process.env.API ?? 'http://localhost:4000';
 const RUN = Date.now().toString(36).slice(-4).toLowerCase();
 let fails = 0;
 const ok = (n, c, x = '') => { console.log(`${c ? 'PASS' : 'FAIL'} ${n}${x ? ' — ' + x : ''}`); if (!c) fails++; };
+const W = process.env.E2E_PLATFORM === 'workers';
+const okw = (n, c, x = '') => (W ? console.log(`SKIP ${n}（Workers：無伺服器硬碟／外掛／排程）`) : ok(n, c, x));
+
 const j = async (path, { method = 'GET', body, cookie } = {}) => {
   const r = await fetch(B + path, { method, headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) });
   const t = await r.text(); let b; try { b = JSON.parse(t); } catch { b = t; }
@@ -50,9 +53,11 @@ const c4 = await cmd(`幫我做一張秋季課程優惠的 Banner，1536x1024，
 ok('Banner 需求 → generate_image 待確認（1536x1024, banner）', c4.body.pending?.[0]?.action === 'generate_image' && c4.body.pending[0].params.size === '1536x1024' && c4.body.pending[0].params.purpose === 'banner');
 const conf4 = await j('/api/admin/ai/command/confirm', { method: 'POST', cookie: admin, body: { token: c4.body.token } });
 const imgUrl = conf4.body.results?.[0]?.data?.url;
-ok('產圖完成回 url（mock svg）', conf4.body.results?.[0]?.ok && typeof imgUrl === 'string' && imgUrl.endsWith('.svg'), JSON.stringify(conf4.body).slice(0, 200));
-const img = await fetch(imgUrl.replace('http://localhost:3000', B)).catch(() => ({ status: 0 }));
-ok('圖片可下載', img.status === 200, String(img.status));
+okw('產圖完成回 url（mock svg）', conf4.body.results?.[0]?.ok && typeof imgUrl === 'string' && imgUrl.endsWith('.svg'), JSON.stringify(conf4.body).slice(0, 200));
+if (!W) {
+  const img = await fetch(imgUrl.replace('http://localhost:3000', B)).catch(() => ({ status: 0 }));
+  ok('圖片可下載', img.status === 200, String(img.status));
+} else console.log('SKIP 圖片可下載（Workers）');
 
 // 5. 建立課程（含章節）→ 確認
 const cslug = `ai-basics-${RUN}`;

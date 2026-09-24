@@ -5,6 +5,7 @@ export * from './modules/admin-auth/admin-auth.service';
 export * from './modules/admin/members.service';
 export * from './modules/auth/auth.service';
 export * from './modules/auth/session.service';
+export * from './modules/auth/password';
 export * from './modules/catalog/catalog.service';
 export * from './modules/content/design.service';
 export * from './modules/content/menu.service';

@@ -160,6 +160,33 @@ jobs:
           echo '== /api/content/site =='; curl -s http://localhost:4000/api/content/site | head -c 1500; echo
           echo '== / head =='; curl -s http://localhost:3000/ | tr -s '[:space:]' ' ' | head -c 1200; echo
 
+  # Cloudflare Workers 殼：wrangler dev（本機 D1）跑同一套 API 類 e2e（需要 web 的檔跳過；伺服器硬碟／備份／外掛以 E2E_PLATFORM=workers 條件跳過）
+  e2e-workers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build -w @sitekit/shared
+      - run: npm run build -w @sitekit/db
+      - run: npm run build -w @sitekit/core
+      - run: npm run build -w @sitekit/api
+      - run: npm run build -w @sitekit/worker
+      - name: D1 migrate（local）
+        working-directory: apps/worker
+        run: npx wrangler d1 migrations apply sitekit --local
+      - name: wrangler dev
+        working-directory: apps/worker
+        run: (nohup npx wrangler dev --port 8787 --ip 127.0.0.1 --var APP_ENV:development --var SEED_DEMO:1 > /tmp/wrangler.log 2>&1 &) && for i in $(seq 1 60); do curl -sf http://127.0.0.1:8787/api/health && break; sleep 3; done
+      - name: e2e（API only, platform=workers）
+        run: API=http://127.0.0.1:8787 WEB=http://127.0.0.1:9 E2E_PLATFORM=workers node tests/e2e/run.mjs
+      - name: logs on failure
+        if: failure()
+        run: tail -n 150 /tmp/wrangler.log
+
   # deploy/compose：Caddy（自簽 localhost）＋單體映像＋Postgres 從原始碼建起，經 Caddy 走 HTTPS 打 /api/health 與 /setup
   compose-smoke:
     runs-on: ubuntu-latest

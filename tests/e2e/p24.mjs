@@ -2,6 +2,9 @@
 const B = process.env.API ?? 'http://localhost:4000';
 let fails = 0;
 const ok = (n, c, x = '') => { console.log(`${c ? 'PASS' : 'FAIL'} ${n}${x ? ' — ' + x : ''}`); if (!c) fails++; };
+const W = process.env.E2E_PLATFORM === 'workers';
+const okw = (n, c, x = '') => (W ? console.log(`SKIP ${n}（Workers：無伺服器硬碟／外掛／排程）`) : ok(n, c, x));
+
 const j = async (path, { method = 'GET', body, cookie } = {}) => {
   const r = await fetch(B + path, { method, headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) });
   const t = await r.text(); let b; try { b = JSON.parse(t); } catch { b = t; }
@@ -34,13 +37,13 @@ const ja = await j('/api/admin/studio/jobs', { method: 'POST', cookie: admin, bo
 ok('後台任務 anthropic 不接受（落回預設供應商，非 anthropic）', ja.status !== 201 || ja.body.provider !== 'anthropic', JSON.stringify(ja.body).slice(0, 120));
 // 等 mock 任務完成
 let done; for (let i = 0; i < 20 && !done; i++) { await new Promise((r) => setTimeout(r, 500)); const g = await j(`/api/admin/studio/jobs/${jb.body.id}`, { cookie: admin }); if (g.body.status === 'succeeded' || g.body.status === 'failed') done = g.body; }
-ok('mock 任務完成 succeeded', done?.status === 'succeeded', JSON.stringify(done).slice(0, 160));
+okw('mock 任務完成 succeeded', done?.status === 'succeeded', JSON.stringify(done ?? null).slice(0, 160));
 // OPS generate_image：provider gemini 無效金鑰 → 錯誤訊息（不是靜默 mock）；provider anthropic 不合法 → 落回設定
 await act('update_settings', { settings: { 'gemini.apiKey': '' } });
 const gi = await act('generate_image', { provider: 'gemini', prompt: 'x' });
 ok('OPS generate_image provider=gemini 無金鑰 → 報錯不靜默', gi.status >= 400 || gi.body?.ok === false || /金鑰/.test(JSON.stringify(gi.body)), JSON.stringify(gi.body).slice(0, 160));
 const gm = await act('generate_image', { provider: 'mock', prompt: '佔位' });
-ok('OPS generate_image provider=mock → 佔位圖 url', gm.status < 400 && /url/.test(JSON.stringify(gm.body)), JSON.stringify(gm.body).slice(0, 160));
+okw('OPS generate_image provider=mock → 佔位圖 url', gm.status < 400 && /url/.test(JSON.stringify(gm.body)), JSON.stringify(gm.body).slice(0, 160));
 // 復原
 await act('update_settings', { settings: { 'gemini.apiKey': '', 'ai.commandProvider': 'mock' } });
 console.log(fails ? `\n${fails} FAILED` : '\nALL PASS');

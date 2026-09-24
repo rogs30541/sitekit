@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { Injectable, Logger } from '../../compat';
+import { BadRequestException, Injectable, Logger } from '../../compat';
 import { createHash, createHmac } from 'node:crypto';
 import { mkdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -24,6 +24,8 @@ export const extFromMime = (mime: string) => MIME_EXT[mime.split(';')[0].trim().
 export class StorageService {
   private readonly log = new Logger(StorageService.name);
   readonly localDir = resolve(process.env.STORAGE_DIR ?? resolve(process.cwd(), 'storage'));
+  /** Cloudflare Workers（workerd）沒有檔案系統：伺服器硬碟儲存不可用，必須設定 R2／S3 */
+  readonly localAvailable = !(typeof navigator !== 'undefined' && /Cloudflare-Workers/.test((navigator as { userAgent?: string }).userAgent ?? ''));
 
   constructor(private readonly settings: SettingsService) {}
 
@@ -32,17 +34,18 @@ export class StorageService {
    * Linux 上資料夾（或其最近的既存上層）與 `/` 的 st_dev 不同＝掛載點＝持久；相同＝容器暫存層＝重新部署會清掉。
    * 非 Linux（開發機、VPS 直跑）一律視為持久。回 null 表示無法判斷。
    */
-  localDiskInfo(): { dir: string; persistent: boolean | null } {
+  localDiskInfo(): { dir: string; persistent: boolean | null; available: boolean } {
     const dir = this.localDir;
-    if (process.platform !== 'linux') return { dir, persistent: true };
+    if (!this.localAvailable) return { dir, persistent: false, available: false };
+    if (process.platform !== 'linux') return { dir, persistent: true, available: true };
     try {
       let probe = dir;
       for (let i = 0; i < 8; i++) {
         try { statSync(probe); break; } catch { probe = dirname(probe); }
       }
-      return { dir, persistent: statSync(probe).dev !== statSync('/').dev };
+      return { dir, persistent: statSync(probe).dev !== statSync('/').dev, available: true };
     } catch {
-      return { dir, persistent: null };
+      return { dir, persistent: null, available: true };
     }
   }
 
@@ -68,6 +71,7 @@ export class StorageService {
       const base = cfg.publicUrl || `${cfg.endpoint}/${cfg.bucket}`;
       return { url: `${base}/${key}`, key, driver: 's3' };
     }
+    if (!this.localAvailable) throw new BadRequestException('此環境（Cloudflare Workers）沒有伺服器硬碟，請到「儲存與通知」設定 Cloudflare R2／S3 相容儲存');
     const file = resolve(this.localDir, key);
     mkdirSync(dirname(file), { recursive: true });
     writeFileSync(file, bytes);

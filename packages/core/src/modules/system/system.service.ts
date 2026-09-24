@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import { BadRequestException, ForbiddenException, Injectable, Logger } from '../../compat';
-import { configureCore, env } from '../../env';
+import { background, configureCore, env } from '../../env';
 import { SettingsService } from '../settings/settings.service';
 import { RevalidateService } from '../settings/revalidate.service';
 import { StorageService } from '../storage/storage.service';
@@ -96,7 +96,7 @@ export class SystemService {
     await this.prisma.setting.upsert({ where: { key: SYSTEM_KEYS.setupCompletedAt }, update: { value: at }, create: { key: SYSTEM_KEYS.setupCompletedAt, value: at, isSecret: false } });
     this.settings.invalidate();
     await this.prisma.auditLog.create({ data: { actor, action: 'setup_complete', ok: true, params: {}, result: { at } } });
-    void events.emit('setup.completed', { at, actor });
+    background(events.emit('setup.completed', { at, actor }));
     return { ok: true, completedAt: at };
   }
 

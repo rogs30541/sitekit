@@ -3,6 +3,9 @@ const B = process.env.API ?? 'http://localhost:4000';
 const RUN = Date.now().toString(36).slice(-4).toLowerCase();
 let fails = 0;
 const ok = (n, c, x = '') => { console.log(`${c ? 'PASS' : 'FAIL'} ${n}${x ? ' — ' + x : ''}`); if (!c) fails++; };
+const W = process.env.E2E_PLATFORM === 'workers';
+const okw = (n, c, x = '') => (W ? console.log(`SKIP ${n}（Workers：無伺服器硬碟／外掛／排程）`) : ok(n, c, x));
+
 const j = async (path, { method = 'GET', body, cookie } = {}) => {
   const r = await fetch(B + path, { method, headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) }, body: body === undefined ? undefined : JSON.stringify(body), redirect: 'manual' });
   const t = await r.text(); let b; try { b = JSON.parse(t); } catch { b = t; }
@@ -55,18 +58,18 @@ ok('買家 order_paid 收件人正確', st3.body.data.recent.some((r) => r.kind 
 const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="#0b6e77"/></svg>').toString('base64');
 const up = await j('/api/admin/content/upload', { method: 'POST', cookie: admin, body: { filename: 'p5.svg', contentType: 'image/svg+xml', dataBase64: `data:image/svg+xml;base64,${svg}` } });
 const img = up.body.url;
-ok('上傳測試圖片', up.status === 201 && typeof img === 'string' && img.includes('/api/assets/'), JSON.stringify(up.body).slice(0, 120));
+okw('上傳測試圖片', up.status === 201 && typeof img === 'string' && img.includes('/api/assets/'), JSON.stringify(up.body).slice(0, 120));
 const csv = `external_id,title,slug,body,published_at,original_url,cover_url\np5-${RUN},媒體落地測試 ${RUN},media-${RUN},"<p>hi</p><img src=""${img}""><img src=""https://invalid.invalid/none.png"">",2026-09-01,https://old.example.com/2026/09/media-${RUN},${img}`;
 const dry = await act(admin, 'import_content', { source: 'csv', csv, dryRun: true, landMedia: true });
 ok('import_content 乾跑回 mediaCount', dry.body.ok && dry.body.data.mediaCount === 3, JSON.stringify(dry.body.data));
 const imp = await act(admin, 'import_content', { source: 'csv', csv, dryRun: false, landMedia: true });
-ok('媒體落地：同網址只下載 1 次、壞網址 1 失敗', imp.body.ok && imp.body.data.media?.downloaded === 1 && imp.body.data.media?.failed === 1, JSON.stringify(imp.body.data));
+okw('媒體落地：同網址只下載 1 次、壞網址 1 失敗', imp.body.ok && imp.body.data.media?.downloaded === 1 && imp.body.data.media?.failed === 1, JSON.stringify(imp.body.data));
 const post = await j(`/api/content/posts/media-${RUN}`);
-ok('內文與封面已改寫成 /api/assets/media/…', post.status === 200 && /\/api\/assets\/media\/[a-f0-9]{40}\.(svg|bin|png)/.test(post.body.body ?? '') && /\/api\/assets\/media\//.test(post.body.coverUrl ?? '') && post.body.body.includes('invalid.invalid'), `${post.body.coverUrl}`);
+okw('內文與封面已改寫成 /api/assets/media/…', post.status === 200 && /\/api\/assets\/media\/[a-f0-9]{40}\.(svg|bin|png)/.test(post.body.body ?? '') && /\/api\/assets\/media\//.test(post.body.coverUrl ?? '') && post.body.body.includes('invalid.invalid'), `${post.body.coverUrl}`);
 if (post.status === 200) {
   const m = (post.body.coverUrl ?? '').match(/\/api\/assets\/media\/[^"']+/);
   const asset = m ? await fetch(B + m[0]) : null;
-  ok('落地檔案可由 /api/assets 讀取', !!asset && asset.status === 200 && Number(asset.headers.get('content-length')) > 0);
+  okw('落地檔案可由 /api/assets 讀取', !!asset && asset.status === 200 && Number(asset.headers.get('content-length')) > 0);
 }
 console.log(fails ? `\n${fails} FAILED` : '\nALL PASS');
 process.exit(fails ? 1 : 0);

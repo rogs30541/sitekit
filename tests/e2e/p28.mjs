@@ -5,6 +5,8 @@ const B = process.env.API ?? 'http://localhost:4000';
 const RUN = Date.now().toString(36).slice(-5).toLowerCase();
 let fails = 0;
 const ok = (n, c, x = '') => { console.log(`${c ? 'PASS' : 'FAIL'} ${n}${x ? ' — ' + x : ''}`); if (!c) fails++; };
+if (process.env.E2E_PLATFORM === 'workers') { console.log('SKIP p28 整檔（Workers：外掛載入需檔案系統，路線圖另作 Workers 外掛機制）'); process.exit(0); }
+
 const j = async (path, { method = 'GET', body, cookie, headers = {} } = {}) => {
   const r = await fetch(B + path, { method, headers: { 'content-type': 'application/json', ...headers, ...(cookie ? { cookie } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) });
   const t = await r.text(); let b; try { b = JSON.parse(t); } catch { b = t; }

@@ -1,6 +1,6 @@
 import { BadRequestException, Body, Controller, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { createHash, randomBytes } from 'node:crypto';
-import bcrypt from 'bcryptjs';
+import { hashPassword, verifyPassword } from '@sitekit/core';
 import { z } from 'zod';
 import { isProd } from '../../config/env';
 import { UserSessionGuard, type AuthedRequest } from '../../common/guards';
@@ -41,7 +41,7 @@ export class AccountController {
     const row = await this.prisma.passwordReset.findUnique({ where: { tokenHash: sha256(token) } });
     if (!row || row.usedAt || row.expiresAt < new Date()) throw new BadRequestException('重設連結無效或已過期');
     await this.prisma.$transaction([
-      this.prisma.user.update({ where: { id: row.userId }, data: { passwordHash: await bcrypt.hash(password, 10) } }),
+      this.prisma.user.update({ where: { id: row.userId }, data: { passwordHash: await hashPassword(password) } }),
       this.prisma.passwordReset.update({ where: { id: row.id }, data: { usedAt: new Date() } }),
       this.prisma.session.deleteMany({ where: { userId: row.userId } }),
     ]);
@@ -63,8 +63,8 @@ export class AccountController {
     const u = await this.prisma.user.findUnique({ where: { id: req.session!.user.id } });
     if (!u) throw new BadRequestException('user not found');
     // 第三方登入建立的帳號可能沒有密碼：首次設定不需要舊密碼
-    if (u.passwordHash && !(d.currentPassword && (await bcrypt.compare(d.currentPassword, u.passwordHash)))) throw new BadRequestException('目前密碼不正確');
-    await this.prisma.user.update({ where: { id: u.id }, data: { passwordHash: await bcrypt.hash(d.newPassword, 10) } });
+    if (u.passwordHash && !(d.currentPassword && (await verifyPassword(d.currentPassword, u.passwordHash)))) throw new BadRequestException('目前密碼不正確');
+    await this.prisma.user.update({ where: { id: u.id }, data: { passwordHash: await hashPassword(d.newPassword) } });
     await this.prisma.session.deleteMany({ where: { userId: u.id, NOT: { id: req.session!.id } } });
     return { ok: true };
   }

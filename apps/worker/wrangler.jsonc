@@ -1,0 +1,31 @@
+// SiteKit API on Cloudflare Workers（免費方案可跑：Workers Free＋D1 Free）
+//   1. wrangler d1 create sitekit → 把 database_id 填進下方
+//   2. npm run migrate:remote -w @sitekit/worker（把 packages/db/sqlite/migrations 轉成 D1 格式並套用）
+//   3. wrangler secret put SESSION_SECRET／OPS_TOKEN（不設＝首次啟動自動產生存資料庫）；vars 的 FRONTEND_URL 改成前台網址
+//   本機開發：.dev.vars 放 APP_ENV=development、SEED_DEMO=1（示範帳號 admin@example.com／admin12345）；CI 用 --var 傳
+//   4. npm run deploy -w @sitekit/worker
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sitekit-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat", "nodejs_compat_populate_process_env"],
+  "d1_databases": [
+    { "binding": "DB", "database_name": "sitekit", "database_id": "cfbc8c84-f881-43f2-b148-abb507ce6ee7", "migrations_dir": "migrations" }
+  ],
+  "vars": {
+    "APP_ENV": "production",
+    "FRONTEND_URL": "http://localhost:3000",
+    "DATABASE_URL": "d1",
+    "APP_VERSION": "0.26.0",
+    "npm_package_version": "0.26.0"
+  },
+  // core／apps/api 以 PostgreSQL 版 client 的型別編譯；Workers 上一律換成 SQLite 版（D1）的 wasm client
+  "alias": {
+    "@prisma/client": "../../packages/db/sqlite/client/wasm.js",
+    "class-validator": "./src/stubs/empty.js",
+    "class-transformer": "./src/stubs/empty.js"
+  },
+  "triggers": { "crons": ["0 * * * *"] },
+  "observability": { "enabled": true }
+}

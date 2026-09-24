@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
+    "@sitekit/db": "*",
     "@sitekit/shared": "*",
     "bcryptjs": "^3.0.3",
     "reflect-metadata": "^0.2.2",

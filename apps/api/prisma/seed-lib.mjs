@@ -4,11 +4,12 @@
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from '@sitekit/core';
 
-const here = dirname(fileURLToPath(import.meta.url));
+// Workers bundle 裡 import.meta.url 不可用，改成用到時才算（只有 Node 讀 image-templates.json 才需要）
+const here = () => dirname(fileURLToPath(import.meta.url));
 
-export async function seedBaseline(prisma, { isProd = process.env.APP_ENV === 'production' } = {}) {
+export async function seedBaseline(prisma, { isProd = process.env.APP_ENV === 'production', templates: givenTemplates } = {}) {
   const settings = [
     ['storage.driver', 'local', false],
     ['payment.provider', isProd ? 'none' : 'mock', false],
@@ -17,7 +18,7 @@ export async function seedBaseline(prisma, { isProd = process.env.APP_ENV === 'p
     ['seo.noindex', 'false', false],
   ];
   for (const [key, value, isSecret] of settings) await prisma.setting.upsert({ where: { key }, update: {}, create: { key, value, isSecret } });
-  const templates = JSON.parse(readFileSync(resolve(here, 'image-templates.json'), 'utf8'));
+  const templates = givenTemplates ?? JSON.parse(readFileSync(resolve(here(), 'image-templates.json'), 'utf8'));
   let created = 0;
   for (const t of templates) {
     const exists = await prisma.aiTemplate.findUnique({ where: { key: t.key } });
@@ -34,9 +35,9 @@ export async function seedDemo(prisma) {
   const member = await prisma.user.upsert({
     where: { email },
     update: {},
-    create: { email, displayName: 'Site Admin', passwordHash: await bcrypt.hash(password, 10), role: 'user', allowedFeatures: ['shop', 'courses', 'studio', 'credits', 'storage', 'byok'] },
+    create: { email, displayName: 'Site Admin', passwordHash: await hashPassword(password), role: 'user', allowedFeatures: ['shop', 'courses', 'studio', 'credits', 'storage', 'byok'] },
   });
-  await prisma.adminUser.upsert({ where: { email }, update: {}, create: { email, passwordHash: await bcrypt.hash(password, 10), displayName: 'Site Admin', role: 'superadmin' } });
+  await prisma.adminUser.upsert({ where: { email }, update: {}, create: { email, passwordHash: await hashPassword(password), displayName: 'Site Admin', role: 'superadmin' } });
   await prisma.content.upsert({
     where: { source_externalId: { source: 'seed', externalId: 'welcome' } },
     update: {},

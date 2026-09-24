@@ -115,20 +115,39 @@ export interface CreatePrismaOptions {
  * Prisma.JsonNull 這類 class 實例會變成 {}，無法辨識。所以用 Proxy 包住 client／delegate／itx，
  * 在呼叫點先 convertArgs；extension 只負責把結果字串 parse 回物件。
  */
+let emulateItx = false;
+// D1（workerd）：Prisma 的 findUnique 走 DataLoader 批次，前一個請求在回應後被中止的批次會讓引擎的批次通道永久卡住；改走等價的 findFirst（單查詢）
+let uniqueAsFirst = false;
+const UNIQUE_ALIAS: Record<string, string> = { findUnique: 'findFirst', findUniqueOrThrow: 'findFirstOrThrow' };
+/** findUnique 的複合唯一鍵 where: { a_b: { a, b } } 在 findFirst 不合法 → 攤平成 where: { a, b }（欄位名一律 camelCase，含底線的鍵必是複合鍵） */
+function flattenCompoundUnique(args: unknown): unknown {
+  if (!args || typeof args !== 'object') return args;
+  const a = args as { where?: Record<string, unknown> };
+  if (!a.where || typeof a.where !== 'object') return args;
+  const where: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(a.where)) {
+    if (k.includes('_') && v && typeof v === 'object' && !Array.isArray(v) && k.split('_').every((part) => part in (v as object))) Object.assign(where, v);
+    else where[k] = v;
+  }
+  return { ...a, where };
+}
 function wrapClient<T extends object>(base: T): T {
   const wrapDelegate = (d: object) =>
     new Proxy(d, {
       get(t, prop, r) {
+        const aliased = uniqueAsFirst && typeof prop === 'string' && UNIQUE_ALIAS[prop];
+        if (aliased) prop = aliased;
         const v = Reflect.get(t, prop, r);
         if (typeof v !== 'function') return v;
-        return (...a: unknown[]) => (v as (...x: unknown[]) => unknown).apply(t, [convertArgs(a[0], 'root'), ...a.slice(1)]);
+        return (...a: unknown[]) => (v as (...x: unknown[]) => unknown).apply(t, [convertArgs(aliased ? flattenCompoundUnique(a[0]) : a[0], 'root'), ...a.slice(1)]);
       },
     });
   return new Proxy(base, {
     get(t, prop, r) {
       if (prop === '$transaction') {
         const tx = Reflect.get(t, prop, r) as (a: unknown, o?: unknown) => Promise<unknown>;
-        return (arg: unknown, opts?: unknown) => (typeof arg === 'function' ? tx.call(t, (itx: object) => (arg as (c: object) => unknown)(wrapClient(itx)), opts) : tx.call(t, arg, opts));
+        // D1 不支援互動式交易：emulateItx 時直接用同一個 client 執行回呼（失去原子性，D1 限制，見 docs §3）
+        return (arg: unknown, opts?: unknown) => (typeof arg === 'function' ? (emulateItx ? (arg as (c: object) => unknown)(wrapClient(t)) : tx.call(t, (itx: object) => (arg as (c: object) => unknown)(wrapClient(itx)), opts)) : tx.call(t, arg, opts));
       }
       const v = Reflect.get(t, prop, r);
       if (v && typeof v === 'object' && typeof prop === 'string' && !prop.startsWith('$') && !prop.startsWith('_') && typeof (v as { findMany?: unknown }).findMany === 'function') return wrapDelegate(v as object);
@@ -161,6 +180,16 @@ export function createPrisma(opts: CreatePrismaOptions = {}): PrismaClient {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { PrismaClient: Sq } = require('../sqlite/client') as { PrismaClient: new (o?: unknown) => { $extends: (ext: unknown) => unknown } };
   const base = new Sq({ datasources: { db: { url } }, ...(opts.log ? { log: opts.log } : {}) });
+  return wrapSqlite(base);
+}
+
+/** 把「已建好的 SQLite 版 client」（本機檔或 Cloudflare D1 adapter）套上 Json／陣列／enum 轉換層；Workers 殼用這個 */
+export function wrapSqlite(base: { $extends: (ext: unknown) => unknown }, opts: { emulateInteractiveTx?: boolean; findUniqueAsFindFirst?: boolean } = {}): PrismaClient {
+  emulateItx = !!opts.emulateInteractiveTx;
+  uniqueAsFirst = !!opts.findUniqueAsFindFirst;
+  JSON_FIELDS = JSON_FIELDS_ALL;
+  CONVERT = new Set<string>([...JSON_FIELDS_ALL, ...ARRAY_FIELDS]);
+  mapSentinel = null;
   const extended = base.$extends({
     name: 'sitekit-sqlite-json',
     query: {

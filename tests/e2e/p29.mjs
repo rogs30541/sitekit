@@ -9,6 +9,9 @@ const B = process.env.API ?? 'http://localhost:4000';
 const RUN = Date.now().toString(36).slice(-5).toLowerCase();
 let fails = 0;
 const ok = (n, c, x = '') => { console.log(`${c ? 'PASS' : 'FAIL'} ${n}${x ? ' — ' + x : ''}`); if (!c) fails++; };
+const W = process.env.E2E_PLATFORM === 'workers';
+const okw = (n, c, x = '') => (W ? console.log(`SKIP ${n}（Workers：無伺服器硬碟／外掛／排程）`) : ok(n, c, x));
+
 const j = async (path, { method = 'GET', body, cookie, headers = {} } = {}) => {
   const r = await fetch(B + path, { method, headers: { 'content-type': 'application/json', ...headers, ...(cookie ? { cookie } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) });
   const t = await r.text(); let b; try { b = JSON.parse(t); } catch { b = t; }
@@ -28,25 +31,27 @@ const exFull = await j('/api/admin/system/export?secrets=1', { cookie: admin });
 ok('含機密版：passwordHash 保留', exFull.status === 200 && exFull.body.includeSecrets === true && (exFull.body.tables.AdminUser ?? []).some((u) => typeof u.passwordHash === 'string' && u.passwordHash.length > 20));
 ok('匯出未登入 → 401', (await j('/api/admin/system/export')).status === 401);
 
-// 2. 備份清單／立即備份／下載／刪除
-const b1 = await j('/api/admin/system/backups', { method: 'POST', cookie: admin });
-ok('立即備份 → file/size', b1.status === 201 && typeof b1.body.file === 'string' && b1.body.file.endsWith('.json') && b1.body.size > 1000, JSON.stringify(b1.body).slice(0, 120));
-const list = await j('/api/admin/system/backups', { cookie: admin });
-ok('備份清單含剛建的檔、lastAt 已更新', list.status === 200 && list.body.files.some((f) => f.name === b1.body.file) && !!list.body.lastAt, JSON.stringify(list.body).slice(0, 160));
-const dl = await j(`/api/admin/system/backups/${encodeURIComponent(b1.body.file)}`, { cookie: admin });
-ok('下載備份檔（JSON、含機密）', dl.status === 200 && dl.body.kind === 'sitekit-export' && dl.body.includeSecrets === true);
-ok('路徑穿越被擋', (await j('/api/admin/system/backups/..%2F..%2Fpackage.json', { cookie: admin })).status >= 400);
-// 保留份數：設 keep=1 再備份 → 只剩 1 份
-await act('update_settings', { settings: { 'backup.keep': '1', 'backup.daily': 'true' } });
-const b2 = await j('/api/admin/system/backups', { method: 'POST', cookie: admin });
-const list2 = await j('/api/admin/system/backups', { cookie: admin });
-ok('backup.keep=1 → 只保留最新一份', b2.status === 201 && list2.body.files.length === 1 && list2.body.files[0].name === b2.body.file && list2.body.daily === true && list2.body.keep === 1, JSON.stringify(list2.body.files.map((f) => f.name)));
-// OPS export_site
-const ops = await act('export_site', {});
-ok('OPS export_site 建備份檔', ops.body.ok && typeof ops.body.data?.file === 'string', JSON.stringify(ops.body).slice(0, 120));
-const del = await j(`/api/admin/system/backups/${encodeURIComponent(ops.body.data.file)}`, { method: 'DELETE', cookie: admin });
-ok('刪除備份檔', del.status === 200 && del.body.ok === true);
-await act('update_settings', { settings: { 'backup.keep': '7', 'backup.daily': 'false' } });
+// 2. 備份清單／立即備份／下載／刪除（Workers 沒有檔案系統：整段跳過）
+if (!W) {
+  const b1 = await j('/api/admin/system/backups', { method: 'POST', cookie: admin });
+  okw('立即備份 → file/size', b1.status === 201 && typeof b1.body.file === 'string' && b1.body.file.endsWith('.json') && b1.body.size > 1000, JSON.stringify(b1.body).slice(0, 120));
+  const list = await j('/api/admin/system/backups', { cookie: admin });
+  okw('備份清單含剛建的檔、lastAt 已更新', list.status === 200 && list.body.files.some((f) => f.name === b1.body.file) && !!list.body.lastAt, JSON.stringify(list.body).slice(0, 160));
+  const dl = await j(`/api/admin/system/backups/${encodeURIComponent(b1.body.file)}`, { cookie: admin });
+  okw('下載備份檔（JSON、含機密）', dl.status === 200 && dl.body.kind === 'sitekit-export' && dl.body.includeSecrets === true);
+  okw('路徑穿越被擋', (await j('/api/admin/system/backups/..%2F..%2Fpackage.json', { cookie: admin })).status >= 400);
+  // 保留份數：設 keep=1 再備份 → 只剩 1 份
+  await act('update_settings', { settings: { 'backup.keep': '1', 'backup.daily': 'true' } });
+  const b2 = await j('/api/admin/system/backups', { method: 'POST', cookie: admin });
+  const list2 = await j('/api/admin/system/backups', { cookie: admin });
+  okw('backup.keep=1 → 只保留最新一份', b2.status === 201 && list2.body.files.length === 1 && list2.body.files[0].name === b2.body.file && list2.body.daily === true && list2.body.keep === 1, JSON.stringify(list2.body.files.map((f) => f.name)));
+  // OPS export_site
+  const ops = await act('export_site', {});
+  okw('OPS export_site 建備份檔', ops.body.ok && typeof ops.body.data?.file === 'string', JSON.stringify(ops.body).slice(0, 120));
+  const del = await j(`/api/admin/system/backups/${encodeURIComponent(ops.body.data.file)}`, { method: 'DELETE', cookie: admin });
+  okw('刪除備份檔', del.status === 200 && del.body.ok === true);
+  await act('update_settings', { settings: { 'backup.keep': '7', 'backup.daily': 'false' } });
+} else console.log('SKIP 備份清單／立即備份／下載／刪除（Workers）');
 
 // 3. 跨資料庫搬家：把含機密匯出檔用 CLI 匯入到全新 SQLite，列數一致
 const here = fileURLToPath(new URL('.', import.meta.url));

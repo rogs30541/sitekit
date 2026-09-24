@@ -268,6 +268,29 @@ node tests/e2e/run.mjs p25      # 只跑指定檔
 }
 ```
 
+## Cloudflare Workers＋D1 殼（v0.27.0，免費方案可跑）
+
+`apps/worker`＝第三個殼：Hono ＋ Cloudflare D1（Prisma driver adapter），**apps/api 的 25 個 controller／187 條路由一行不改**——`src/nest-bridge.ts` 在執行期讀 Nest 的裝飾器中繼資料（@Controller／@Get／@Body／@UseGuards…）掛到 Hono，並提供 Express 形狀的 req／res；`src/container.ts` 是讀 @Module 圖的迷你 DI 容器。
+
+```bash
+cd apps/worker
+npx wrangler login
+npx wrangler d1 create sitekit            # 把 database_id 填進 wrangler.jsonc
+npm run migrate:remote                    # packages/db/sqlite/migrations → D1 格式並套用
+npx wrangler deploy                       # 之後把前台的 API_INTERNAL_URL 指到這個 Worker
+```
+
+D1／workerd 的差異都收在 `packages/db`（`wrapSqlite(base, { emulateInteractiveTx, findUniqueAsFindFirst })`）與殼層：
+- **互動式交易**：D1 不支援 `$transaction(async tx => …)`，殼層改成直接執行回呼（失去原子性，D1 限制）。
+- **findUnique → findFirst**：Prisma 的 findUnique 走批次載入器，請求結束後被中止的批次會讓 wasm 引擎的批次通道永久卡住（症狀：所有 findUnique 逾時、其餘查詢正常）；複合唯一鍵自動攤平。
+- **adapter-d1 靠值的長相猜欄位型別**：String 欄位存了日期字串就整欄被當 DateTime（`Error converting field "value"`），殼層用建置期落地的 `dmmf.json` 把非 DateTime 欄位改回 Text；engine 產生的 now()／@updatedAt 是毫秒整數，統一轉成字串避免同欄混型。
+- **回應後的工作**（通知信、事件、前台重新驗證、產圖任務）：core 的 `background()` 在 Workers 交給 `ctx.waitUntil`，Node 直接跑。
+- **密碼**：bcryptjs 的非同步版在 workerd 會被判「永遠不回應」而中止，新雜湊一律 WebCrypto PBKDF2（`pbkdf2$sha256$…`，兩平台共用），舊 bcrypt 雜湊仍可驗證。
+- **不可用**：伺服器硬碟儲存（精靈選 R2）、備份排程、外掛載入（需檔案系統）；逾期訂單改 Cron Trigger。
+- `Prisma.dmmf` 在 wasm client 不存在：匯出服務改讀 `@sitekit/db` 的 `getDmmf()`。
+
+CI `e2e-workers`：wrangler dev＋本機 D1 跑同一套 API 類 e2e（14 檔全綠；需要 web 的 10 檔跳過）。前台（Next）上 Workers 走 OpenNext 是下一步。
+
 ## 其他平台一頁部署（單體殼，全部同一個 `Dockerfile.monolith`）
 
 儲存規則：**部署在哪個平台就用該平台的持久硬碟**（精靈第 3 步選「伺服器硬碟」，會顯示實際路徑與是否已掛持久硬碟）；只有沒硬碟的環境才用 R2。所有平台開站後都是開網址 → `/setup`。

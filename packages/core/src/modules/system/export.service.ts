@@ -1,4 +1,5 @@
 import { Prisma, PrismaClient } from '@prisma/client';
+import { getDmmf } from '@sitekit/db';
 import { BadRequestException, Injectable, Logger } from '../../compat';
 import { env } from '../../env';
 
@@ -36,7 +37,7 @@ export class ExportService {
 
   /** 模型中繼資料（依 DMMF），依相依性拓撲排序 */
   models(): ModelMeta[] {
-    const metas: ModelMeta[] = Prisma.dmmf.datamodel.models.map((m) => {
+    const metas: ModelMeta[] = getDmmf().datamodel.models.map((m) => {
       const deps = new Set<string>();
       let selfParent: string | null = null;
       for (const f of m.fields) {

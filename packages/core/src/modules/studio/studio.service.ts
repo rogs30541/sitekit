@@ -1,3 +1,4 @@
+import { background } from '../../env';
 import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from '../../compat';
 import { resolve } from 'node:path';
 import { Prisma } from '@prisma/client';
@@ -281,6 +282,7 @@ export class StudioService implements OnModuleInit {
   // ---- 佇列（程序內序列）----
   private enqueue(id: string) {
     this.chain = this.chain.then(() => this.process(id)).catch((e) => this.log.error(`job ${id}: ${e instanceof Error ? e.message : e}`));
+    background(this.chain);
   }
 
   private async process(id: string) {

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '../../compat';
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { env } from '../../env';
+import { background, env } from '../../env';
 
 /**
  * 發佈即清快取（on-demand ISR revalidation）：
@@ -31,12 +31,18 @@ export class RevalidateService {
   trigger(reason: string) {
     this.reasons.add(reason);
     if (this.timer) clearTimeout(this.timer);
-    this.timer = setTimeout(() => {
+    const fire = () => {
       this.timer = null;
       const why = [...this.reasons].join(',');
       this.reasons.clear();
-      void this.send(why);
-    }, 300);
+      return this.send(why);
+    };
+    if ((globalThis as { __sitekitWaitUntil?: unknown }).__sitekitWaitUntil) {
+      // Workers：計時器在請求結束後不會執行，改交給 waitUntil（等 300ms 合併同一請求內的多次觸發）
+      background(new Promise((r) => setTimeout(r, 300)).then(fire));
+      return;
+    }
+    this.timer = setTimeout(() => void fire(), 300);
   }
   private async send(reason: string) {
     let site = '';

@@ -1,0 +1,29 @@
+{
+  "name": "@sitekit/worker",
+  "version": "0.26.0",
+  "private": true,
+  "type": "module",
+  "description": "SiteKit Cloudflare Workers 殼：Hono＋D1，直接掛 apps/api 的 controller（nest-bridge）",
+  "scripts": {
+    "dev": "wrangler dev --port 8787",
+    "deploy": "wrangler deploy",
+    "build": "tsc -p tsconfig.json --noEmit",
+    "sync:migrations": "node scripts/sync-migrations.mjs",
+    "migrate:local": "node scripts/sync-migrations.mjs && wrangler d1 migrations apply sitekit --local",
+    "migrate:remote": "node scripts/sync-migrations.mjs && wrangler d1 migrations apply sitekit --remote"
+  },
+  "dependencies": {
+    "@prisma/adapter-d1": "6.19.3",
+    "@sitekit/api": "*",
+    "@sitekit/core": "*",
+    "@sitekit/db": "*",
+    "@sitekit/shared": "*",
+    "hono": "^4.13.0",
+    "reflect-metadata": "^0.2.2"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250901.0",
+    "typescript": "^5.6.0",
+    "wrangler": "^4.137.0"
+  }
+}
