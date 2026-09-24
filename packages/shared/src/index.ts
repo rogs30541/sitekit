@@ -307,3 +307,4 @@ export function effectivePrice(p: { price: number; salePrice?: number | null; sa
   return { price: sp, original: p.price, onSale: true };
 }
 export * from './i18n';
+export * from './site-templates';

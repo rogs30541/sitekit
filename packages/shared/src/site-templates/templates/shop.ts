@@ -1,0 +1,156 @@
+/** 電商類 10 套：線上商店、品牌購物 */
+import type { SiteTemplate } from '../common';
+import { MENU, PAGES } from '../common';
+
+const shopNav = (extra: { label: string; href: string }[] = []) => [{ label: '首頁', href: '/' }, { label: '全部商品', href: '/store' }, ...extra, { label: '品牌故事', href: '/p/about' }, { label: '購物須知', href: '/p/faq' }];
+const shopFaq = PAGES.faq([{ q: '運費怎麼算？', a: '滿千免運，未滿收 80 元。' }, { q: '多久出貨？', a: '付款後 1 到 3 個工作天。' }, { q: '可以退換貨嗎？', a: '收到 7 天內未拆封可退換。' }, { q: '有哪些付款方式？', a: '信用卡、ATM、超商代碼、超商取貨付款。' }]);
+const brandStory = (title = '品牌故事'): SiteTemplate['pages'][number] => ({ slug: 'about', title, sections: [{ kind: 'hero', variant: 'center', title, compact: true }, { kind: 'split', title: '為什麼開始', text: '兩三段：起心動念、堅持、現在。', imageSide: 'left' }, { kind: 'features', variant: 'icons', title: '我們的堅持', columns: 3, items: [{ icon: '🌱', title: '堅持一', text: '一句話' }, { icon: '🔬', title: '堅持二', text: '一句話' }, { icon: '🤍', title: '堅持三', text: '一句話' }] }, { kind: 'cta', variant: 'band', title: '逛逛商店', buttonText: '前往商城', buttonHref: '/store' }] });
+
+export const SHOP_TEMPLATES: SiteTemplate[] = [
+  {
+    id: 'shop-fashion-clean', category: 'shop', name: '時尚商店', style: '簡潔', tagline: '滿版主視覺、分類磚、新品與熱銷、品牌故事、電子報', tags: ['服飾', '配件', '新品'], source: 'Wix 時尚商店 (簡潔) 骨架',
+    theme: { mode: 'light', accent: '#171717', font: 'display', radius: 'none', header: 'centered', footer: 'columns' },
+    menu: { header: shopNav([{ label: '新品', href: '/store' }]), footer: MENU.footerShop },
+    home: [
+      { kind: 'banner', text: '全館滿 NT$1,500 免運 · 新會員折 100', href: '/store' },
+      { kind: 'hero', variant: 'cover', kicker: 'NEW SEASON', title: '本季新品', subtitle: '一句話。', ctaText: '立即選購', ctaHref: '/store', tone: 'image' },
+      { kind: 'categories', variant: 'tiles', columns: 4, items: [{ title: '上衣', href: '/store' }, { title: '下著', href: '/store' }, { title: '外套', href: '/store' }, { title: '配件', href: '/store' }] },
+      { kind: 'products', variant: 'grid', title: '新品上架', columns: 4, limit: 8, ctaText: '看全部', ctaHref: '/store' },
+      { kind: 'split', title: '品牌故事', text: '兩三句。', imageSide: 'left', ctaText: '了解更多', ctaHref: '/p/about' },
+      { kind: 'products', variant: 'ranking', title: '熱銷排行', columns: 4, limit: 4 },
+      { kind: 'testimonials', variant: 'cards', title: '顧客回饋', items: [{ quote: '一句原話。', name: '顧客' }, { quote: '一句原話。', name: '顧客' }, { quote: '一句原話。', name: '顧客' }] },
+      { kind: 'cta', variant: 'card', title: '訂閱電子報', text: '新品與優惠第一時間通知。', buttonText: '加入會員', buttonHref: '/register' },
+    ],
+    pages: [brandStory(), shopFaq, PAGES.contact()],
+  },
+  {
+    id: 'shop-skincare-organic', category: 'shop', name: '純淨保養', style: '有機', tagline: '概念主張、好評數字、LINE 導流、保養教學、商品格', tags: ['保養', '美妝', '天然'], source: '參考站綠藤生機骨架',
+    theme: { mode: 'light', accent: '#3f6b4f', font: 'serif', radius: 'md', header: 'solid', footer: 'columns' },
+    menu: { header: shopNav([{ label: '保養教學', href: '/blog' }]), footer: MENU.footerShop },
+    home: [
+      { kind: 'hero', variant: 'split', kicker: '減法保養', title: '沒有減法，何來精華', subtitle: '一句話主張。', ctaText: '選購', ctaHref: '/store', imageSide: 'right' },
+      { kind: 'split', title: '現在，保養從減法開始', text: '兩段講概念。', imageSide: 'left', bullets: ['減一：不必要的成分', '減二：不必要的步驟', '加一：真正有效的精華'] },
+      { kind: 'stats', variant: 'row', items: [{ value: '20,000+', label: '真實好評' }, { value: '23', label: '款產品' }, { value: '0', label: '不必要成分' }] },
+      { kind: 'cta', variant: 'split', title: '加入 LINE 官方帳號', text: '肌膚問題直接問。', buttonText: '加入 LINE', buttonHref: '#' },
+      { kind: 'features', variant: 'numbered', title: '三步保養法', columns: 3, items: [{ code: '01', title: '清潔', text: '一句話' }, { code: '02', title: '精華', text: '一句話' }, { code: '03', title: '鎖水', text: '一句話' }] },
+      { kind: 'gallery', variant: 'strip', columns: 3, items: [] },
+      { kind: 'products', variant: 'grid', title: '全系列', columns: 3, limit: 6, ctaText: '看全部', ctaHref: '/store' },
+    ],
+    pages: [brandStory('關於品牌'), shopFaq, PAGES.contact()],
+  },
+  {
+    id: 'shop-gym-bold', category: 'shop', name: '機能運動品牌', style: '粗體 · 深色', tagline: '促銷帶、滿版視覺、分類籤、商品牆、聯名牆', tags: ['運動', '健身', '機能'], source: '參考站 TeamJoined 骨架',
+    theme: { mode: 'dark', accent: '#facc15', font: 'display', radius: 'sm', header: 'bar', footer: 'columns', heading: 'display' },
+    menu: { header: shopNav([{ label: '男裝', href: '/store' }, { label: '女裝', href: '/store' }, { label: 'SALE', href: '/store' }]), footer: MENU.footerShop },
+    home: [
+      { kind: 'banner', text: '本週限定 · 全館 8 折', href: '/store', tone: 'accent' },
+      { kind: 'hero', variant: 'cover', kicker: 'TRAIN HARDER', title: '穿上，就是狀態', subtitle: '一句話。', ctaText: '選購男裝', ctaHref: '/store', cta2Text: '選購女裝', cta2Href: '/store', tone: 'dark' },
+      { kind: 'categories', variant: 'chips', items: [{ title: '熱銷', href: '/store' }, { title: '新品', href: '/store' }, { title: '護具', href: '/store' }, { title: '居家訓練', href: '/store' }, { title: '聯名', href: '/store' }], tone: 'dark' },
+      { kind: 'products', variant: 'grid', title: '熱銷', columns: 4, limit: 8, tone: 'dark' },
+      { kind: 'split', title: '為訓練而生', text: '布料、版型、耐用度各一句。', imageSide: 'right', tone: 'dark' },
+      { kind: 'logos', title: '聯名 · 合作', items: [{ name: 'A' }, { name: 'B' }, { name: 'C' }, { name: 'D' }], tone: 'dark' },
+      { kind: 'cta', variant: 'band', title: '加入會員享首購折扣', buttonText: '免費加入', buttonHref: '/register' },
+    ],
+    pages: [brandStory(), shopFaq, PAGES.contact({ tone: 'dark' })],
+  },
+  {
+    id: 'shop-gift-soft', category: 'shop', name: '禮品店', style: '柔和', tagline: '主打商品、送禮分類、精選、見證與 FAQ', tags: ['禮品', '節慶', '客製'], source: 'Wix 禮品店 (柔和色) 骨架',
+    theme: { mode: 'light', accent: '#d97706', accent2: '#f472b6', font: 'rounded', radius: 'xl', header: 'centered', footer: 'columns' },
+    menu: { header: shopNav([{ label: '送禮指南', href: '/blog' }]), footer: MENU.footerShop },
+    home: [
+      { kind: 'hero', variant: 'center', kicker: '把心意包起來', title: '每一份禮，都有它的故事', subtitle: '一句話。', ctaText: '挑選禮物', ctaHref: '/store', tone: 'muted' },
+      { kind: 'categories', variant: 'icons', title: '送給誰', columns: 4, items: [{ icon: '💐', title: '給她', href: '/store' }, { icon: '🎩', title: '給他', href: '/store' }, { icon: '🧸', title: '給孩子', href: '/store' }, { icon: '🏢', title: '企業贈禮', href: '/p/contact' }] },
+      { kind: 'products', variant: 'featured', title: '精選', columns: 3, limit: 3 },
+      { kind: 'products', variant: 'grid', title: '本季熱門', columns: 4, limit: 8 },
+      { kind: 'testimonials', variant: 'quotes', items: [{ quote: '一句原話。', name: '顧客' }, { quote: '一句原話。', name: '顧客' }] },
+      { kind: 'faq', title: '常見問題', items: [{ q: '可以客製卡片嗎？', a: '可以，結帳備註即可。' }, { q: '多久到貨？', a: '2 到 3 個工作天。' }] },
+      { kind: 'cta', variant: 'card', title: '企業大量訂購', buttonText: '聯絡我們', buttonHref: '/p/contact' },
+    ],
+    pages: [brandStory(), shopFaq, PAGES.contact()],
+  },
+  {
+    id: 'shop-jewelry-luxe', category: 'shop', name: '珠寶飾品', style: '奢華 · serif', tagline: '編輯式主視覺、商品橫帶、工藝故事、瀑布圖庫、單則見證', tags: ['珠寶', '精品', '高單價'], source: 'Wix 珠寶店（奢華）骨架',
+    theme: { mode: 'light', accent: '#8a6d3b', font: 'serif', radius: 'none', header: 'centered', footer: 'minimal', container: 'wide' },
+    menu: { header: shopNav([{ label: '系列', href: '/store' }, { label: '工藝', href: '/p/craft' }]), footer: MENU.footerShop },
+    home: [
+      { kind: 'hero', variant: 'editorial', kicker: 'COLLECTION', title: '光，落在每一個細節', subtitle: '一句話。', ctaText: '探索系列', ctaHref: '/store' },
+      { kind: 'products', variant: 'strip', title: '本季系列', columns: 4, limit: 8 },
+      { kind: 'split', title: '工藝', text: '材質、製程、檢驗各一段。', imageSide: 'left', ctaText: '了解工藝', ctaHref: '/p/craft' },
+      { kind: 'gallery', variant: 'masonry', columns: 3, items: [] },
+      { kind: 'testimonials', variant: 'single', items: [{ quote: '一句原話。', name: '顧客', role: '台北' }] },
+      { kind: 'contact', variant: 'columns', title: '預約鑑賞', items: [{ icon: '📍', label: '門市', value: '地址', href: '' }, { icon: '📞', label: '預約', value: '02-0000-0000', href: 'tel:+886200000000' }] },
+    ],
+    pages: [{ slug: 'craft', title: '工藝', sections: [{ kind: 'hero', variant: 'center', title: '工藝', compact: true }, { kind: 'steps', variant: 'timeline', items: [{ title: '選材' }, { title: '設計' }, { title: '製作' }, { title: '檢驗' }] }, { kind: 'gallery', variant: 'grid', columns: 3, items: [] }] }, brandStory(), shopFaq, PAGES.contact()],
+  },
+  {
+    id: 'shop-home-cozy', category: 'shop', name: '家居選物', style: '溫馨', tagline: '空間分類、商品格、選物理念、生活提案文章', tags: ['家居', '選物', '生活'], source: 'Wix 家居用品店 (溫馨風格) 骨架',
+    theme: { mode: 'light', accent: '#b45309', font: 'rounded', radius: 'xl', header: 'solid', footer: 'columns' },
+    menu: { header: shopNav([{ label: '生活提案', href: '/blog' }]), footer: MENU.footerShop },
+    home: [
+      { kind: 'hero', variant: 'split', kicker: '為日常選物', title: '把喜歡的東西，留在家裡', subtitle: '一句話。', ctaText: '逛逛', ctaHref: '/store', imageSide: 'left' },
+      { kind: 'categories', variant: 'tiles', title: '依空間', columns: 4, items: [{ title: '客廳', href: '/store' }, { title: '臥室', href: '/store' }, { title: '廚房', href: '/store' }, { title: '陽台', href: '/store' }] },
+      { kind: 'products', variant: 'grid', title: '本週選物', columns: 4, limit: 8 },
+      { kind: 'split', title: '我們怎麼選', text: '三個標準各一句。', imageSide: 'right', bullets: ['用得久', '看得順', '價格合理'] },
+      { kind: 'posts', variant: 'grid', title: '生活提案', limit: 3 },
+      { kind: 'cta', variant: 'band', title: '加入會員收藏喜歡的東西', buttonText: '免費加入', buttonHref: '/register' },
+    ],
+    pages: [brandStory(), shopFaq, PAGES.contact()],
+  },
+  {
+    id: 'shop-food-warm', category: 'shop', name: '食物飲品', style: '暖色', tagline: '滿版食物主視覺、商品格、三大堅持、訂購流程、FAQ', tags: ['食品', '甜點', '茶飲'], source: 'Wix 食物及飲料類骨架',
+    theme: { mode: 'light', accent: '#c2410c', font: 'rounded', radius: 'xl', header: 'solid', footer: 'columns', heading: 'bold' },
+    menu: { header: shopNav([{ label: '訂購流程', href: '/#steps' }]), footer: MENU.footerShop },
+    home: [
+      { kind: 'hero', variant: 'cover', kicker: '每日現做', title: '好吃，是最基本的事', subtitle: '一句話。', ctaText: '立即訂購', ctaHref: '/store', tone: 'image' },
+      { kind: 'products', variant: 'grid', title: '人氣品項', columns: 3, limit: 6 },
+      { kind: 'features', variant: 'icons', title: '三大堅持', columns: 3, items: [{ icon: '🌾', title: '原料', text: '一句話' }, { icon: '👩‍🍳', title: '手作', text: '一句話' }, { icon: '🚚', title: '冷鏈', text: '一句話' }] },
+      { kind: 'steps', id: 'steps', variant: 'numbers', title: '訂購流程', items: [{ title: '選品' }, { title: '結帳' }, { title: '製作' }, { title: '配送' }] },
+      { kind: 'faq', items: [{ q: '保存期限？', a: '冷藏 5 天。' }, { q: '可以指定到貨日？', a: '可以，結帳備註。' }] },
+      { kind: 'cta', variant: 'card', title: '團購或企業訂購', buttonText: '聯絡我們', buttonHref: '/p/contact' },
+    ],
+    pages: [brandStory(), shopFaq, PAGES.contact()],
+  },
+  {
+    id: 'shop-tech-dark', category: 'shop', name: '3C 電子', style: '深色', tagline: '影片主視覺、排行、規格特色、數字、FAQ', tags: ['3C', '電子', '配件'], source: 'Wix Camera／Electronics 骨架',
+    theme: { mode: 'dark', accent: '#22d3ee', font: 'sans', radius: 'md', header: 'solid', footer: 'columns' },
+    menu: { header: shopNav([{ label: '排行', href: '/#rank' }]), footer: MENU.footerShop },
+    home: [
+      { kind: 'hero', variant: 'split', kicker: '新品', title: '規格說話，價格說服', subtitle: '一句話。', ctaText: '立即購買', ctaHref: '/store', videoUrl: '', tone: 'dark' },
+      { kind: 'products', id: 'rank', variant: 'ranking', title: '熱銷排行', columns: 4, limit: 8, tone: 'dark' },
+      { kind: 'features', variant: 'grid', title: '為什麼選我們', columns: 3, items: [{ icon: '🛡️', title: '原廠保固', text: '一句話' }, { icon: '🚀', title: '當日出貨', text: '一句話' }, { icon: '💬', title: '技術客服', text: '一句話' }], tone: 'dark' },
+      { kind: 'stats', variant: 'row', items: [{ value: '50,000+', label: '出貨' }, { value: '4.8', label: '評分' }, { value: '7 天', label: '鑑賞期' }], tone: 'dark' },
+      { kind: 'faq', items: [{ q: '保固多久？', a: '一年原廠保固。' }, { q: '可以分期？', a: '信用卡 3、6 期零利率。' }], tone: 'dark' },
+    ],
+    pages: [brandStory(), shopFaq, PAGES.contact({ tone: 'dark' })],
+  },
+  {
+    id: 'shop-marketplace', category: 'shop', name: '策展市集', style: '多分類', tagline: '分類籤、主題策展商品帶、文章、公告帶，適合多品牌選物', tags: ['選物', '市集', '策展'], source: '參考站 Pinkoi 型市集骨架',
+    theme: { mode: 'light', accent: '#e11d48', font: 'sans', radius: 'md', header: 'solid', footer: 'columns', container: 'wide' },
+    menu: { header: shopNav([{ label: '策展', href: '/#curation' }, { label: '文章', href: '/blog' }]), footer: MENU.footerShop },
+    home: [
+      { kind: 'categories', variant: 'chips', items: [{ title: '全部', href: '/store' }, { title: '生活', href: '/store' }, { title: '文具', href: '/store' }, { title: '服飾', href: '/store' }, { title: '食品', href: '/store' }, { title: '設計', href: '/store' }] },
+      { kind: 'hero', variant: 'carousel', slides: [{ title: '主題策展一', subtitle: '一句話', ctaText: '看策展', ctaHref: '/store' }, { title: '主題策展二', subtitle: '一句話', ctaText: '看策展', ctaHref: '/store' }] },
+      { kind: 'products', id: 'curation', variant: 'strip', title: '編輯精選', columns: 4, limit: 8 },
+      { kind: 'products', variant: 'strip', title: '本週新上架', columns: 4, limit: 8 },
+      { kind: 'posts', variant: 'grid', title: '設計故事', limit: 3 },
+      { kind: 'banner', text: '成為賣家：把你的作品放上來', href: '/p/contact', tone: 'muted' },
+    ],
+    pages: [brandStory('關於市集'), shopFaq, PAGES.contact()],
+  },
+  {
+    id: 'shop-single-product', category: 'shop', name: '單品銷售頁', style: '轉換', tagline: '一個商品一頁：賣點、數字、見證、方案、FAQ、CTA', tags: ['單品', '轉換', '登陸頁'], source: 'Wix 產品登陸頁面骨架',
+    theme: { mode: 'light', accent: '#dc2626', font: 'sans', radius: 'md', header: 'minimal', footer: 'minimal' },
+    menu: { header: [{ label: '特色', href: '/#features' }, { label: '評價', href: '/#reviews' }, { label: '方案', href: '/#pricing' }, { label: '立即購買', href: '/store' }], footer: MENU.footerShop },
+    home: [
+      { kind: 'hero', variant: 'split', kicker: '熱銷 10,000 件', title: '一件解決三個問題', subtitle: '一句話。', ctaText: '立即購買', ctaHref: '/store', imageSide: 'right' },
+      { kind: 'stats', variant: 'row', items: [{ value: '10,000+', label: '售出' }, { value: '4.9', label: '評分' }, { value: '98%', label: '回購' }] },
+      { kind: 'features', id: 'features', variant: 'icons', columns: 3, items: [{ icon: '✅', title: '賣點一', text: '一句話' }, { icon: '✅', title: '賣點二', text: '一句話' }, { icon: '✅', title: '賣點三', text: '一句話' }] },
+      { kind: 'split', title: '怎麼用', text: '三句。', imageSide: 'left' },
+      { kind: 'testimonials', id: 'reviews', variant: 'cards', items: [{ quote: '一句原話。', name: '顧客', metric: '★★★★★' }, { quote: '一句原話。', name: '顧客', metric: '★★★★★' }, { quote: '一句原話。', name: '顧客', metric: '★★★★★' }] },
+      { kind: 'pricing', id: 'pricing', plans: [{ name: '單入', price: 'NT$990', ctaText: '購買', ctaHref: '/store' }, { name: '兩入組', price: 'NT$1,780', note: '省 200', ctaText: '購買', ctaHref: '/store', highlight: true }, { name: '家庭組', price: 'NT$3,300', note: '省 660', ctaText: '購買', ctaHref: '/store' }] },
+      { kind: 'faq', items: [{ q: '尺寸？', a: '一句話。' }, { q: '保固？', a: '一年。' }, { q: '退貨？', a: '7 天內。' }] },
+      { kind: 'cta', variant: 'band', title: '現在下單，明天出貨', buttonText: '立即購買', buttonHref: '/store' },
+    ],
+    pages: [shopFaq, PAGES.contact()],
+  },
+];
