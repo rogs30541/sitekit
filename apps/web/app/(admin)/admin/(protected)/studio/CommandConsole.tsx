@@ -331,6 +331,17 @@ export function CommandConsole({
                           {OPS_ACTIONS[s.action as keyof typeof OPS_ACTIONS]
                             ?.desc ?? s.desc}
                         </span>
+                        {s.action === "set_home_sections" ? (
+                          <SectionsDiff
+                            before={
+                              ((t.executed ?? []).find((e) => e.action === "get_site")?.data as { home?: { sections?: { kind: string }[] } } | undefined)?.home?.sections?.map((x) => x.kind) ?? null
+                            }
+                            after={(Array.isArray(s.params.sections) ? (s.params.sections as { kind: string }[]) : []).map((x) => x.kind)}
+                          />
+                        ) : null}
+                        {s.action === "apply_site_template" || s.action === "quick_setup_site" ? (
+                          <p className="mt-1 text-[11px] text-amber-800">會覆寫主題、首頁區塊、選單並建立同名子頁；商品／課程／文章不動；可用 restore 還原。</p>
+                        ) : null}
                         <details>
                           <summary
                             className="cursor-pointer"
@@ -508,6 +519,32 @@ export function CommandConsole({
         chat
       )}
     </div>
+  );
+}
+
+/** 首頁區塊待確認差異：現況（同回合 get_site）vs 送出的 sections，以 kind 序列比對 */
+function SectionsDiff({ before, after }: { before: string[] | null; after: string[] }) {
+  if (!before) return <p className="mt-1 text-[11px]" style={{ color: "var(--muted)" }}>新首頁區塊（{after.length}）：{after.join(" → ")}</p>;
+  const b = [...before];
+  const rows: { kind: string; op: "keep" | "add" | "del" }[] = [];
+  for (const k of after) {
+    const i = b.indexOf(k);
+    if (i >= 0) {
+      b.splice(i, 1);
+      rows.push({ kind: k, op: "keep" });
+    } else rows.push({ kind: k, op: "add" });
+  }
+  for (const k of b) rows.push({ kind: k, op: "del" });
+  return (
+    <p className="mt-1 flex flex-wrap gap-1 text-[11px]">
+      {rows.map((r, i) => (
+        <span key={i} className={`rounded px-1 ${r.op === "add" ? "bg-green-100 text-green-800" : r.op === "del" ? "bg-red-100 text-red-800 line-through" : "bg-neutral-100"}`}>
+          {r.op === "add" ? "＋" : r.op === "del" ? "－" : ""}
+          {r.kind}
+        </span>
+      ))}
+      <span style={{ color: "var(--muted)" }}>（{before.length} → {after.length} 個區塊）</span>
+    </p>
   );
 }
 

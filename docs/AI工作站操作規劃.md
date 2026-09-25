@@ -20,7 +20,7 @@
 ### A. 建站
 | 項目 | 常用動作 | 典型流程 |
 |---|---|---|
-| **A1 版型與主題** `site` | `list_site_templates`（R）→ `apply_site_template`（W，confirm）；`get_site`（R）→ `set_theme`（W）；`update_brand`（W） | 「幫我挑一套適合烘焙坊的電商版型並套用」→ AI 先列 shop 分類、比較風格、選一套排入待確認，回覆說明會覆寫首頁／選單／子頁與可還原。「整站換成深色＋圓體字」→ `set_theme({mode:'dark',font:'rounded'})`。「網站名稱改成…、Email 改成…」→ `update_brand`。 |
+| **A1 版型與主題** `site` | `recommend_site_template`（R）→ `quick_setup_site`（W，confirm，一鍵建站）；`list_site_templates`（R）→ `apply_site_template`（W，confirm）；`get_site`（R）→ `set_theme`（W）；`update_brand`（W） | 「幫我挑一套適合烘焙坊的電商版型並套用」→ AI 先列 shop 分類、比較風格、選一套排入待確認，回覆說明會覆寫首頁／選單／子頁與可還原。「整站換成深色＋圓體字」→ `set_theme({mode:'dark',font:'rounded'})`。「網站名稱改成…、Email 改成…」→ `update_brand`。 |
 | **A2 選單與導覽** `menu` | `get_menu`（R）→ `set_menu`（W） | 「主選單加一個『作品集』連到 /p/works，放在『關於』前面」→ 先讀整棵樹再整棵覆寫（不可只送差異）。 |
 
 ### B. 內容
@@ -109,7 +109,8 @@
 
 ## 8. 下一步（不在本輪）
 
-- 指令台「一鍵建站」：一句話（行業＋風格＋品牌名）→ 自動挑版型＋改品牌＋主題＋首頁文案初稿＋三張圖，全部列成一份待確認清單。
-- 待確認卡片預覽：對 `set_home_sections`／`upsert_content` 顯示區塊線框差異（新增／修改／刪除）。
+- （v0.31.0 已做）一鍵建站 `quick_setup_site`：挑版型＋套用＋品牌資料寫進區塊＋品牌設定＋主題；後台套版庫／精靈有同名面板。文案初稿與產圖仍分開做（不杜撰）。
+- （v0.31.0 已做）待確認卡片：`set_home_sections` 顯示區塊 kind 差異（＋／－）；套版類提示覆寫範圍與還原。
+- 待確認卡片：`upsert_content` 區塊頁差異。
 - 表單訊息 AI 回覆草稿一鍵寄出（需先有站主寄件身分與範本）。
 - 對話記錄落庫（目前只在 sessionStorage）。

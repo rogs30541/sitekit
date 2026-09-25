@@ -177,6 +177,8 @@ export const OPS_ACTIONS = {
   list_invoices: { desc: '列出電子發票（status issued|failed|invalid 可選）', mutating: false },
   get_site: { desc: '讀取站台外觀（品牌／聯絡／社群／SEO 設定值、首頁區塊、選單）', mutating: false },
   set_home_sections: { desc: '設定首頁版面區塊 sections[]（20 種 kind：hero／banner／stats／features／split／gallery／testimonials／faq／pricing／steps／team／logos／video／cta／contact／categories／courses／products／posts／html，各有 variant；伺服器驗證）', mutating: true },
+  recommend_site_template: { desc: '依行業／風格／關鍵字推薦版型（category 可指定 image|shop|course|brand|service；industry 行業描述；style 風格詞；keywords[]）；回 picked 與 alternatives，不改資料', mutating: false },
+  quick_setup_site: { desc: '一鍵建站（必須 confirm=true）：挑版型（templateId 或依 industry／category／style 推薦）→ 套用並把 brandName／tagline／contactEmail／phone／address 寫進 hero 與聯絡區塊 → 更新品牌設定（siteName／description）→ accent／mode 有給才改主題。不產圖、不杜撰文案；可 restore 還原', mutating: true },
   set_theme: { desc: '設定外觀主題（theme.* 白名單：mode light|dark、accent #rrggbb（同步 brand.primaryColor）、accent2、font sans|serif|display|rounded|mono、radius none|sm|md|xl|full、header solid|transparent|centered|minimal|bar、footer simple|columns|minimal、container narrow|normal|wide、heading normal|bold|display；只改給的鍵）', mutating: true },
   update_brand: { desc: '更新品牌／聯絡／SEO／語言等非機密站台設定（白名單：brand.*、seo.*、site.locale；金流／金鑰／系統設定不在此，請用系統功能）', mutating: true },
   list_site_templates: { desc: '列出快速套版：五大分類（形象／電商／課程／品牌／專業服務）× 10 套，回 id、名稱、風格、主題、子頁；可帶 category 過濾', mutating: false },
@@ -287,7 +289,7 @@ export const COMMAND_EXCLUDED_ACTIONS: OpsAction[] = ['status', 'deploy', 'migra
 
 /** 指令台七大工作項目（快捷任務；範例指令會填入輸入框） */
 export const COMMAND_TASKS: { key: string; group: string; label: string; desc: string; examples: string[] }[] = [
-  { key: 'site', group: '建站', label: '版型與主題', desc: '挑套版、換主題（深淺色／字型／圓角／頁首頁尾）、改品牌名稱與聯絡資料；套版會覆寫首頁／選單／子頁，可一鍵還原', examples: ['幫我挑一套適合烘焙坊的電商版型並套用，先告訴我會改到什麼', '整站換成深色、圓體字、大圓角，頁首置中', '網站名稱改成「小明烘焙坊」，聯絡 Email 改成 hello@example.com，標語「每天現烤」'] },
+  { key: 'site', group: '建站', label: '版型與主題', desc: '挑套版、換主題（深淺色／字型／圓角／頁首頁尾）、改品牌名稱與聯絡資料；套版會覆寫首頁／選單／子頁，可一鍵還原', examples: ['幫我建站：品牌「小明烘焙坊」、行業 手工烘焙、風格 溫暖、Email hello@example.com、電話 02-1234-5678', '幫我挑一套適合烘焙坊的電商版型並套用，先告訴我會改到什麼', '整站換成深色、圓體字、大圓角，頁首置中', '網站名稱改成「小明烘焙坊」，聯絡 Email 改成 hello@example.com，標語「每天現烤」'] },
   { key: 'menu', group: '建站', label: '選單與導覽', desc: '主選單／頁尾選單整棵讀取與覆寫', examples: ['主選單加一個「作品集」連到 /p/works，放在「關於我們」前面', '頁尾選單只留：關於我們、聯絡我們、會員中心'] },
   { key: 'home', group: '內容', label: '首頁區塊', desc: '讀取並重排首頁的 20 種區塊（hero／stats／features／testimonials／faq／pricing／courses／products…）', examples: ['首頁在課程列表後面加一段三則學員見證，底色淺灰', '把首頁 hero 改成左右分欄版式，標題「AI 讓小店也能做大生意」，按鈕連到 /courses', '首頁加一個 FAQ 區塊：退換貨、運費、付款方式各一題'] },
   { key: 'page', group: '內容', label: '頁面與文章', desc: '用區塊建立子頁（about／services／faq…）或寫文章；存草稿→沙盒預覽→確認發佈；可還原歷史版本', examples: ['建立「關於我們」區塊頁：hero＋品牌故事（split）＋團隊三人＋聯絡方式，存草稿給我預覽', '寫一篇部落格文章：「新手選課的三個原則」，600 字，存草稿', '把 about 頁的標題改成「我們是誰」並給我預覽'] },

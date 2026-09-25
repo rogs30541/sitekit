@@ -144,7 +144,7 @@ export function SetupWizard() {
     <div className="rounded-xl border p-6" style={{ ...line, background: 'var(--card)' }}>
       <h1 className="text-xl font-bold">{tr('SiteKit 安裝精靈')}</h1>
       <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>
-        版本 {status.version}。像 WordPress 一樣，幾個步驟把站台建好；每一步之後都可以在後台再改。
+        版本 {status.version}。像 WordPress 一樣，幾個步驟把站台建好；每一步之後都可以在後台再改。建議部署平台：Zeabur（伺服器硬碟直接可用）。
       </p>
       <ol className="my-4 flex flex-wrap gap-2 text-xs">
         {STEPS.map((s, i) => (

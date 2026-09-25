@@ -374,6 +374,10 @@ export class OpsService {
       }
       case 'set_home_sections':
         return this.site.setHomeSections({ sections: p.sections ?? [] });
+      case 'recommend_site_template':
+        return this.siteTemplates.recommend({ category: p.category ? String(p.category) : undefined, industry: p.industry ? String(p.industry) : undefined, style: p.style ? String(p.style) : undefined, keywords: Array.isArray(p.keywords) ? (p.keywords as unknown[]).map(String) : undefined });
+      case 'quick_setup_site':
+        return this.siteTemplates.quickSetup({ ...(p as Record<string, never>), confirm: p.confirm === true || p.confirm === 'true' }, actor);
       case 'set_theme': {
         const t = themeSchema.partial().parse(Object.fromEntries(Object.entries(p).filter(([k, v]) => k in THEME_KEYS && v !== undefined && v !== null)));
         const values = themeToSettings(t);

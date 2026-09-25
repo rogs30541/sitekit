@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { SiteTemplateSummary, TemplateCategory } from '@sitekit/shared';
+import { QuickSetupPanel } from './QuickSetupPanel';
 
 /**
  * 套版庫（後台「網站 → 套版庫」與安裝精靈「版型」步驟共用）：
@@ -111,6 +112,12 @@ export function TemplateGallery({ onApplied, compact }: { onApplied?: (id: strin
   const picked = list.find((t) => t.id === pick) ?? data.templates.find((t) => t.id === pick);
   return (
     <div className="space-y-3 text-sm">
+      <QuickSetupPanel
+        onDone={(id) => {
+          void load();
+          onApplied?.(id);
+        }}
+      />
       <div className="flex flex-wrap items-center gap-2">
         {[{ id: 'all' as const, label: `全部 ${data.templates.length}` }, ...data.categories].map((c) => (
           <button key={c.id} onClick={() => setCat(c.id as TemplateCategory | 'all')} className={`rounded-full border px-3 py-1 text-xs ${cat === c.id ? 'bg-black text-white' : ''}`} style={cat === c.id ? undefined : { borderColor: 'var(--line)' }}>

@@ -57,6 +57,8 @@ const TOOL_HINTS: Partial<Record<OpsAction, string>> = {
   publish_sales_page: '參數：idOrSlug、confirm(true)、note；unpublish=true 為下架。',
   apply_site_template: '參數：id（先 list_site_templates 取 id）、confirm(true)、restore(true=還原套版前)、pages(false=不建子頁)、menu(false=不動選單)。會覆寫主題／首頁區塊／選單並建立同名子頁；商品／課程／文章／品牌資料不動；第一次套版前自動備份。',
   list_site_templates: '參數：category image|shop|course|brand|service（可選）。回 templates[{id,name,category,style,tagline,tags,theme,pages[],homeKinds[],headerMenu[]}] 與 current（目前版型）。',
+  recommend_site_template: '參數：industry（行業描述，例：手工烘焙坊）、style（風格詞：簡潔／深色／溫暖…）、category（可選）、keywords[]。回 picked／alternatives；推薦後把理由講給使用者。',
+  quick_setup_site: '參數：confirm(true)、templateId（或 industry／category／style 讓系統挑）、brandName、siteName、tagline、description、contactEmail、phone、address、accent(#rrggbb)、mode。只寫使用者給的值。回 template／pages／brandUpdated／next。',
   set_theme: '參數（只放要改的）：mode、accent、accent2、font、radius、header、footer、container、heading。accent 會同步 brand.primaryColor。',
   update_brand: '參數：settings{ key: value }，key 白名單 brand.name／brand.siteName／brand.description／brand.tagline／brand.logoUrl／brand.primaryColor／brand.contactEmail／brand.phone／brand.address／brand.social.facebook|instagram|line|youtube／brand.footerText／seo.ogImage／site.locale。',
   list_contact_messages: '參數：status new|read|replied|archived（可選）、limit。回 counts 與 items[{id,name,email,phone,subject,message,page,status,note,createdAt}]。',
@@ -78,7 +80,8 @@ const SYSTEM_PROMPT = `你是「SiteKit 架站套件」的後台全站工作總�
 8. 區塊裡的 icon 一律填圖示名稱（例 mail、phone、star、rocket、check-circle、shield、truck、sprout），不要用 emoji。連結用站內路徑（/courses、/store、/p/about、/#faq）或完整網址。
 9. 產圖會花錢：一次一張，先確認尺寸與用途。Banner 一般 1536x1024；商品主圖 1024x1024；商品圖優先用 list_image_templates 挑模板＋參考圖。產完的網址回填商品 coverUrl 或區塊的 imageUrl／bgImageUrl。
 10. 聯絡表單訊息（list_contact_messages）只做摘要、排序與擬回覆文字；真正寄信由管理員在後台「表單訊息」用 Email 回覆；標記狀態用 update_contact_message。回覆學員提問 answer_question 會寄信給學員，務必列成待確認。
-11. 不要杜撰資料；找不到就說找不到。金額一律整數新台幣。回覆精簡、條列，用繁體中文；連結請完整輸出。`;
+11. 一鍵建站：使用者說「幫我建站／從零開始」時，先問齊或從對話取得品牌名稱、行業、風格偏好、聯絡 Email／電話（沒有就只用有的），用 recommend_site_template 挑版型並說明理由與備選，再排入 quick_setup_site（confirm=true）；文案與圖片之後再用「首頁區塊」與「製圖」項目補，不要自己編造品牌事實。
+12. 不要杜撰資料；找不到就說找不到。金額一律整數新台幣。回覆精簡、條列，用繁體中文；連結請完整輸出。`;
 
 /**
  * AI 指令台：自然語言 → OPS 動作。
@@ -333,6 +336,18 @@ export class CommandService {
       await exec('generate_image', { prompt: m, size, quality: 'standard', purpose: banner ? 'banner' : sku ? 'product' : 'illustration' });
       return `（mock）準備產生一張 ${size} 的${banner ? ' Banner' : sku ? `商品圖（${sku}）` : '圖片'}；確認後回傳圖片網址${sku ? '，再用 upsert_product 設為封面' : banner ? '，再放進頁面 Hero 區塊' : ''}。`;
     }
+    if (/(一鍵建站|幫我建站|從零開始|建一個網站|開站)/.test(m)) {
+      const brandName = grab(/品牌(?:名稱)?[:：\s]*[「"']([^「」"']+)[」"']/) ?? grab(/[「"']([^「」"']+)[」"']/);
+      const industry = grab(/行業[:：\s]*([^\s，,、]+)/) ?? grab(/是一?[家間個]?([^\s，,、]{2,8})(?:的)?(?:網站|店|公司)/);
+      const style = grab(/風格[:：\s]*([^\s，,、]+)/);
+      const contactEmail = grab(/([\w.+-]+@[\w-]+\.[\w.-]+)/);
+      const phone = grab(/電話[:：\s]*([\d\-+ ]{7,})/);
+      if (!brandName || !industry) return '（mock）請告訴我品牌名稱（用「」包住）與行業（例：行業 烘焙），我才能挑版型並建站。';
+      const rec = (await exec('recommend_site_template', { industry, ...(style ? { style } : {}) })) as { data?: { picked?: { id: string; name: string } | null; category?: string } };
+      if (!rec.data?.picked) return '（mock）請告訴我品牌名稱（用「」包住）與行業（例：行業 烘焙），我才能挑版型。';
+      await exec('quick_setup_site', { confirm: true, templateId: rec.data.picked.id, ...(brandName ? { brandName } : {}), ...(industry ? { industry } : {}), ...(style ? { style } : {}), ...(contactEmail ? { contactEmail } : {}), ...(phone ? { phone } : {}) });
+      return `（mock）依「${industry ?? '未指定行業'}」推薦版型「${rec.data.picked.name}」（${rec.data.picked.id}）；確認後會套用並把${[brandName && '品牌名稱', contactEmail && 'Email', phone && '電話'].filter(Boolean).join('、') || '版型'}寫進站台。文案與圖片之後再補。請確認執行。`;
+    }
     if (/(版型|套版|套用|範本|template)/i.test(m)) {
       const cat = /電商|商城|賣/.test(m) ? 'shop' : /課程|教學/.test(m) ? 'course' : /品牌|個人/.test(m) ? 'brand' : /服務|顧問|診所|事務所/.test(m) ? 'service' : /形象|企業|公司/.test(m) ? 'image' : undefined;
       const r = (await exec('list_site_templates', { ...(cat ? { category: cat } : {}) })) as { data?: { templates?: { id: string; name: string }[] } };
@@ -417,6 +432,6 @@ export class CommandService {
       return `（mock）準備把頁面「${title}」（/p/${slug}）存成草稿；確認後我會給你沙盒預覽連結（用 preview_content）。`;
     }
     if (/(部署|遷移|管理員|設定|deploy|migrate)/.test(m)) return '系統功能（部署／遷移／設定／管理員）不開放給 AI 指令台，請到「系統功能」選單人工操作。';
-    return '（mock 規則模式）我目前只懂：版型套用／主題／品牌設定／首頁區塊／表單訊息／列出商品／上架商品／下架商品／產圖 Banner／訂單／報表／建立課程／建立頁面。要用真正的 AI 理解自然語言，請到「設定」把供應商改成 anthropic 或 openai 並填入金鑰。';
+    return '（mock 規則模式）我目前只懂：一鍵建站／版型套用／主題／品牌設定／首頁區塊／表單訊息／列出商品／上架商品／下架商品／產圖 Banner／訂單／報表／建立課程／建立頁面。要用真正的 AI 理解自然語言，請到「設定」把供應商改成 anthropic 或 openai 並填入金鑰。';
   }
 }

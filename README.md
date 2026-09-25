@@ -215,7 +215,11 @@ docs/             架構說明、雙平台部署架構（一核心三殼路線�
 - core 讀環境值只經 `env` getter（`configureCore()` 注入，Node 殼退回 `process.env`）；`isProd()` 是函式。
 - 建置順序：shared → core → api → web（`npm run build`、Dockerfile.api、CI 已同步）。
 
-## 最快開站（單體模式，任何有 Node 20 的主機）
+## 最快開站
+
+**推薦：Zeabur（預設平台）**——GitHub 匯入 repo，用 `Dockerfile.monolith` 建置、掛 `/data` 硬碟、加 PostgreSQL，開網域後進 `/setup`。詳細步驟見下方「Zeabur 實際部署」；一鍵模板 `deploy/zeabur-template.yaml`（映像 `ghcr.io/rogs30541/sitekit`）。
+
+### 自己的主機（單體模式，任何有 Node 20 的主機）
 
 ```bash
 npm install && npm run build          # 一次建置 shared → db → core → api → web → server
