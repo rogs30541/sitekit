@@ -28,6 +28,12 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 **P3 產品化（完成）**：點數帳本（保留再結算、失敗釋放）、AI Provider 抽象層（mock／OpenAI、平台金鑰或 BYOK）、程序內任務佇列（可換 BullMQ）、`/studio` AI 創作工作站、`/admin/studio` 模板管理與點數調整、MCP／AI API 的 `adjust_credits`。
 
+## AI 工作站 2.0（2026-09-25，v0.30.0）
+
+- 操作規劃全文見 `docs/AI工作站操作規劃.md`。指令台（`/admin/studio`）改為**五組十二項**工作：建站（版型與主題／選單）、內容（首頁區塊／頁面與文章／一頁式銷售頁）、商務（商品與庫存／課程與學員／訂單物流發票）、營運（報表與名單／客服與訊息／追蹤與 SEO）、設計（商品製圖與 Banner）；左欄「站台狀態」卡顯示目前版型、深淺色、未讀表單訊息、未回覆提問。
+- 新 OPS／MCP：`set_theme`／`sitekit_set_theme`（只改給的主題鍵）、`update_brand`／`sitekit_update_brand`（brand.*／seo.*／site.locale 白名單）。系統功能（金流、金鑰、部署、遷移、管理員、備份）維持不開放給對話。
+- 指令台規則：讀立即、寫待確認；頁面／區塊頁／銷售頁草稿→預覽→確認發佈；首頁區塊／選單／追蹤碼整份覆寫（先讀後寫）；套版說明影響與還原；新頁面優先區塊頁；圖示用名稱不用 emoji。
+
 ## 快速套版（2026-09-25，v0.28.0／v0.29.0）
 
 - **套版庫**（`/admin/site/templates`、精靈「版型」步驟、MCP `sitekit_list_site_templates`／`sitekit_apply_site_template`）：五大分類（形象／電商／課程／品牌／專業服務）× 10 ＝ 50 套，資料在 `packages/shared/src/site-templates/templates/<category>.ts`；結構來源見 `docs/套版研究筆記.md`（三個指定成品站＋Wix 分類法＋各分類 3 個參考站，只取版面骨架，不含任何文案／圖片／程式）。

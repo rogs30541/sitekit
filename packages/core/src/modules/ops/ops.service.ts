@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '../../compat';
 import { Prisma } from '@prisma/client';
-import { OPS_ACTIONS, OPS_ACTION_KEYS, type OpsAction, type OpsResult } from '@sitekit/shared';
+import { OPS_ACTIONS, OPS_ACTION_KEYS, type OpsAction, type OpsResult, THEME_KEYS, themeFromSettings, themeSchema, themeToSettings, SETTING_KEYS } from '@sitekit/shared';
 import { background, env } from '../../env';
 import { PrismaClient } from '@prisma/client';
 import { MigrationService } from '../migration/migration.service';
@@ -374,6 +374,27 @@ export class OpsService {
       }
       case 'set_home_sections':
         return this.site.setHomeSections({ sections: p.sections ?? [] });
+      case 'set_theme': {
+        const t = themeSchema.partial().parse(Object.fromEntries(Object.entries(p).filter(([k, v]) => k in THEME_KEYS && v !== undefined && v !== null)));
+        const values = themeToSettings(t);
+        if (t.accent) values[SETTING_KEYS.brandPrimaryColor] = t.accent;
+        if (!Object.keys(values).length) throw new Error('沒有可設定的主題鍵（mode/accent/accent2/font/radius/header/footer/container/heading）');
+        for (const [key, value] of Object.entries(values)) await this.prisma.setting.upsert({ where: { key }, update: { value }, create: { key, value, isSecret: false } });
+        this.settings.invalidate();
+        return { updated: values, theme: themeFromSettings((k) => values[k] ?? undefined) };
+      }
+      case 'update_brand': {
+        const allowed = (k: string) => (k.startsWith('brand.') || k.startsWith('seo.') || k === SETTING_KEYS.siteLocale) && !/secret|key|token|password/i.test(k);
+        const entries = Object.entries((p.settings as Record<string, unknown>) ?? p).filter(([k]) => allowed(k));
+        if (!entries.length) throw new Error('沒有可更新的品牌鍵（brand.*、seo.*、site.locale）');
+        for (const [key, v] of entries) {
+          const value = v === null || v === undefined ? '' : String(v);
+          if (key === SETTING_KEYS.brandPrimaryColor && value && !/^#[0-9a-fA-F]{6}$/.test(value)) throw new Error('brand.primaryColor 需為 #rrggbb');
+          await this.prisma.setting.upsert({ where: { key }, update: { value }, create: { key, value, isSecret: false } });
+        }
+        this.settings.invalidate();
+        return { updated: Object.fromEntries(entries.map(([k, v]) => [k, String(v ?? '')])) };
+      }
       case 'list_site_templates':
         return { ...this.siteTemplates.list(p.category ? String(p.category) : undefined), current: await this.siteTemplates.current() };
       case 'apply_site_template':

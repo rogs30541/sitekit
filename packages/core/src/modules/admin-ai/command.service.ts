@@ -27,14 +27,14 @@ export interface CommandResult {
 
 /** 動作參數提示（給模型的工具說明；OPS_ACTIONS.desc 之外的補充） */
 const TOOL_HINTS: Partial<Record<OpsAction, string>> = {
-  upsert_content: '參數：slug(必填)、type page|post、title、body(HTML) 或 design(設計文件 JSON)、excerpt、coverUrl。design 格式：{"root":{"type":"root","children":[{"type":"section","props":{"contentWidth":"1100px"},"style":{"base":{"padding":"64px 24px","background":"#111827","color":"#fff","textAlign":"center"}},"children":[{"type":"heading","props":{"level":1,"text":"標題"}},{"type":"text","props":{"text":"副標"}},{"type":"image","props":{"src":"https://…","alt":"…"}},{"type":"button","props":{"text":"按鈕","href":"/store","variant":"primary"}}]}]}}；可用類型 section/container/columns(props.cols)/column/heading/text/richtext(props.html)/button/spacer/divider/image/video/embed(props.url)/quote/list(props.items[])/iconbox(icon,title,text)/card(image,title,text,buttonText,href)/faq(items[{q,a}])/html/products/courses/posts(props.limit,title)。style 可有 base/tablet/mobile 三組 CSS（camelCase）。首頁 slug=home。',
+  upsert_content: '參數：slug(必填)、type page|post、title、body(HTML) 或 design、excerpt、coverUrl。design 優先用區塊頁：{"kind":"sections","sections":[…]}（sections 格式同 set_home_sections，20 種 kind）；或視覺設計器 DesignDoc 格式：{"root":{"type":"root","children":[{"type":"section","props":{"contentWidth":"1100px"},"style":{"base":{"padding":"64px 24px","background":"#111827","color":"#fff","textAlign":"center"}},"children":[{"type":"heading","props":{"level":1,"text":"標題"}},{"type":"text","props":{"text":"副標"}},{"type":"image","props":{"src":"https://…","alt":"…"}},{"type":"button","props":{"text":"按鈕","href":"/store","variant":"primary"}}]}]}}；可用類型 section/container/columns(props.cols)/column/heading/text/richtext(props.html)/button/spacer/divider/image/video/embed(props.url)/quote/list(props.items[])/iconbox(icon,title,text)/card(image,title,text,buttonText,href)/faq(items[{q,a}])/html/products/courses/posts(props.limit,title)。style 可有 base/tablet/mobile 三組 CSS（camelCase）。首頁 slug=home。',
   publish_content: '參數：idOrSlug、confirm(true)、note。只有使用者在指令台確認後才會執行。',
   preview_content: '參數：idOrSlug。回沙盒預覽網址，請把網址給使用者。',
   get_content_draft: '參數：idOrSlug。',
   restore_revision: '參數：idOrSlug、version。',
   import_page_design: '參數：slug、title、type、design。',
   export_page_design: '參數：idOrSlug。',
-  set_home_sections: '參數：sections[]（kind hero|features|courses|products|posts|html|cta …）。首頁若有 slug=home 的已發佈設計頁，會優先於 sections。',
+  set_home_sections: '參數：sections[]（20 種 kind，整份覆寫；先 get_site 取現值）。每個區塊可帶 variant、tone default|muted|accent|dark|image（＋bgImageUrl）、compact、id（錨點）。kind 與欄位：hero{variant center|left|split|cover|editorial|dashboard|carousel,kicker,title,subtitle,ctaText,ctaHref,cta2Text,cta2Href,imageUrl,videoUrl,imageSide,highlights[{icon,title,text}],slides[{title,subtitle,imageUrl,ctaText,ctaHref}]}；banner{text,href}；stats{items[{value,label,note}]}；features{variant grid|list|icons|tabs|numbered,columns 1-4,items[{icon,code,tag,title,text,href,ctaText}]}；split{title,text,bullets[],imageUrl,videoUrl,imageSide,sticky,ctaText,ctaHref}；gallery{variant grid|masonry|strip|logos,columns 2-6,items[{imageUrl,caption,href}]}；testimonials{variant cards|quotes|wall|single,items[{quote,name,role,avatarUrl,metric}]}；faq{items[{q,a}]}；pricing{plans[{name,price,period,note,features[],ctaText,ctaHref,highlight}]}；steps{variant numbers|timeline|cards,items[{title,text}]}；team{variant grid|list|founder,members[{name,role,bio,avatarUrl}]}；logos{items[{name,imageUrl}]}；video{videoUrl,text}；cta{variant band|card|split,title,text,buttonText,buttonHref}；contact{variant cards|columns|map,mapEmbedUrl,showForm,items[{icon,label,value,href}]}；categories{variant tiles|chips|icons,columns,items[{icon,title,href,count,imageUrl}]}；courses|products|posts{title,subtitle,limit,columns,variant,ctaText,ctaHref}（自動讀資料）；html{title,html}。icon 填圖示名稱。首頁若有 slug=home 的已發佈設計頁會優先於 sections。',
   set_menu: '參數：location header|footer、items[{label,kind page|route|link,contentId|href,children[]}]。',
   get_menu: '參數：location。',
   sales_report: '參數：from、to（YYYY-MM-DD）、groupBy day|month。',
@@ -55,17 +55,30 @@ const TOOL_HINTS: Partial<Record<OpsAction, string>> = {
   set_tracking: '參數：ga4、gtm、fbPixel、tiktok、lineTag、googleAdsId、googleAdsLabel、head、bodyTop、bodyBottom、events{pageView,viewContent,addToCart,initiateCheckout,purchase}（未給的欄位會被清空，先 get_tracking 取現值再整份回傳）。頁面層級追蹤放在 upsert_content 的 design.settings.tracking 或 upsert_sales_page 的 doc.tracking。',
   upsert_sales_page: '參數：slug(必填)、title、code、doc（深度合併）。doc.content 為設計文件（同 upsert_content 的 design 格式，可放 addtocart 區塊）；doc.items=[{productId,kind:offer|bundle|product|addon,order}]（productId 先用 list_products 查）；doc.notice/countdown/theme/display/form/contact/tracking/seo/schedule。存草稿後用 preview_sales_page 給預覽連結。',
   publish_sales_page: '參數：idOrSlug、confirm(true)、note；unpublish=true 為下架。',
+  apply_site_template: '參數：id（先 list_site_templates 取 id）、confirm(true)、restore(true=還原套版前)、pages(false=不建子頁)、menu(false=不動選單)。會覆寫主題／首頁區塊／選單並建立同名子頁；商品／課程／文章／品牌資料不動；第一次套版前自動備份。',
+  list_site_templates: '參數：category image|shop|course|brand|service（可選）。回 templates[{id,name,category,style,tagline,tags,theme,pages[],homeKinds[],headerMenu[]}] 與 current（目前版型）。',
+  set_theme: '參數（只放要改的）：mode、accent、accent2、font、radius、header、footer、container、heading。accent 會同步 brand.primaryColor。',
+  update_brand: '參數：settings{ key: value }，key 白名單 brand.name／brand.siteName／brand.description／brand.tagline／brand.logoUrl／brand.primaryColor／brand.contactEmail／brand.phone／brand.address／brand.social.facebook|instagram|line|youtube／brand.footerText／seo.ogImage／site.locale。',
+  list_contact_messages: '參數：status new|read|replied|archived（可選）、limit。回 counts 與 items[{id,name,email,phone,subject,message,page,status,note,createdAt}]。',
+  update_contact_message: '參數：id、status new|read|replied|archived、note。',
+  get_site: '無參數。回 brand、theme、menus{header,footer}、home.sections（現有首頁區塊，改動前先讀）、settings。',
   list_image_templates: '無參數。回每個模板的 key／分類／說明／欄位定義（inputFields[].key、label、required、options）。',
 };
 
-const SYSTEM_PROMPT = `你是「SiteKit 架站套件」的後台全站工作總控（AI 指令台）。使用者是網站管理員，用中文下指令；你透過工具操作網站：前端頁面、電商訂單／物流／發票／折扣碼／庫存、報表分析、商品製圖、商品上架與分類、線上課程上架、Banner 設計。
+const SYSTEM_PROMPT = `你是「SiteKit 架站套件」的後台全站工作總控（AI 指令台）。使用者是網站管理員，用中文下指令；你透過工具操作整站：
+建站（版型與主題、選單）／內容（首頁區塊、頁面與文章、一頁式銷售頁）／商務（商品庫存、課程學員、訂單物流發票）／營運（報表名單、客服訊息、追蹤與 SEO）／設計（商品製圖與 Banner）。
 原則：
-1. 先用唯讀工具查清楚（列商品、看訂單、讀草稿…），再規劃寫入動作。唯讀工具會立即執行並把結果給你。
-2. 所有會改動資料的工具（寫入）不會立刻執行：系統會把你要做的動作列成「待確認清單」交給使用者按下確認。因此你可以在同一回合排入多個寫入動作；請在回覆中用一兩句話說明將做什麼、為什麼。
-3. 頁面一律走草稿流程：upsert_content 只存草稿 → preview_content 取預覽連結給使用者 → 使用者說要上線才 publish_content（confirm=true）。不要在使用者未要求時發佈。
-4. 產圖會花錢：一次一張，先確認尺寸與用途。Banner 一般 1536x1024；商品主圖 1024x1024。
-5. 不要杜撰資料；找不到就說找不到。金額一律整數新台幣。
-6. 回覆精簡、條列，用繁體中文；回覆給使用者的連結請完整輸出。`;
+1. 先用唯讀工具查清楚現況（get_site、list_*、get_*），再規劃寫入。唯讀工具會立即執行並把結果給你。
+2. 所有寫入工具不會立刻執行：系統會把你要做的動作列成「待確認清單」交給使用者按確認。同一回合可排多個寫入；回覆要用一兩句話說明「要做什麼、會覆寫什麼、怎麼還原」。
+3. 頁面／區塊頁／銷售頁一律草稿流程：upsert_content 或 upsert_sales_page 只存草稿 → preview_* 取預覽連結給使用者 → 使用者說要上線才 publish_*（confirm=true）。不要在使用者未要求時發佈。
+4. 新頁面優先用「區塊頁」：upsert_content 的 design 傳 { kind:'sections', sections:[…] }（與首頁 set_home_sections 同一套 20 種區塊，後台可用區塊編輯器續改）；只有需要自由排版才用視覺設計器 DesignDoc。文章（type post）用 body HTML。
+5. 首頁區塊、選單、追蹤碼都是「整份覆寫」：先讀現值（get_site／get_menu／get_tracking），在原資料上增刪改後整份回傳，不要只送差異。
+6. 套版 apply_site_template 會覆寫主題、首頁區塊、選單並建立同名子頁（商品／課程／文章／品牌資料不動），可用 restore=true 還原；請先 list_site_templates 比較再挑一套，並在回覆說明影響。
+7. 主題用 set_theme（只改給的鍵）；品牌名稱／聯絡／SEO／語言用 update_brand（白名單）。金流、金鑰、部署、遷移、管理員屬系統功能，不在你的工具裡，遇到就請使用者到「系統功能」選單操作。
+8. 區塊裡的 icon 一律填圖示名稱（例 mail、phone、star、rocket、check-circle、shield、truck、sprout），不要用 emoji。連結用站內路徑（/courses、/store、/p/about、/#faq）或完整網址。
+9. 產圖會花錢：一次一張，先確認尺寸與用途。Banner 一般 1536x1024；商品主圖 1024x1024；商品圖優先用 list_image_templates 挑模板＋參考圖。產完的網址回填商品 coverUrl 或區塊的 imageUrl／bgImageUrl。
+10. 聯絡表單訊息（list_contact_messages）只做摘要、排序與擬回覆文字；真正寄信由管理員在後台「表單訊息」用 Email 回覆；標記狀態用 update_contact_message。回覆學員提問 answer_question 會寄信給學員，務必列成待確認。
+11. 不要杜撰資料；找不到就說找不到。金額一律整數新台幣。回覆精簡、條列，用繁體中文；連結請完整輸出。`;
 
 /**
  * AI 指令台：自然語言 → OPS 動作。
@@ -320,6 +333,61 @@ export class CommandService {
       await exec('generate_image', { prompt: m, size, quality: 'standard', purpose: banner ? 'banner' : sku ? 'product' : 'illustration' });
       return `（mock）準備產生一張 ${size} 的${banner ? ' Banner' : sku ? `商品圖（${sku}）` : '圖片'}；確認後回傳圖片網址${sku ? '，再用 upsert_product 設為封面' : banner ? '，再放進頁面 Hero 區塊' : ''}。`;
     }
+    if (/(版型|套版|套用|範本|template)/i.test(m)) {
+      const cat = /電商|商城|賣/.test(m) ? 'shop' : /課程|教學/.test(m) ? 'course' : /品牌|個人/.test(m) ? 'brand' : /服務|顧問|診所|事務所/.test(m) ? 'service' : /形象|企業|公司/.test(m) ? 'image' : undefined;
+      const r = (await exec('list_site_templates', { ...(cat ? { category: cat } : {}) })) as { data?: { templates?: { id: string; name: string }[] } };
+      const list = r.data?.templates ?? [];
+      const wanted = grab(/套用[「"']?([a-z0-9-]+)/i) ?? grab(/id[:：\s]*([a-z0-9-]+)/i);
+      const pick = wanted ? list.find((t) => t.id === wanted) : /套用|換成|改用/.test(m) ? list[0] : undefined;
+      if (pick) {
+        await exec('apply_site_template', { id: pick.id, confirm: true });
+        return `（mock）準備套用版型「${pick.name}」（${pick.id}）：會覆寫主題、首頁區塊、選單並建立同名子頁；商品／課程／文章不動，可用 restore 還原。請確認執行。`;
+      }
+      return `（mock）已列出 ${list.length} 套版型${cat ? `（${cat}）` : ''}，見下方結果；說「套用 <id>」即可排入待確認。`;
+    }
+    if (/(主題|深色|淺色|字型|圓角|頁首|頁尾)/.test(m) && !/區塊|頁面/.test(m)) {
+      const t: Record<string, string> = {};
+      if (/深色/.test(m)) t.mode = 'dark';
+      if (/淺色/.test(m)) t.mode = 'light';
+      if (/圓體/.test(m)) t.font = 'rounded';
+      if (/明體|襯線/.test(m)) t.font = 'serif';
+      if (/等寬/.test(m)) t.font = 'mono';
+      if (/大圓角/.test(m)) t.radius = 'xl';
+      if (/直角/.test(m)) t.radius = 'none';
+      if (/頁首置中|置中/.test(m)) t.header = 'centered';
+      if (/頁尾單列|極簡頁尾/.test(m)) t.footer = 'minimal';
+      const color = grab(/(#[0-9a-fA-F]{6})/);
+      if (color) t.accent = color;
+      if (!Object.keys(t).length) return '（mock）主題可改：深色／淺色、圓體／明體／等寬、大圓角／直角、頁首置中、頁尾單列、主色 #rrggbb。';
+      await exec('set_theme', t);
+      return `（mock）準備更新主題：${Object.entries(t).map(([k, v]) => `${k}=${v}`).join('、')}。請確認執行。`;
+    }
+    if (/(網站名稱|品牌名稱|標語|聯絡 ?email|電話|地址)/i.test(m) && /改|設|換/.test(m)) {
+      const settings: Record<string, string> = {};
+      const siteName = grab(/網站名稱[改設為成]+[「"']([^「」"']+)[」"']/);
+      const name = grab(/品牌名稱[改設為成]+[「"']([^「」"']+)[」"']/);
+      const tagline = grab(/標語[改設為成]*[「"']([^「」"']+)[」"']/);
+      const email = grab(/([\w.+-]+@[\w-]+\.[\w.-]+)/);
+      if (siteName) settings['brand.siteName'] = siteName;
+      if (name) settings['brand.name'] = name;
+      if (tagline) settings['brand.tagline'] = tagline;
+      if (email) settings['brand.contactEmail'] = email;
+      if (!Object.keys(settings).length) return '（mock）請用「網站名稱改成「…」」「標語「…」」「Email 改成 x@y」的格式。';
+      await exec('update_brand', { settings });
+      return `（mock）準備更新品牌設定：${Object.keys(settings).join('、')}。請確認執行。`;
+    }
+    if (/(表單|訊息|留言|聯絡我們)/.test(m) && !/區塊|首頁/.test(m)) {
+      const status = /未讀/.test(m) ? 'new' : /已回覆/.test(m) ? 'replied' : /封存/.test(m) ? 'archived' : undefined;
+      const r = (await exec('list_contact_messages', { ...(status ? { status } : {}), limit: 50 })) as { data?: { items?: unknown[] } };
+      return `（mock）已列出聯絡表單訊息${status ? `（${status}）` : ''}，共 ${r.data?.items?.length ?? 0} 筆，見下方結果。`;
+    }
+    if (/首頁/.test(m) && /(區塊|加|放|改)/.test(m)) {
+      const r = (await exec('get_site', {})) as { data?: { home?: { sections?: Record<string, unknown>[] } } };
+      const cur = r.data?.home?.sections ?? [];
+      const add: Record<string, unknown> = /見證|評價/.test(m) ? { kind: 'testimonials', title: '學員見證', items: [{ quote: '很實用。', name: '學員 A' }, { quote: '值得推薦。', name: '學員 B' }, { quote: '收穫很多。', name: '學員 C' }] } : /faq|常見問題/i.test(m) ? { kind: 'faq', title: '常見問題', items: [{ q: '如何購買？', a: '到商城結帳即可。' }] } : /cta|行動/i.test(m) ? { kind: 'cta', title: '準備好開始了嗎？', buttonText: '立即加入', buttonHref: '/register' } : { kind: 'features', title: '特色', items: [{ icon: 'sparkles', title: '特色一' }, { icon: 'rocket', title: '特色二' }, { icon: 'lightbulb', title: '特色三' }] };
+      await exec('set_home_sections', { sections: [...cur, add] });
+      return `（mock）準備在首頁末尾加入「${String(add.kind)}」區塊（目前 ${cur.length} 個 → ${cur.length + 1} 個），整份覆寫。請確認執行。`;
+    }
     if (/訂單/.test(m)) {
       const status = /已付款|paid/.test(m) ? 'paid' : /未付款|pending/.test(m) ? 'pending' : undefined;
       const shipping = /未出貨/.test(m) ? 'pending' : /已出貨/.test(m) ? 'shipped' : undefined;
@@ -349,6 +417,6 @@ export class CommandService {
       return `（mock）準備把頁面「${title}」（/p/${slug}）存成草稿；確認後我會給你沙盒預覽連結（用 preview_content）。`;
     }
     if (/(部署|遷移|管理員|設定|deploy|migrate)/.test(m)) return '系統功能（部署／遷移／設定／管理員）不開放給 AI 指令台，請到「系統功能」選單人工操作。';
-    return '（mock 規則模式）我目前只懂：列出商品／上架商品／下架商品／產圖 Banner／訂單／報表／建立課程／建立頁面。要用真正的 AI 理解自然語言，請到「設定」把供應商改成 anthropic 或 openai 並填入金鑰。';
+    return '（mock 規則模式）我目前只懂：版型套用／主題／品牌設定／首頁區塊／表單訊息／列出商品／上架商品／下架商品／產圖 Banner／訂單／報表／建立課程／建立頁面。要用真正的 AI 理解自然語言，請到「設定」把供應商改成 anthropic 或 openai 並填入金鑰。';
   }
 }

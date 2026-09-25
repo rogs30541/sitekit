@@ -124,6 +124,8 @@ server.tool(
   { sections: z.array(z.record(z.any())) },
   async (p) => asText(await ops('set_home_sections', p)),
 );
+server.tool('sitekit_set_theme', '設定外觀主題（只改給的鍵）：mode light|dark、accent #rrggbb、accent2、font、radius、header、footer、container、heading', { mode: z.enum(['light', 'dark']).optional(), accent: z.string().optional(), accent2: z.string().optional(), font: z.enum(['sans', 'serif', 'display', 'rounded', 'mono']).optional(), radius: z.enum(['none', 'sm', 'md', 'xl', 'full']).optional(), header: z.enum(['solid', 'transparent', 'centered', 'minimal', 'bar']).optional(), footer: z.enum(['simple', 'columns', 'minimal']).optional(), container: z.enum(['narrow', 'normal', 'wide']).optional(), heading: z.enum(['normal', 'bold', 'display']).optional() }, async (p) => asText(await ops('set_theme', p)));
+server.tool('sitekit_update_brand', '更新品牌／聯絡／SEO／語言（白名單 brand.*、seo.*、site.locale；不含金流與機密）', { settings: z.record(z.string()) }, async (p) => asText(await ops('update_brand', p)));
 server.tool('sitekit_list_site_templates', '列出快速套版（五大分類 × 10 套）：id、名稱、風格、主題、子頁；category 可過濾 image|shop|course|brand|service', { category: z.string().optional() }, async (p) => asText(await ops('list_site_templates', p)));
 server.tool(
   'sitekit_apply_site_template',

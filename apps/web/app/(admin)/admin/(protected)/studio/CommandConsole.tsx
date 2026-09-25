@@ -6,6 +6,7 @@ import { OPS_ACTIONS } from "@sitekit/shared";
 
 interface Task {
   key: string;
+  group?: string;
   label: string;
   desc: string;
   examples: string[];
@@ -53,12 +54,22 @@ const KEY = "sitekit.command.transcript";
  * AI 指令台（後台全站工作總控）：自然語言 → 唯讀動作即時執行、寫入動作列成待確認清單 → 管理員按「確認執行」才真的改資料。
  * 系統功能（部署／遷移／設定／管理員）不在此開放。
  */
+export interface SiteStatus {
+  templateName?: string;
+  templateId?: string;
+  themeMode?: string;
+  unreadMessages?: number;
+  openQuestions?: number;
+}
+
 export function CommandConsole({
   config: initial,
   imageStudio,
+  status,
 }: {
   config: CommandConfig;
   imageStudio?: React.ReactNode;
+  status?: SiteStatus;
 }) {
   const router = useRouter();
   const [config, setConfig] = useState(initial);
@@ -265,7 +276,7 @@ export function CommandConsole({
           >
             <p className="font-semibold">這裡是後台全站工作總控。</p>
             <p className="mt-1">
-              用一句話描述要做的事（左側有範例）。我會先查資料，再把要「改動」的動作列出來給你確認；頁面一律先存草稿、給預覽連結，你確認後才發佈。
+              用一句話描述要做的事（左側有範例）。我會先查資料，再把要「改動」的動作列出來給你確認；頁面一律先存草稿、給預覽連結，你確認後才發佈。套版、首頁區塊、選單屬整份覆寫，我會說明影響與還原方式。
             </p>
           </div>
         ) : null}
@@ -403,18 +414,41 @@ export function CommandConsole({
   return (
     <div className="grid gap-3 lg:grid-cols-[16rem_minmax(0,1fr)]">
       <aside className="space-y-2 text-xs">
+        {status ? (
+          <div className="rounded-lg border p-2" style={line} data-site-status>
+            <div className="mb-1 font-semibold">站台狀態</div>
+            <ul className="space-y-0.5" style={{ color: "var(--muted)" }}>
+              <li>
+                版型：<b style={{ color: "var(--fg)" }}>{status.templateName ?? "未套用"}</b>
+                {status.themeMode ? `（${status.themeMode === "dark" ? "深色" : "淺色"}）` : ""}
+              </li>
+              <li>
+                未讀表單訊息：<b style={{ color: (status.unreadMessages ?? 0) > 0 ? "#b45309" : "var(--fg)" }}>{status.unreadMessages ?? 0}</b>
+              </li>
+              <li>
+                未回覆提問：<b style={{ color: (status.openQuestions ?? 0) > 0 ? "#b45309" : "var(--fg)" }}>{status.openQuestions ?? 0}</b>
+              </li>
+            </ul>
+          </div>
+        ) : null}
         <div className="rounded-lg border p-2" style={line}>
           <div className="mb-1 flex items-center justify-between">
-            <span className="font-semibold">七大工作項目</span>
+            <span className="font-semibold">工作項目</span>
           </div>
-          {config.tasks.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTask(t.key)}
-              className={`block w-full rounded px-2 py-1 text-left ${task === t.key ? "bg-black text-white" : "hover:bg-neutral-100"}`}
-            >
-              {t.label}
-            </button>
+          {Array.from(new Set(config.tasks.map((t) => t.group ?? ""))).map((g) => (
+            <div key={g} className="mb-1">
+              {g ? <div className="px-2 pt-1 text-[10px] uppercase tracking-wider" style={{ color: "var(--muted)" }}>{g}</div> : null}
+              {config.tasks.filter((t) => (t.group ?? "") === g).map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setTask(t.key)}
+                  className={`block w-full rounded px-2 py-1 text-left ${task === t.key ? "bg-black text-white" : "hover:bg-neutral-100"}`}
+                  data-task={t.key}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
           ))}
         </div>
         {cur ? (

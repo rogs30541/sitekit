@@ -18,7 +18,7 @@ ok('admin login', !!admin);
 
 await act('update_settings', { settings: { 'ai.commandProvider': 'mock', 'ai.provider': 'mock' } });
 const cfg = await j('/api/admin/ai/command/config', { cookie: admin });
-ok('指令台設定：mock、ready、七大工作項目、動作清單排除系統功能', cfg.status === 200 && cfg.body.provider === 'mock' && cfg.body.ready && cfg.body.tasks.length === 8 && !cfg.body.actions.some((a) => ['deploy', 'migrate', 'update_settings', 'create_admin', 'delete_admin'].includes(a.action)) && cfg.body.actions.some((a) => a.action === 'upsert_product'), JSON.stringify({ n: cfg.body.actions?.length, tasks: cfg.body.tasks?.length }));
+ok('指令台設定：mock、ready、七大工作項目、動作清單排除系統功能', cfg.status === 200 && cfg.body.provider === 'mock' && cfg.body.ready && cfg.body.tasks.length >= 8 && !cfg.body.actions.some((a) => ['deploy', 'migrate', 'update_settings', 'create_admin', 'delete_admin'].includes(a.action)) && cfg.body.actions.some((a) => a.action === 'upsert_product'), JSON.stringify({ n: cfg.body.actions?.length, tasks: cfg.body.tasks?.length }));
 
 // 1. 上架商品 → 待確認（尚未寫入）→ 確認 → 存在＋分類
 const sku = `AI-TEE-${RUN.toUpperCase()}`;

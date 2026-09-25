@@ -177,6 +177,8 @@ export const OPS_ACTIONS = {
   list_invoices: { desc: '列出電子發票（status issued|failed|invalid 可選）', mutating: false },
   get_site: { desc: '讀取站台外觀（品牌／聯絡／社群／SEO 設定值、首頁區塊、選單）', mutating: false },
   set_home_sections: { desc: '設定首頁版面區塊 sections[]（20 種 kind：hero／banner／stats／features／split／gallery／testimonials／faq／pricing／steps／team／logos／video／cta／contact／categories／courses／products／posts／html，各有 variant；伺服器驗證）', mutating: true },
+  set_theme: { desc: '設定外觀主題（theme.* 白名單：mode light|dark、accent #rrggbb（同步 brand.primaryColor）、accent2、font sans|serif|display|rounded|mono、radius none|sm|md|xl|full、header solid|transparent|centered|minimal|bar、footer simple|columns|minimal、container narrow|normal|wide、heading normal|bold|display；只改給的鍵）', mutating: true },
+  update_brand: { desc: '更新品牌／聯絡／SEO／語言等非機密站台設定（白名單：brand.*、seo.*、site.locale；金流／金鑰／系統設定不在此，請用系統功能）', mutating: true },
   list_site_templates: { desc: '列出快速套版：五大分類（形象／電商／課程／品牌／專業服務）× 10 套，回 id、名稱、風格、主題、子頁；可帶 category 過濾', mutating: false },
   apply_site_template: { desc: '套用版型（必須 confirm=true）：覆寫主題 theme.*、首頁區塊、header/footer 選單，並建立／更新同名子頁（about/services/contact…，slug 冪等、直接上線）；不動商品／課程／文章／品牌資料。restore=true 還原套版前的主題／首頁／選單', mutating: true },
   list_contact_messages: { desc: '列出前台聯絡表單訊息（status new|read|replied|archived 可選、limit）', mutating: false },
@@ -284,15 +286,19 @@ export * from './design';
 export const COMMAND_EXCLUDED_ACTIONS: OpsAction[] = ['status', 'deploy', 'migrate', 'get_settings', 'update_settings', 'import_content', 'adjust_credits', 'audit', 'create_admin', 'list_admins', 'update_admin', 'delete_admin', 'send_test_notification', 'storage_status', 'export_site', 'import_site', 'list_backups'];
 
 /** 指令台七大工作項目（快捷任務；範例指令會填入輸入框） */
-export const COMMAND_TASKS: { key: string; label: string; desc: string; examples: string[] }[] = [
-  { key: 'page', label: '前端頁面編輯', desc: '建立／修改官網頁面草稿、產生沙盒預覽、經確認發佈', examples: ['幫我建立「關於我們」頁面草稿：一段品牌故事＋三個特色卡片＋聯絡方式，做好給我預覽連結', '把 about 頁的標題改成「我們是誰」，存草稿並給我預覽'] },
-  { key: 'orders', label: '後端電商處理', desc: '訂單查詢、出貨、物流單、發票、折扣碼、庫存', examples: ['列出今天已付款但未出貨的訂單', '訂單 SK... 標記已出貨，黑貓 單號 1234567890，並開立發票'] },
-  { key: 'report', label: '電商報表分析', desc: '銷售報表、對帳、趨勢摘要', examples: ['幫我看這個月的銷售報表，按天分組，告訴我最好的三天和原因', '比較上個月和這個月的營收與訂單數'] },
-  { key: 'image', label: '商品製圖', desc: 'AI 產生商品情境圖／主圖並設定到商品', examples: ['幫 SKU DEMO-MUG 產生一張白底簡約的商品主圖，1024x1024，並設成商品封面'] },
-  { key: 'product', label: '商品上架／分類', desc: '新增商品、改價、上下架、分類整理', examples: ['上架商品：SKU AI-TEE、名稱「AI 創客 T 恤」、價格 590、分類 服飾、庫存 50', '把所有分類是「服飾」的商品下架'] },
-  { key: 'course', label: '線上課程上架', desc: '建立課程、章節、發布', examples: ['建立課程 slug ai-basics「AI 入門」，價格 1990，摘要一句話，先不發布，並新增三個章節：認識 AI、提示詞入門、實作練習'] },
-  { key: 'sales', label: '一頁式銷售頁', desc: '建立銷售頁草稿：內文＋掛商品＋表單規則，預覽後確認上線', examples: ['建立一頁式銷售頁 slug autumn-sale「秋季限定組合」：內文放 Hero＋三個賣點，掛上 SKU DEMO-MUG 當優惠區塊、DEMO-TEE 當一般產品，先存草稿給我預覽'] },
-  { key: 'banner', label: 'BANNER 設計', desc: 'AI 產生橫幅圖並放進頁面／首頁區塊草稿', examples: ['做一張秋季課程優惠的 Banner（1536x1024，暖色系），放進首頁草稿最上方的 Hero 區塊，給我預覽'] },
+export const COMMAND_TASKS: { key: string; group: string; label: string; desc: string; examples: string[] }[] = [
+  { key: 'site', group: '建站', label: '版型與主題', desc: '挑套版、換主題（深淺色／字型／圓角／頁首頁尾）、改品牌名稱與聯絡資料；套版會覆寫首頁／選單／子頁，可一鍵還原', examples: ['幫我挑一套適合烘焙坊的電商版型並套用，先告訴我會改到什麼', '整站換成深色、圓體字、大圓角，頁首置中', '網站名稱改成「小明烘焙坊」，聯絡 Email 改成 hello@example.com，標語「每天現烤」'] },
+  { key: 'menu', group: '建站', label: '選單與導覽', desc: '主選單／頁尾選單整棵讀取與覆寫', examples: ['主選單加一個「作品集」連到 /p/works，放在「關於我們」前面', '頁尾選單只留：關於我們、聯絡我們、會員中心'] },
+  { key: 'home', group: '內容', label: '首頁區塊', desc: '讀取並重排首頁的 20 種區塊（hero／stats／features／testimonials／faq／pricing／courses／products…）', examples: ['首頁在課程列表後面加一段三則學員見證，底色淺灰', '把首頁 hero 改成左右分欄版式，標題「AI 讓小店也能做大生意」，按鈕連到 /courses', '首頁加一個 FAQ 區塊：退換貨、運費、付款方式各一題'] },
+  { key: 'page', group: '內容', label: '頁面與文章', desc: '用區塊建立子頁（about／services／faq…）或寫文章；存草稿→沙盒預覽→確認發佈；可還原歷史版本', examples: ['建立「關於我們」區塊頁：hero＋品牌故事（split）＋團隊三人＋聯絡方式，存草稿給我預覽', '寫一篇部落格文章：「新手選課的三個原則」，600 字，存草稿', '把 about 頁的標題改成「我們是誰」並給我預覽'] },
+  { key: 'sales', group: '內容', label: '一頁式銷售頁', desc: '建立銷售頁草稿：內文＋掛商品＋表單規則，預覽後確認上線', examples: ['建立一頁式銷售頁 slug autumn-sale「秋季限定組合」：內文放 Hero＋三個賣點，掛上 SKU DEMO-MUG 當優惠區塊，先存草稿給我預覽'] },
+  { key: 'product', group: '商務', label: '商品與庫存', desc: '新增商品、改價、多規格、上下架、庫存、CSV 匯入', examples: ['上架商品：SKU AI-TEE、名稱「AI 創客 T 恤」、價格 590、分類 服飾、庫存 50', '把所有分類是「服飾」的商品下架', 'SKU DEMO-MUG 庫存補 20 個'] },
+  { key: 'course', group: '商務', label: '課程與學員', desc: '建立課程與章節、發公告、回覆學員提問（會寄信通知）', examples: ['建立課程 slug ai-basics「AI 入門」，價格 1990，先不發布，並新增三個章節：認識 AI、提示詞入門、實作練習', '列出未回覆的學員提問，幫每題擬一段回覆給我確認'] },
+  { key: 'orders', group: '商務', label: '訂單物流發票', desc: '訂單查詢、出貨、物流單、發票、折扣碼、逾期訂單', examples: ['列出今天已付款但未出貨的訂單', '訂單 SK… 標記已出貨，黑貓 單號 1234567890，並開立發票', '建立折扣碼 WELCOME10：九折、最低 500、限用 100 次'] },
+  { key: 'report', group: '營運', label: '報表與名單', desc: '銷售報表、期間比較、會員名單與標籤', examples: ['幫我看這個月的銷售報表，按天分組，告訴我最好的三天和原因', '比較上個月和這個月的營收與訂單數', '列出買過課程的會員'] },
+  { key: 'inbox', group: '營運', label: '客服與訊息', desc: '前台聯絡表單訊息（未讀／已讀／已回覆／封存、備註）與課程提問', examples: ['未讀的聯絡表單有哪些？依急迫度排序，每則幫我擬一句回覆', '把來自 hello@example.com 的訊息標成已回覆，備註「已電話聯絡」'] },
+  { key: 'tracking', group: '營運', label: '追蹤與 SEO', desc: 'GA4／GTM／Meta Pixel／TikTok／LINE Tag／Google Ads 與網站描述、OG 圖、語言', examples: ['安裝 GA4 G-XXXXXXX 和 Meta Pixel 1234567890，其他不動', '網站描述改成「台北最好吃的手工麵包」，OG 圖用 https://…'] },
+  { key: 'image', group: '設計', label: '商品製圖與 Banner', desc: 'AI 產生商品主圖／Banner（先套 20 組模板＋參考圖），產完回填商品封面或區塊圖片', examples: ['幫 SKU DEMO-MUG 產生一張白底簡約的商品主圖，1024x1024，並設成商品封面', '做一張秋季課程優惠 Banner（1536x1024，暖色系），放進首頁最上方 hero 的圖片'] },
 ];
 export * from './sales';
 export * from './tracking';
