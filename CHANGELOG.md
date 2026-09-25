@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v0.34.0（2026-09-26）
+
+- 滑動追蹤（每個區塊都能裝）：設計器任何節點可設 `track{event,percent,once,label}`（渲染成 data-sk-track 屬性），首頁／區塊頁的 20 種區塊可設 `track`／`trackPercent`，25 套一頁式模板每一段預掛 `sp_<區塊>`（可視 50% 送一次）；全站一個 `ScrollTracker`（IntersectionObserver＋MutationObserver）在區塊可視達百分比時送自訂事件
+- 頁面滑動深度：TrackingConfig 新增 `scroll{enabled,percents,event}`（預設 25/50/75/100、scroll_depth；網站設定與頁面／銷售頁可覆蓋）；事件 JS 新增「滑動事件」（變數 event／percent／block／page）；`skTrackCustom` 同時送 GA4 gtag event、Meta trackCustom、TikTok track、dataLayer
+- 後台：追蹤設定表單「滑動追蹤」區、設計器屬性面板「滑動追蹤」、首頁區塊編輯器事件名／可視百分比；OPS `set_tracking`／`upsert_content`／`set_home_sections` 說明更新
+- e2e p36
+
 ## v0.33.0（2026-09-25）
 
 - 一頁式網頁套版（25 套）：分析 airuru.com.tw 課程銷售頁結構（主張→信任帶→痛點→權威→承諾→公式→模組×N→優惠→見證→場次→頁尾；只取骨架）存成課程類「霓虹爆款」，並反推電商／形象／品牌／專業服務四類敘事，每類 5 種風格配色（`packages/shared/src/sales-templates/`：DesignDoc 內文＋主題色＋區塊順序／標題＋通知列＋顯示設定；文案圖片佔位、圖示名稱）

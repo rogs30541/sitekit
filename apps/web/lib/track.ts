@@ -16,6 +16,7 @@ declare global {
   interface Window {
     __skTracking?: TrackingConfig;
     __skTrackSeen?: Record<string, true>;
+    __skPage?: { id: string; title: string; type: string; pathname: string };
     gtag?: (...args: unknown[]) => void;
     fbq?: (...args: unknown[]) => void;
     ttq?: { track: (name: string, params?: unknown) => void; page?: () => void };
@@ -25,6 +26,40 @@ declare global {
 }
 const GA_EVENT: Record<TrackEvent, string> = { PageView: 'page_view', ViewContent: 'view_item', AddToCart: 'add_to_cart', InitiateCheckout: 'begin_checkout', Purchase: 'purchase' };
 const TT_EVENT: Record<TrackEvent, string> = { PageView: 'Pageview', ViewContent: 'ViewContent', AddToCart: 'AddToCart', InitiateCheckout: 'InitiateCheckout', Purchase: 'CompletePayment' };
+
+/** 自訂事件（滑動深度／區塊可視等）：GA4 gtag event、Meta trackCustom、TikTok track、dataLayer，並執行後台「滑動事件 JS」 */
+export function skTrackCustom(name: string, params: { percent?: number; block?: string; page?: { id: string; title: string; type: string } } = {}) {
+  if (typeof window === 'undefined') return;
+  const cfg = window.__skTracking;
+  const payload = { percent: params.percent, block: params.block, page_id: params.page?.id, page_title: params.page?.title, page_type: params.page?.type };
+  try {
+    // 先建 dataLayer：GTM／GA 晚載入也能讀到已緩衝的事件
+    (window.dataLayer = window.dataLayer || []).push({ event: name, ...payload });
+  } catch {
+    /* ignore */
+  }
+  try {
+    if (window.gtag) window.gtag('event', name, payload);
+  } catch {
+    /* ignore */
+  }
+  try {
+    if (window.fbq) window.fbq('trackCustom', name, payload);
+  } catch {
+    /* ignore */
+  }
+  try {
+    if (window.ttq) window.ttq.track(name, payload);
+  } catch {
+    /* ignore */
+  }
+  try {
+    const code = cfg?.events?.scroll;
+    if (code) new Function('event', 'percent', 'block', 'page', code)(name, params.percent, params.block, params.page);
+  } catch (e) {
+    console.warn('[tracking] scroll event error', e);
+  }
+}
 
 /** 一次呼叫送到所有已載入的追蹤器（GA4／Meta／TikTok／LINE／Google Ads）＋執行後台設定的自訂事件 JS；`once` 以 key 去重（例如同一訂單只送一次 Purchase）。 */
 export function skTrack(event: TrackEvent, params: TrackParams = {}, once?: string) {

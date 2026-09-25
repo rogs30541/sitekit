@@ -208,6 +208,7 @@ export function DesignEditor({ doc, onChange, onUpload }: DesignEditorProps) {
     setRoot(moveNode(doc.root, id, p.parent.id, dir > 0 ? to + 1 : to));
   };
   const patchProps = (id: string, patch: Record<string, unknown>) => setRoot(updateNode(doc.root, id, (x) => ({ ...x, props: { ...x.props, ...patch } })));
+  const patchTrack = (id: string, track: DesignNode['track'] | undefined) => setRoot(updateNode(doc.root, id, (x) => { const { track: _old, ...rest } = x; void _old; return track ? { ...rest, track } : rest; }));
   const patchStyle = (id: string, bp: Breakpoint, key: string, value: string) => setRoot(updateNode(doc.root, id, (x) => ({ ...x, style: { ...(x.style ?? {}), [bp]: { ...(x.style?.[bp] ?? {}), [key]: value || undefined } } })));
 
   /* ---------- 畫布事件（事件委派到 data-sk） ---------- */
@@ -486,7 +487,7 @@ export function DesignEditor({ doc, onChange, onUpload }: DesignEditorProps) {
         <div className="space-y-2 overflow-auto p-2" style={{ maxHeight: panelH }}>
           {right === 'props' ? (
             node ? (
-              <PropsPanel node={node} onPatch={(p) => patchProps(node.id, p)} onUpload={onUpload} />
+              <PropsPanel node={node} onPatch={(p) => patchProps(node.id, p)} onTrack={(t) => patchTrack(node.id, t)} onUpload={onUpload} />
             ) : (
               <PageSettings doc={doc} onChange={commit} />
             )
@@ -573,11 +574,26 @@ function Layers({ root, selected, onSelect, onMove }: { root: DesignNode; select
 }
 
 /* ---------- 內容屬性 ---------- */
-function PropsPanel({ node, onPatch, onUpload }: { node: DesignNode; onPatch: (p: Record<string, unknown>) => void; onUpload?: (f: File) => Promise<string> }) {
+function PropsPanel({ node, onPatch, onUpload, onTrack }: { node: DesignNode; onPatch: (p: Record<string, unknown>) => void; onUpload?: (f: File) => Promise<string>; onTrack?: (t: DesignNode['track'] | undefined) => void }) {
   const fields = PROP_FIELDS[node.type] ?? [];
   const p = node.props;
+  const tr = node.track;
   return (
     <div className="space-y-2">
+      {node.type !== 'root' && onTrack ? (
+        <details className="rounded border p-2" style={line} open={!!tr}>
+          <summary className="cursor-pointer text-xs font-semibold">滑動追蹤{tr ? `：${tr.event}` : ''}</summary>
+          <p className="text-[11px]" style={{ color: 'var(--muted)' }}>此區塊進入可視範圍達指定百分比時送自訂事件（GA4／Meta／TikTok／dataLayer＋滑動事件 JS）。</p>
+          <input className={input} style={line} placeholder="事件名，例 view_hero（空＝不追蹤）" value={tr?.event ?? ''} onChange={(e) => { const ev = e.target.value.replace(/[^A-Za-z0-9_]/g, '').slice(0, 40); onTrack(ev ? { event: ev, percent: tr?.percent ?? 50, once: tr?.once ?? true, label: tr?.label } : undefined); }} />
+          {tr ? (
+            <div className="mt-1 flex items-center gap-2 text-xs">
+              可視 <input className="w-16 rounded border px-1" style={line} type="number" min={1} max={100} value={tr.percent} onChange={(e) => onTrack({ ...tr, percent: Math.max(1, Math.min(100, Number(e.target.value) || 50)) })} /> %
+              <label className="flex items-center gap-1"><input type="checkbox" checked={tr.once} onChange={(e) => onTrack({ ...tr, once: e.target.checked })} /> 只送一次</label>
+              <input className="flex-1 rounded border px-1" style={line} placeholder="標籤（block 變數）" value={tr.label ?? ''} onChange={(e) => onTrack({ ...tr, label: e.target.value.slice(0, 60) })} />
+            </div>
+          ) : null}
+        </details>
+      ) : null}
       <div className="font-semibold">
         {BLOCK_MAP[node.type]?.label ?? node.type}
         <span className="ml-1 font-normal" style={{ color: 'var(--muted)' }}>

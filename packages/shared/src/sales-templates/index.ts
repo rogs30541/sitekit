@@ -356,6 +356,15 @@ function make(category: TemplateCategory, P: SalesPalette): SalesTemplate {
     blocks: bp.blocks,
     doc: () => {
       const b = BLUEPRINTS[category](P);
+      // 每一段都掛滑動追蹤：sp_<區塊>（重複的加序號），區塊自身可見 50% 即送一次
+      const seen: Record<string, number> = {};
+      const contentBlocks = b.blocks.filter((x) => x !== 'products'); // products 由銷售頁商品區塊渲染，不在內文
+      b.content.root.children?.forEach((node, i) => {
+        const key = contentBlocks[i] ?? node.type;
+        seen[key] = (seen[key] ?? 0) + 1;
+        const name = seen[key] > 1 ? `${key}_${seen[key]}` : key;
+        node.track = { event: `sp_${name}`.replace(/[^A-Za-z0-9_]/g, '_').slice(0, 40), percent: 50, once: true, label: name };
+      });
       return {
         content: b.content,
         contentOptions: { addToCartButton: b.addToCartButton, funnelTracking: true },
@@ -364,6 +373,7 @@ function make(category: TemplateCategory, P: SalesPalette): SalesTemplate {
         sections: { order: b.order, titles: { offer: b.sectionTitles.offer ?? '優惠折扣', bundle: b.sectionTitles.bundle ?? '熱銷組合', product: b.sectionTitles.product ?? '精選單品', addon: b.sectionTitles.addon ?? '加價購' }, enabled: { offer: true, bundle: true, product: true, addon: true } },
         notice: { enabled: !!b.notice, text: b.notice },
         contact: { line: '', facebook: '', telegram: '', email: '', phone: '', display: 'collapsed' },
+        tracking: { scroll: { enabled: true, percents: [25, 50, 75, 100], event: 'scroll_depth' } } as SalesPageDoc['tracking'],
       };
     },
   };

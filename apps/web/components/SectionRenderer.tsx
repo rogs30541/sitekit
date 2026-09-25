@@ -43,15 +43,17 @@ function Shell({ s, children, className = '' }: { s: Section; children: React.Re
   const tone = (s as { tone?: string }).tone ?? 'default';
   const compact = (s as { compact?: boolean }).compact;
   const id = (s as { id?: string }).id || undefined;
+  const tr = (s as { track?: string; trackPercent?: number }).track;
+  const trackAttrs = tr ? { 'data-sk-track': tr, 'data-sk-track-percent': String((s as { trackPercent?: number }).trackPercent ?? 50), 'data-sk-track-once': '1', 'data-sk-track-label': s.kind } : {};
   const pad = compact ? 'py-8' : 'py-14 sm:py-20';
   if (isFull(tone))
     return (
-      <section id={id} className={`sk-full ${pad} ${className}`} style={toneStyle(tone, (s as { bgImageUrl?: string }).bgImageUrl)}>
+      <section id={id} {...trackAttrs} className={`sk-full ${pad} ${className}`} style={toneStyle(tone, (s as { bgImageUrl?: string }).bgImageUrl)}>
         <div className="sk-container">{children}</div>
       </section>
     );
   return (
-    <section id={id} className={`${compact ? 'py-4' : 'py-6 sm:py-8'} ${className}`}>
+    <section id={id} {...trackAttrs} className={`${compact ? 'py-4' : 'py-6 sm:py-8'} ${className}`}>
       {children}
     </section>
   );

@@ -14,10 +14,26 @@ export const BREAKPOINTS: { key: Breakpoint; label: string; width: number; maxWi
 ];
 
 export type DesignStyle = Record<string, string | undefined>;
+/** 區塊滑動追蹤：進入可視範圍達 percent（區塊自身可見百分比）時送自訂事件 */
+export interface NodeTrack {
+  event: string;
+  percent: number;
+  once: boolean;
+  label?: string;
+}
+export const normalizeNodeTrack = (v: unknown): NodeTrack | undefined => {
+  if (!v || typeof v !== 'object') return undefined;
+  const o = v as Record<string, unknown>;
+  const event = typeof o.event === 'string' ? o.event.trim() : '';
+  if (!/^[A-Za-z][A-Za-z0-9_]{0,39}$/.test(event)) return undefined;
+  const percent = Math.max(1, Math.min(100, Math.round(Number(o.percent)) || 50));
+  return { event, percent, once: o.once !== false, ...(typeof o.label === 'string' && o.label.trim() ? { label: o.label.trim().slice(0, 60) } : {}) };
+};
 export interface DesignNode {
   id: string;
   type: string;
   props: Record<string, unknown>;
+  track?: NodeTrack;
   style?: Partial<Record<Breakpoint, DesignStyle>>;
   children?: DesignNode[];
 }
@@ -266,7 +282,8 @@ export function parseDesignDoc(input: unknown): DesignDoc {
     const props = o.props && typeof o.props === 'object' ? (o.props as Record<string, unknown>) : {};
     const children = Array.isArray(o.children) ? o.children.map((c) => walk(c, depth + 1)) : undefined;
     if (children && !isContainerType(type)) throw new Error(`區塊 ${type} 不可包含子節點`);
-    return { id, type: type === 'root' ? 'root' : type, props, style, ...(children ? { children } : isContainerType(type) ? { children: [] } : {}) };
+    const track = normalizeNodeTrack(o.track);
+    return { id, type: type === 'root' ? 'root' : type, props, style, ...(track ? { track } : {}), ...(children ? { children } : isContainerType(type) ? { children: [] } : {}) };
   };
   const r = walk(root, 0);
   return { version: 1, root: { ...r, id: 'root', type: 'root' }, settings: { maxWidth: Number(d.settings?.maxWidth) || 1200, ...(d.settings?.fontFamily ? { fontFamily: String(d.settings.fontFamily).slice(0, 120) } : {}), ...(d.settings?.accent ? { accent: String(d.settings.accent).slice(0, 40) } : {}), ...(d.settings?.tracking ? { tracking: normalizeTracking(d.settings.tracking) } : {}) } };
@@ -438,7 +455,8 @@ export function renderDesign(doc: DesignDoc, opts: RenderOptions = {}): { html: 
   if (doc.settings?.accent) css = `.sk-page{--accent:${doc.settings.accent}}\n` + css;
   if (doc.settings?.fontFamily) css = `.sk-page{font-family:${doc.settings.fontFamily}}\n` + css;
 
-  const attr = (node: DesignNode, cls = '') => `class="sk-${node.id}${cls ? ' ' + cls : ''}${editor && opts.selected === node.id ? ' sk-selected' : ''}"${editor ? ` data-sk="${node.id}" data-sk-type="${node.type}"` : ''}`;
+  const trackAttr = (node: DesignNode) => (node.track ? ` data-sk-track="${escapeHtml(node.track.event)}" data-sk-track-percent="${node.track.percent}" data-sk-track-once="${node.track.once ? '1' : '0'}"${node.track.label ? ` data-sk-track-label="${escapeHtml(node.track.label)}"` : ''}` : '');
+  const attr = (node: DesignNode, cls = '') => `class="sk-${node.id}${cls ? ' ' + cls : ''}${editor && opts.selected === node.id ? ' sk-selected' : ''}"${editor ? ` data-sk="${node.id}" data-sk-type="${node.type}"` : ''}${trackAttr(node)}`;
   const kids = (node: DesignNode) => {
     const inner = (node.children ?? []).map(render).join('');
     if (editor && !inner && isContainerType(node.type)) return `<div class="sk-empty-container">拖曳物件到這裡（${BLOCK_MAP[node.type]?.label ?? node.type}）</div>`;

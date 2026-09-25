@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { hasTracking, mergeTracking, normalizeTracking, type TrackingConfig } from '@sitekit/shared';
 import { skTrack } from '@/lib/track';
+import { ScrollTracker } from './ScrollTracker';
 
 const clean = (s: string) => s.replace(/[^A-Za-z0-9_-]/g, '');
 
@@ -50,6 +51,7 @@ export function Tracking({ config, site, scope = 'site', page }: { config: Parti
   const fired = useRef('');
   useEffect(() => {
     window.__skTracking = merged;
+    if (scope === 'page' && page) window.__skPage = { ...page, pathname: pathname ?? '' };
     const key = `${scope}:${pathname}:${page?.id ?? ''}`;
     if (fired.current === key) return;
     fired.current = key;
@@ -58,10 +60,12 @@ export function Tracking({ config, site, scope = 'site', page }: { config: Parti
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, page?.id, scope]);
-  if (!hasTracking(load as TrackingConfig) && !hasTracking(merged)) return null;
+  const scroller = scope === 'site' ? <ScrollTracker /> : null;
+  if (!hasTracking(load as TrackingConfig) && !hasTracking(merged)) return scroller;
   const prefix = scope === 'page' ? `sk-p-${page?.id ?? 'x'}-` : 'sk-';
   return (
     <>
+      {scroller}
       {load.gtm ? (
         <>
           <script id={`${prefix}gtm`} dangerouslySetInnerHTML={{ __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${clean(load.gtm)}');` }} />

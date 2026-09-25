@@ -18,7 +18,7 @@ const limit = z.number().int().min(1).max(24).optional().default(6);
 const cta = { ctaText: optShort(40), ctaHref: optUrl, cta2Text: optShort(40), cta2Href: optUrl };
 const heading = { title: optShort(160), subtitle: optText(400), kicker: optShort(60) };
 /** 區塊外觀：tone 決定底色（default 跟主題、muted 淺灰、accent 主色、dark 深色、image 背景圖） */
-const look = { tone: z.enum(['default', 'muted', 'accent', 'dark', 'image']).optional().default('default'), bgImageUrl: optUrl, id: optShort(40), compact: z.boolean().optional().default(false) };
+const look = { tone: z.enum(['default', 'muted', 'accent', 'dark', 'image']).optional().default('default'), bgImageUrl: optUrl, id: optShort(40), compact: z.boolean().optional().default(false), track: optShort(40), trackPercent: z.number().int().min(1).max(100).optional().default(50) };
 
 export const sectionSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('hero'), variant: z.enum(['center', 'left', 'split', 'cover', 'editorial', 'dashboard', 'carousel']).optional().default('center'), ...heading, ...cta, imageUrl: optUrl, videoUrl: optUrl, imageSide: z.enum(['right', 'left']).optional().default('right'), highlights: z.array(z.object({ icon: optShort(24), title: short(60), text: optShort(120) })).max(4).optional().default([]), slides: z.array(z.object({ title: short(120), subtitle: optText(300), imageUrl: optUrl, ctaText: optShort(40), ctaHref: optUrl })).max(8).optional().default([]), ...look }),

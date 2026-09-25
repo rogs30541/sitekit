@@ -53,6 +53,19 @@ export function TrackingFields({ value, onChange, compact = false, inherit = fal
           </label>
         ))}
       </Wrap>
+      <Wrap title="滑動追蹤" desc="頁面滑動深度到達各百分比時送自訂事件（GA4 event／Meta trackCustom／TikTok／dataLayer）；區塊層級的可視事件在設計器或首頁區塊每個區塊上設定事件名。">
+        <label className="flex items-center gap-2 text-xs">
+          <input type="checkbox" checked={value.scroll?.enabled !== false} onChange={(e) => onChange({ ...value, scroll: { ...(value.scroll ?? { percents: [25, 50, 75, 100], event: 'scroll_depth' }), enabled: e.target.checked } })} /> 啟用頁面滑動深度事件
+        </label>
+        <label className="block text-xs">
+          深度百分比（逗號分隔，1–100）
+          <input className={`${input} font-mono`} style={line} value={(value.scroll?.percents ?? [25, 50, 75, 100]).join(',')} placeholder="25,50,75,100" onChange={(e) => onChange({ ...value, scroll: { ...(value.scroll ?? { enabled: true, event: 'scroll_depth' }), percents: e.target.value.split(/[,，\s]+/).map((x) => Math.round(Number(x))).filter((x) => x >= 1 && x <= 100) } })} />
+        </label>
+        <label className="block text-xs">
+          事件名（GA4 規則：字母開頭、底線、≤40）
+          <input className={`${input} font-mono`} style={line} value={value.scroll?.event ?? 'scroll_depth'} onChange={(e) => onChange({ ...value, scroll: { ...(value.scroll ?? { enabled: true, percents: [25, 50, 75, 100] }), event: e.target.value.replace(/[^A-Za-z0-9_]/g, '').slice(0, 40) } })} />
+        </label>
+      </Wrap>
       <Wrap title="購物車事件（JavaScript）" desc="在各事件觸發時執行你的 JavaScript（不要貼 HTML）。可用變數：page、product、qty、value、currency、items、order。">
         {TRACKING_EVENT_FIELDS.map((f) => (
           <label key={f.key} className="block text-xs">

@@ -292,6 +292,13 @@ export function SectionsEditor({ value, onChange }: { value: SectionInput[]; onC
                     ) : null}
                     {s.tone === 'image' ? <Field col={['bgImageUrl', '背景圖', 'image']} value={s.bgImageUrl} onChange={(v) => upd(i, { bgImageUrl: v })} /> : null}
                     <label className="block text-xs">
+                      滑動追蹤事件名（區塊可視即送；字母開頭、底線）
+                      <span className="flex gap-1">
+                        <input className={input} style={line} value={String(s.track ?? '')} placeholder="例 view_pricing" onChange={(e) => upd(i, { track: e.target.value.replace(/[^A-Za-z0-9_]/g, '').slice(0, 40) })} />
+                        <input className="w-20 rounded border px-2 py-1 text-sm" style={line} type="number" min={1} max={100} title="可視百分比" value={Number(s.trackPercent ?? 50)} onChange={(e) => upd(i, { trackPercent: Math.max(1, Math.min(100, Number(e.target.value) || 50)) })} />
+                      </span>
+                    </label>
+                    <label className="block text-xs">
                       錨點 id（選單可連到 /#id）
                       <input className={input} style={line} value={String(s.id ?? '')} placeholder="例 pricing、faq" onChange={(e) => upd(i, { id: e.target.value.replace(/[^a-z0-9-]/gi, '').toLowerCase() })} />
                     </label>

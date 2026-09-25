@@ -9,6 +9,14 @@ export interface TrackingEvents {
   addToCart: string;
   initiateCheckout: string;
   purchase: string;
+  /** 滑動事件（區塊進入可視／頁面深度）JS；變數 event、percent、block、page */
+  scroll: string;
+}
+/** 頁面滑動深度：percents 例 [25,50,75,100]，到達即送 event（預設 scroll_depth） */
+export interface ScrollTracking {
+  enabled: boolean;
+  percents: number[];
+  event: string;
 }
 export interface TrackingConfig {
   ga4: string;
@@ -23,8 +31,9 @@ export interface TrackingConfig {
   bodyTop: string;
   bodyBottom: string;
   events: TrackingEvents;
+  scroll: ScrollTracking;
 }
-export const TRACKING_ID_FIELDS: { key: keyof Omit<TrackingConfig, 'events' | 'head' | 'bodyTop' | 'bodyBottom'>; label: string; placeholder: string; help: string }[] = [
+export const TRACKING_ID_FIELDS: { key: keyof Omit<TrackingConfig, 'events' | 'head' | 'bodyTop' | 'bodyBottom' | 'scroll'>; label: string; placeholder: string; help: string }[] = [
   { key: 'gtm', label: 'Google Tag Manager', placeholder: 'GTM-XXXXXXX', help: '啟用後由 GTM 統一管理標籤；會在 head 載入並補 noscript' },
   { key: 'ga4', label: 'Google Analytics 4', placeholder: 'G-XXXXXXXXXX', help: '量測 ID；自動送 page_view／view_item／add_to_cart／begin_checkout／purchase' },
   { key: 'fbPixel', label: 'Meta（Facebook）Pixel', placeholder: '1234567890', help: '自動追蹤 PageView／ViewContent／AddToCart／InitiateCheckout／Purchase' },
@@ -39,9 +48,25 @@ export const TRACKING_EVENT_FIELDS: { key: keyof TrackingEvents; label: string; 
   { key: 'addToCart', label: '加入購物車 AddToCart', help: '變數 product、qty、value、currency' },
   { key: 'initiateCheckout', label: '開始結帳 InitiateCheckout', help: '變數 value、currency、items' },
   { key: 'purchase', label: '訂單成立 Purchase', help: '變數 order（{no,amount,items}）、value、currency' },
+  { key: 'scroll', label: '滑動事件（區塊可視／頁面深度）', help: '變數 event（事件名）、percent（可視或深度百分比）、block（區塊標籤，頁面深度時為空）、page' },
 ];
+export const DEFAULT_SCROLL_PERCENTS = [25, 50, 75, 100];
+export const EVENT_NAME_RE = /^[A-Za-z][A-Za-z0-9_]{0,39}$/;
+export const defaultScrollTracking = (): ScrollTracking => ({ enabled: true, percents: [...DEFAULT_SCROLL_PERCENTS], event: 'scroll_depth' });
+/** 正規化滑動設定：百分比 1–100 整數、去重排序、最多 20 個；事件名 GA4 規則（字母開頭、底線／數字、≤40） */
+export function normalizeScroll(input: unknown): ScrollTracking {
+  const d = defaultScrollTracking();
+  if (!input || typeof input !== 'object') return d;
+  const o = input as Record<string, unknown>;
+  if (typeof o.enabled === 'boolean') d.enabled = o.enabled;
+  const raw = Array.isArray(o.percents) ? o.percents : typeof o.percents === 'string' ? o.percents.split(/[,，\s]+/) : null;
+  if (raw) d.percents = [...new Set(raw.map((x) => Math.round(Number(x))).filter((x) => Number.isFinite(x) && x >= 1 && x <= 100))].sort((a, b) => a - b).slice(0, 20);
+  const ev = typeof o.event === 'string' ? o.event.trim() : '';
+  d.event = EVENT_NAME_RE.test(ev) ? ev : 'scroll_depth';
+  return d;
+}
 
-export const defaultTracking = (): TrackingConfig => ({ ga4: '', gtm: '', fbPixel: '', tiktok: '', lineTag: '', googleAdsId: '', googleAdsLabel: '', head: '', bodyTop: '', bodyBottom: '', events: { pageView: '', viewContent: '', addToCart: '', initiateCheckout: '', purchase: '' } });
+export const defaultTracking = (): TrackingConfig => ({ ga4: '', gtm: '', fbPixel: '', tiktok: '', lineTag: '', googleAdsId: '', googleAdsLabel: '', head: '', bodyTop: '', bodyBottom: '', events: { pageView: '', viewContent: '', addToCart: '', initiateCheckout: '', purchase: '', scroll: '' }, scroll: defaultScrollTracking() });
 
 const ID_RE: Record<string, RegExp> = { ga4: /^G-[A-Z0-9]{4,20}$/i, gtm: /^GTM-[A-Z0-9]{4,12}$/i, fbPixel: /^\d{6,20}$/, tiktok: /^[A-Z0-9]{8,40}$/i, lineTag: /^[a-z0-9-]{8,64}$/i, googleAdsId: /^AW-\d{6,15}$/i, googleAdsLabel: /^[A-Za-z0-9_-]{4,64}$/ };
 const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
@@ -57,7 +82,8 @@ export function normalizeTracking(input: unknown): TrackingConfig {
   }
   for (const k of ['head', 'bodyTop', 'bodyBottom'] as const) d[k] = str(o[k], 20000);
   const ev = (o.events && typeof o.events === 'object' ? o.events : {}) as Record<string, unknown>;
-  for (const k of ['pageView', 'viewContent', 'addToCart', 'initiateCheckout', 'purchase'] as const) d.events[k] = str(ev[k], 5000);
+  for (const k of ['pageView', 'viewContent', 'addToCart', 'initiateCheckout', 'purchase', 'scroll'] as const) d.events[k] = str(ev[k], 5000);
+  d.scroll = normalizeScroll(o.scroll);
   return d;
 }
 
@@ -68,7 +94,9 @@ export function mergeTracking(site: TrackingConfig, page?: Partial<TrackingConfi
   const out = { ...site, events: { ...site.events } };
   for (const k of ['ga4', 'gtm', 'fbPixel', 'tiktok', 'lineTag', 'googleAdsId', 'googleAdsLabel'] as const) if (p[k]) out[k] = p[k];
   for (const k of ['head', 'bodyTop', 'bodyBottom'] as const) out[k] = [site[k], p[k]].filter(Boolean).join('\n');
-  for (const k of ['pageView', 'viewContent', 'addToCart', 'initiateCheckout', 'purchase'] as const) out.events[k] = [site.events[k], p.events[k]].filter(Boolean).join('\n;\n');
+  for (const k of ['pageView', 'viewContent', 'addToCart', 'initiateCheckout', 'purchase', 'scroll'] as const) out.events[k] = [site.events[k], p.events[k]].filter(Boolean).join('\n;\n');
+  // 頁面有明確給 scroll 才覆蓋（銷售頁／設計頁可設不同深度）
+  out.scroll = page.scroll !== undefined ? p.scroll : site.scroll;
   return out;
 }
 export const hasTracking = (t: TrackingConfig) => !!(t.ga4 || t.gtm || t.fbPixel || t.tiktok || t.lineTag || t.googleAdsId || t.head || t.bodyTop || t.bodyBottom || Object.values(t.events ?? {}).some(Boolean));
