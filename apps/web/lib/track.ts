@@ -19,12 +19,16 @@ declare global {
     __skPage?: { id: string; title: string; type: string; pathname: string };
     gtag?: (...args: unknown[]) => void;
     fbq?: (...args: unknown[]) => void;
+    /** OpenAI（ChatGPT Ads）Measurement Pixel */
+    oaiq?: (...args: unknown[]) => void;
     ttq?: { track: (name: string, params?: unknown) => void; page?: () => void };
     _lt?: (...args: unknown[]) => void;
     dataLayer?: unknown[];
   }
 }
 const GA_EVENT: Record<TrackEvent, string> = { PageView: 'page_view', ViewContent: 'view_item', AddToCart: 'add_to_cart', InitiateCheckout: 'begin_checkout', Purchase: 'purchase' };
+/** OpenAI Ads 標準事件（developers.openai.com/ads/supported-events）：contents 形狀＝type＋amount(整數)＋currency＋contents[{id,name,content_type,quantity}] */
+const OAI_EVENT: Record<TrackEvent, string> = { PageView: 'page_viewed', ViewContent: 'contents_viewed', AddToCart: 'items_added', InitiateCheckout: 'checkout_started', Purchase: 'order_created' };
 const TT_EVENT: Record<TrackEvent, string> = { PageView: 'Pageview', ViewContent: 'ViewContent', AddToCart: 'AddToCart', InitiateCheckout: 'InitiateCheckout', Purchase: 'CompletePayment' };
 
 /** 自訂事件（滑動深度／區塊可視等）：GA4 gtag event、Meta trackCustom、TikTok track、dataLayer，並執行後台「滑動事件 JS」 */
@@ -50,6 +54,12 @@ export function skTrackCustom(name: string, params: { percent?: number; block?: 
   }
   try {
     if (window.ttq) window.ttq.track(name, payload);
+  } catch {
+    /* ignore */
+  }
+  try {
+    // OpenAI Ads：自訂事件走 custom（custom_event_name 小寫／數字／底線／連字號，1–64）
+    if (window.oaiq && cfg?.openaiPixel) window.oaiq('measure', 'custom', { type: 'custom', custom_event_name: name.toLowerCase().replace(/[^a-z0-9_-]/g, '_').slice(0, 64) }, { event_id: `${name}:${params.block ?? ''}:${params.percent ?? ''}:${params.page?.id ?? location.pathname}` });
   } catch {
     /* ignore */
   }
@@ -99,6 +109,17 @@ export function skTrack(event: TrackEvent, params: TrackParams = {}, once?: stri
     if (window.ttq) {
       if (event === 'PageView') window.ttq.page?.();
       else window.ttq.track(TT_EVENT[event], { value, currency, contents: gaItems.map((i) => ({ content_id: i.item_id, content_name: i.item_name, price: i.price, quantity: i.quantity })) });
+    }
+  } catch {
+    /* ignore */
+  }
+  try {
+    if (window.oaiq && cfg?.openaiPixel) {
+      const contents = gaItems.map((i) => ({ id: String(i.item_id), name: i.item_name, content_type: 'product', quantity: i.quantity }));
+      const data: Record<string, unknown> = { type: event === 'PageView' ? 'page' : 'product', ...(value !== undefined ? { amount: Math.round(value), currency } : {}), ...(contents.length ? { contents } : {}) };
+      const opts = event === 'Purchase' && params.order ? { event_id: `order_${params.order.no}` } : undefined;
+      if (opts) window.oaiq('measure', OAI_EVENT[event], data, opts);
+      else window.oaiq('measure', OAI_EVENT[event], data);
     }
   } catch {
     /* ignore */

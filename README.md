@@ -71,6 +71,9 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 ## P12 追蹤碼區塊與連接追蹤設定（2026-09-22，v0.11.0）
 
+- **v0.35.0 ChatGPT Ads Pixel**：追蹤設定新增「ChatGPT Ads（OpenAI）Pixel」（Pixel ID 來自 OpenAI Ads Manager 的資料來源）；自動送 page_viewed／contents_viewed／items_added／checkout_started／order_created（含 event_id 去重），滑動深度與區塊事件送 custom；與 GA4／Meta／TikTok／LINE 並列，網站層級或單頁覆蓋。
+- **v0.34.0 滑動追蹤**：每個區塊可設可視事件（設計器節點 track、首頁區塊 track、25 套一頁式模板每段預掛 sp_*），頁面滑動深度自訂百分比（預設 25/50/75/100）；送 GA4 event／Meta trackCustom／TikTok／dataLayer＋滑動事件 JS。
+
 對標 1shop「追蹤」頁；所有網頁設計（官網頁面、首頁、銷售頁）與全站都能內嵌追蹤碼。
 
 - **網站層級**（後台「網站 → 網站設定 → 追蹤設定（全站）」，`PUT /api/admin/site/tracking`；OPS／MCP `get_tracking`／`set_tracking`）：Google Tag Manager、GA4、Meta（Facebook）Pixel、TikTok Pixel、LINE Tag、Google Ads 轉換 ID／標籤；自訂程式碼 Head 內／Body 最上方／Body 最下方（HTML，可含 script，前台以 DOM 重建 script 讓它真的執行）；購物車事件 JavaScript（PageView／ViewContent／AddToCart／InitiateCheckout／Purchase，可用變數 page、product、qty、value、currency、items、order）。設定鍵 `tracking.*`（`seo.gaId` 舊欄位仍作 GA4 後備）。ID 格式驗證，不符者清空（`normalizeTracking`，`packages/shared/src/tracking.ts`）。

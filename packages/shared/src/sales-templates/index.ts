@@ -56,7 +56,8 @@ const mk = (P: SalesPalette) => {
   const cards = (items: Card[], cols = 1) => n('columns', { cols }, { gap: '14px' }, items.map((c) => n('column', {}, {}, [n('iconbox', c, cardStyle)])));
   const btn = (text: string) => n('addtocart', { text, target: '#sk-products' }, { display: 'inline-block', padding: '14px 32px', borderRadius: '999px', fontWeight: '800', fontSize: '16px', background: P.primary, color: P.onPrimary, textAlign: 'center' });
   const center = (children: DesignNode[]) => n('container', {}, { display: 'flex', justifyContent: 'center', gap: '12px', margin: '24px 0 0' }, children);
-  const image = (alt: string, ratio = '16 / 9') => n('image', { src: '', alt }, { width: '100%', aspectRatio: ratio, borderRadius: P.radius, background: P.surface, border: `1px dashed ${P.border}` });
+  // 圖片佔位：用 container＋text（不是空 src 的 image 節點，否則發佈前檢測「圖片沒有網址」會擋）；站主在設計器把它換成圖片區塊
+  const image = (alt: string, ratio = '16 / 9') => n('container', {}, { width: '100%', aspectRatio: ratio, borderRadius: P.radius, background: P.surface, border: `1px dashed ${P.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }, [n('text', { text: `＋ 放圖片：${alt}（在設計器換成「圖片」區塊）` }, { fontSize: '13px', color: P.muted, textAlign: 'center', padding: '12px' })]);
 
   const hero = (kicker: string, title: string, subtitle: string, cta: string) =>
     n('section', { contentWidth: '720px' }, { padding: '72px 20px 56px', background: `linear-gradient(160deg, ${P.heroFrom}, ${P.heroTo})`, color: P.dark ? '#ffffff' : P.text, textAlign: 'center' }, [

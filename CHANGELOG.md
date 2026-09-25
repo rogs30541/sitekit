@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.35.0（2026-09-26）
+
+- 追蹤新增 **ChatGPT Ads（OpenAI Ads）Measurement Pixel**：追蹤設定多一欄 `openaiPixel`（網站層級與頁面／銷售頁可覆蓋），前台載入官方 `oaiq` SDK（bzrcdn.openai.com/sdk/oaiq.min.js）並 `init`；自動事件對映 PageView→page_viewed、ViewContent→contents_viewed、AddToCart→items_added、InitiateCheckout→checkout_started、Purchase→order_created（amount 整數、currency、contents[{id,name,content_type,quantity}]、event_id=order_<訂單號> 去重）；滑動深度與區塊可視事件送 `custom`（custom_event_name）
+- OPS `set_tracking`／MCP／指令台說明含 openaiPixel；e2e p37
+- 一頁式模板的圖片佔位改為 container＋文字（原本空 src 的 image 節點會被發佈前檢測「圖片沒有網址」擋住，模板頁無法直接發佈）
+
 ## v0.34.0（2026-09-26）
 
 - 滑動追蹤（每個區塊都能裝）：設計器任何節點可設 `track{event,percent,once,label}`（渲染成 data-sk-track 屬性），首頁／區塊頁的 20 種區塊可設 `track`／`trackPercent`，25 套一頁式模板每一段預掛 `sp_<區塊>`（可視 50% 送一次）；全站一個 `ScrollTracker`（IntersectionObserver＋MutationObserver）在區塊可視達百分比時送自訂事件

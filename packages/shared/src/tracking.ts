@@ -24,6 +24,8 @@ export interface TrackingConfig {
   fbPixel: string;
   tiktok: string;
   lineTag: string;
+  /** ChatGPT Ads（OpenAI Ads）Measurement Pixel ID：載入 bzrcdn.openai.com/sdk/oaiq.min.js，自動送 page_viewed／contents_viewed／items_added／checkout_started／order_created */
+  openaiPixel: string;
   /** Google Ads 轉換：AW-XXXX / 標籤 */
   googleAdsId: string;
   googleAdsLabel: string;
@@ -39,6 +41,7 @@ export const TRACKING_ID_FIELDS: { key: keyof Omit<TrackingConfig, 'events' | 'h
   { key: 'fbPixel', label: 'Meta（Facebook）Pixel', placeholder: '1234567890', help: '自動追蹤 PageView／ViewContent／AddToCart／InitiateCheckout／Purchase' },
   { key: 'tiktok', label: 'TikTok Pixel', placeholder: 'CXXXXXXXXXXXXXXX', help: '自動 track ViewContent／AddToCart／InitiateCheckout／CompletePayment' },
   { key: 'lineTag', label: 'LINE Tag', placeholder: 'xxxxxxxx-xxxx-xxxx', help: 'LINE Ads Platform 基本代碼；轉換事件自動送 AddToCart／Purchase' },
+  { key: 'openaiPixel', label: 'ChatGPT Ads（OpenAI）Pixel', placeholder: 'OpenAI Ads Manager 資料來源的 Pixel ID', help: '載入 OpenAI Measurement Pixel（oaiq）；自動送 page_viewed／contents_viewed／items_added／checkout_started／order_created（含 amount、currency、contents、event_id 去重），滑動與區塊事件送 custom' },
   { key: 'googleAdsId', label: 'Google Ads 轉換 ID', placeholder: 'AW-XXXXXXXXX', help: '訂單成立時送轉換（購買）' },
   { key: 'googleAdsLabel', label: 'Google Ads 轉換標籤', placeholder: 'abcDEFghiJKL', help: '搭配轉換 ID' },
 ];
@@ -66,9 +69,9 @@ export function normalizeScroll(input: unknown): ScrollTracking {
   return d;
 }
 
-export const defaultTracking = (): TrackingConfig => ({ ga4: '', gtm: '', fbPixel: '', tiktok: '', lineTag: '', googleAdsId: '', googleAdsLabel: '', head: '', bodyTop: '', bodyBottom: '', events: { pageView: '', viewContent: '', addToCart: '', initiateCheckout: '', purchase: '', scroll: '' }, scroll: defaultScrollTracking() });
+export const defaultTracking = (): TrackingConfig => ({ ga4: '', gtm: '', fbPixel: '', tiktok: '', lineTag: '', openaiPixel: '', googleAdsId: '', googleAdsLabel: '', head: '', bodyTop: '', bodyBottom: '', events: { pageView: '', viewContent: '', addToCart: '', initiateCheckout: '', purchase: '', scroll: '' }, scroll: defaultScrollTracking() });
 
-const ID_RE: Record<string, RegExp> = { ga4: /^G-[A-Z0-9]{4,20}$/i, gtm: /^GTM-[A-Z0-9]{4,12}$/i, fbPixel: /^\d{6,20}$/, tiktok: /^[A-Z0-9]{8,40}$/i, lineTag: /^[a-z0-9-]{8,64}$/i, googleAdsId: /^AW-\d{6,15}$/i, googleAdsLabel: /^[A-Za-z0-9_-]{4,64}$/ };
+const ID_RE: Record<string, RegExp> = { ga4: /^G-[A-Z0-9]{4,20}$/i, gtm: /^GTM-[A-Z0-9]{4,12}$/i, fbPixel: /^\d{6,20}$/, tiktok: /^[A-Z0-9]{8,40}$/i, lineTag: /^[a-z0-9-]{8,64}$/i, openaiPixel: /^[A-Za-z0-9_-]{4,80}$/, googleAdsId: /^AW-\d{6,15}$/i, googleAdsLabel: /^[A-Za-z0-9_-]{4,64}$/ };
 const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
 /** 正規化（未知鍵丟棄、ID 格式不符則清空、程式碼欄位長度上限） */
@@ -76,7 +79,7 @@ export function normalizeTracking(input: unknown): TrackingConfig {
   const d = defaultTracking();
   if (!input || typeof input !== 'object') return d;
   const o = input as Record<string, unknown>;
-  for (const k of ['ga4', 'gtm', 'fbPixel', 'tiktok', 'lineTag', 'googleAdsId', 'googleAdsLabel'] as const) {
+  for (const k of ['ga4', 'gtm', 'fbPixel', 'tiktok', 'lineTag', 'openaiPixel', 'googleAdsId', 'googleAdsLabel'] as const) {
     const v = str(o[k], 80);
     d[k] = v && ID_RE[k].test(v) ? v : '';
   }
@@ -92,11 +95,11 @@ export function mergeTracking(site: TrackingConfig, page?: Partial<TrackingConfi
   if (!page) return site;
   const p = normalizeTracking(page);
   const out = { ...site, events: { ...site.events } };
-  for (const k of ['ga4', 'gtm', 'fbPixel', 'tiktok', 'lineTag', 'googleAdsId', 'googleAdsLabel'] as const) if (p[k]) out[k] = p[k];
+  for (const k of ['ga4', 'gtm', 'fbPixel', 'tiktok', 'lineTag', 'openaiPixel', 'googleAdsId', 'googleAdsLabel'] as const) if (p[k]) out[k] = p[k];
   for (const k of ['head', 'bodyTop', 'bodyBottom'] as const) out[k] = [site[k], p[k]].filter(Boolean).join('\n');
   for (const k of ['pageView', 'viewContent', 'addToCart', 'initiateCheckout', 'purchase', 'scroll'] as const) out.events[k] = [site.events[k], p.events[k]].filter(Boolean).join('\n;\n');
   // 頁面有明確給 scroll 才覆蓋（銷售頁／設計頁可設不同深度）
   out.scroll = page.scroll !== undefined ? p.scroll : site.scroll;
   return out;
 }
-export const hasTracking = (t: TrackingConfig) => !!(t.ga4 || t.gtm || t.fbPixel || t.tiktok || t.lineTag || t.googleAdsId || t.head || t.bodyTop || t.bodyBottom || Object.values(t.events ?? {}).some(Boolean));
+export const hasTracking = (t: TrackingConfig) => !!(t.ga4 || t.gtm || t.fbPixel || t.tiktok || t.lineTag || t.openaiPixel || t.googleAdsId || t.head || t.bodyTop || t.bodyBottom || Object.values(t.events ?? {}).some(Boolean));
