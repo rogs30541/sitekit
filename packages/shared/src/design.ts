@@ -22,6 +22,15 @@ export interface DesignNode {
   children?: DesignNode[];
 }
 import { normalizeTracking, type TrackingConfig } from './tracking';
+import { ICONS } from './site-templates/icons';
+
+/** 圖示：名稱（ICON_NAMES）→ 線條 SVG；其他文字（舊 emoji）原樣輸出 */
+const iconHtml = (raw: unknown, size = 32): string => {
+  const s = String(raw ?? '').trim();
+  const body = ICONS[s];
+  if (body) return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+  return escapeHtml(s);
+};
 
 export interface DesignDoc {
   version: 1;
@@ -362,7 +371,7 @@ export const BASE_CSS = `.sk-page{box-sizing:border-box;width:100%;overflow-x:hi
 .sk-list li{display:flex;gap:8px;align-items:flex-start}
 .sk-list.sk-ordered{list-style:decimal;padding-left:1.4em}
 .sk-list.sk-ordered li{display:list-item}
-.sk-iconbox .sk-icon{font-size:30px;line-height:1;margin-bottom:12px}
+.sk-iconbox .sk-icon{font-size:30px;line-height:1;margin-bottom:12px}.sk-iconbox .sk-icon svg{display:block}.sk-list .sk-li-icon svg{display:inline-block;vertical-align:-3px;margin-right:6px}
 .sk-iconbox h3{font-size:18px;font-weight:700;margin-bottom:6px}
 .sk-card{overflow:hidden;display:flex;flex-direction:column}
 .sk-card img{width:100%;aspect-ratio:16/9;object-fit:cover}
@@ -488,11 +497,11 @@ export function renderDesign(doc: DesignDoc, opts: RenderOptions = {}): { html: 
       case 'list': {
         const items = Array.isArray(p.items) ? (p.items as unknown[]).map(String) : [];
         const ordered = !!p.ordered;
-        const icon = ordered ? '' : escapeHtml(p.icon ?? '•');
+        const icon = ordered ? '' : iconHtml(p.icon ?? '•', 18);
         return `<${ordered ? 'ol' : 'ul'} ${attr(node, `sk-list${ordered ? ' sk-ordered' : ''}`)}>${items.map((it) => `<li>${icon ? `<span class="sk-li-icon">${icon}</span>` : ''}<span>${escapeHtml(it)}</span></li>`).join('')}</${ordered ? 'ol' : 'ul'}>`;
       }
       case 'iconbox':
-        return `<div ${attr(node, 'sk-iconbox')}><div class="sk-icon">${escapeHtml(p.icon)}</div><h3>${escapeHtml(p.title)}</h3><p>${escapeHtml(p.text)}</p></div>`;
+        return `<div ${attr(node, 'sk-iconbox')}><div class="sk-icon">${iconHtml(p.icon)}</div><h3>${escapeHtml(p.title)}</h3><p>${escapeHtml(p.text)}</p></div>`;
       case 'card': {
         const img = safeUrl(p.image);
         const href = safeUrl(p.href);

@@ -24,6 +24,7 @@ import { DesignService } from '../content/design.service';
 import { getProvider } from '../studio/providers';
 import { composeTemplatePrompt, StudioService } from '../studio/studio.service';
 import { SalesService } from '../sales/sales.service';
+import { SalesTemplateService } from '../sales/sales-template.service';
 import { pluginRegistry } from '../../plugins';
 import { SystemService } from '../system/system.service';
 import { MembersService } from '../admin/members.service';
@@ -58,6 +59,7 @@ export class OpsService {
     private readonly design: DesignService,
     private readonly studio: StudioService,
     private readonly sales: SalesService,
+    private readonly salesTemplates: SalesTemplateService,
     private readonly members: MembersService,
     private readonly system: SystemService,
   ) {}
@@ -255,6 +257,10 @@ export class OpsService {
         return this.sales.list();
       case 'get_sales_page':
         return this.sales.present(await this.sales.page(String(p.idOrSlug ?? p.slug ?? p.id ?? '')));
+      case 'list_sales_templates':
+        return this.salesTemplates.list(p.category ? String(p.category) : undefined);
+      case 'apply_sales_template':
+        return this.salesTemplates.apply(String(p.id ?? ''), { slug: p.slug ? String(p.slug) : undefined, title: p.title ? String(p.title) : undefined, code: p.code ? String(p.code) : undefined, confirm: p.confirm === true || p.confirm === 'true' }, actor);
       case 'upsert_sales_page': {
         const slug = String(p.slug ?? '').trim();
         if (!slug) throw new Error('slug is required');

@@ -221,6 +221,8 @@ export const OPS_ACTIONS = {
   generate_image: { desc: 'AI 產圖（provider openai|gemini，Claude 不產圖；model 可指定；prompt；或 templateKey＋inputs{欄位key:值} 套用產圖模板；referenceImages[] 參考圖網址≤4；size 1024x1024|1536x1024|1024x1536、quality standard|high、purpose product|banner|illustration）→ 存到儲存空間回公開 url；會產生費用', mutating: true },
   get_tracking: { desc: '讀取網站層級追蹤設定（GTM／GA4／Meta Pixel／TikTok／LINE Tag／Google Ads／自訂 Head・Body 碼／購物車事件 JS）', mutating: false },
   set_tracking: { desc: '設定網站層級追蹤碼（套用到所有頁面；ga4、gtm、fbPixel、tiktok、lineTag、googleAdsId、googleAdsLabel、head、bodyTop、bodyBottom、events{pageView,viewContent,addToCart,initiateCheckout,purchase}）', mutating: true },
+  list_sales_templates: { desc: '列出一頁式網頁套版（五分類 × 5 風格配色 ＝ 25 套；回 id、名稱、風格、配色、區塊序列；category 可過濾）', mutating: false },
+  apply_sales_template: { desc: '用套版建立或覆寫一頁式銷售頁「草稿」（必須 confirm=true；id、slug 可選（不存在則以 title 新建）、title、code）：寫入內文設計文件、主題色、區塊順序與標題、通知列；不動掛載商品／表單／追蹤／SEO，不發佈', mutating: true },
   list_sales_pages: { desc: '列出一頁式銷售頁（slug、標題、狀態、版本、是否有未發佈草稿）', mutating: false },
   get_sales_page: { desc: '讀取銷售頁草稿全文（doc：通知／倒數／內文設計文件／產品區塊／表單／順序／追蹤／SEO／排程）＋掛載商品＋檢測＋預覽連結', mutating: false },
   upsert_sales_page: { desc: '建立或更新一頁式銷售頁「草稿」（slug 冪等；title、code 訂單前綴、doc 深度合併：notice/countdown/content(設計文件)/sections/items[{productId,kind offer|bundle|product|addon,order,badge}]/theme/display/form/contact/tracking/seo/schedule/access）；線上不動，需 publish_sales_page 確認', mutating: true },
@@ -293,7 +295,7 @@ export const COMMAND_TASKS: { key: string; group: string; label: string; desc: s
   { key: 'menu', group: '建站', label: '選單與導覽', desc: '主選單／頁尾選單整棵讀取與覆寫', examples: ['主選單加一個「作品集」連到 /p/works，放在「關於我們」前面', '頁尾選單只留：關於我們、聯絡我們、會員中心'] },
   { key: 'home', group: '內容', label: '首頁區塊', desc: '讀取並重排首頁的 20 種區塊（hero／stats／features／testimonials／faq／pricing／courses／products…）', examples: ['首頁在課程列表後面加一段三則學員見證，底色淺灰', '把首頁 hero 改成左右分欄版式，標題「AI 讓小店也能做大生意」，按鈕連到 /courses', '首頁加一個 FAQ 區塊：退換貨、運費、付款方式各一題'] },
   { key: 'page', group: '內容', label: '頁面與文章', desc: '用區塊建立子頁（about／services／faq…）或寫文章；存草稿→沙盒預覽→確認發佈；可還原歷史版本', examples: ['建立「關於我們」區塊頁：hero＋品牌故事（split）＋團隊三人＋聯絡方式，存草稿給我預覽', '寫一篇部落格文章：「新手選課的三個原則」，600 字，存草稿', '把 about 頁的標題改成「我們是誰」並給我預覽'] },
-  { key: 'sales', group: '內容', label: '一頁式銷售頁', desc: '建立銷售頁草稿：內文＋掛商品＋表單規則，預覽後確認上線', examples: ['建立一頁式銷售頁 slug autumn-sale「秋季限定組合」：內文放 Hero＋三個賣點，掛上 SKU DEMO-MUG 當優惠區塊，先存草稿給我預覽'] },
+  { key: 'sales', group: '內容', label: '一頁式銷售頁', desc: '建立銷售頁草稿：內文＋掛商品＋表單規則，預覽後確認上線', examples: ['有哪些銷售頁模板？我要做課程報名頁', '用模板 sales-course-neon 建立銷售頁「秋季實體課」，先存草稿給我預覽', '建立一頁式銷售頁 slug autumn-sale「秋季限定組合」：內文放 Hero＋三個賣點，掛上 SKU DEMO-MUG 當優惠區塊，先存草稿給我預覽'] },
   { key: 'product', group: '商務', label: '商品與庫存', desc: '新增商品、改價、多規格、上下架、庫存、CSV 匯入', examples: ['上架商品：SKU AI-TEE、名稱「AI 創客 T 恤」、價格 590、分類 服飾、庫存 50', '把所有分類是「服飾」的商品下架', 'SKU DEMO-MUG 庫存補 20 個'] },
   { key: 'course', group: '商務', label: '課程與學員', desc: '建立課程與章節、發公告、回覆學員提問（會寄信通知）', examples: ['建立課程 slug ai-basics「AI 入門」，價格 1990，先不發布，並新增三個章節：認識 AI、提示詞入門、實作練習', '列出未回覆的學員提問，幫每題擬一段回覆給我確認'] },
   { key: 'orders', group: '商務', label: '訂單物流發票', desc: '訂單查詢、出貨、物流單、發票、折扣碼、逾期訂單', examples: ['列出今天已付款但未出貨的訂單', '訂單 SK… 標記已出貨，黑貓 單號 1234567890，並開立發票', '建立折扣碼 WELCOME10：九折、最低 500、限用 100 次'] },
@@ -321,3 +323,4 @@ export function effectivePrice(p: { price: number; salePrice?: number | null; sa
 }
 export * from './i18n';
 export * from './site-templates';
+export * from './sales-templates';

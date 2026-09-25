@@ -4,6 +4,7 @@ import { Section } from '@/components/Section';
 import { fmtDateTime } from '@/lib/api-public';
 import { apiServer } from '@/lib/api-server';
 import { NewSalesPageButton } from './NewSalesPageButton';
+import { SalesTemplatePicker } from './SalesTemplatePicker';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +30,7 @@ export default async function AdminSalesPage() {
     <Section title="一頁式網頁" group="(admin)">
       <div className="mb-3 flex flex-wrap items-center gap-3 text-xs">
         <NewSalesPageButton />
+        <SalesTemplatePicker />
         <span style={{ color: 'var(--muted)' }}>網址 /s/&lt;slug&gt;。每頁＝通知列＋優惠倒數＋內文（設計器）＋優惠／組合／單品／加購產品區塊＋購物車＋客服；所有修改先存草稿 → 沙盒預覽 → 確認發佈（自動備份上一版）。</span>
       </div>
       <table className="w-full text-left text-xs">

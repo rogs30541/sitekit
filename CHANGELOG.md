@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v0.33.0（2026-09-25）
+
+- 一頁式網頁套版（25 套）：分析 airuru.com.tw 課程銷售頁結構（主張→信任帶→痛點→權威→承諾→公式→模組×N→優惠→見證→場次→頁尾；只取骨架）存成課程類「霓虹爆款」，並反推電商／形象／品牌／專業服務四類敘事，每類 5 種風格配色（`packages/shared/src/sales-templates/`：DesignDoc 內文＋主題色＋區塊順序／標題＋通知列＋顯示設定；文案圖片佔位、圖示名稱）
+- core `SalesTemplateService`（list／apply：建立或覆寫銷售頁草稿，不發佈、不動掛商品／表單／追蹤）；OPS `list_sales_templates`／`apply_sales_template`；MCP 同名；後台「一頁式網頁 → 從套版建立」（分類頁籤、線框縮圖、配色點）；指令台 B3 範例／TOOL_HINTS／mock「用模板 <id> 建立銷售頁「標題」」
+- 設計器渲染：iconbox／list 的 icon 若為圖示名稱（ICON_NAMES）輸出線條 SVG（不再只有 emoji）
+- e2e p35
+
 ## v0.32.0（2026-09-25）
 
 - Cloudflare 前台殼：`apps/web` 以 OpenNext（@opennextjs/cloudflare 1.20）打包成 Worker `sitekit-web`（`wrangler.jsonc`、`open-next.config.ts`、`cf:build`／`cf:preview`／`cf:deploy`）；next.config 在 OPEN_NEXT_CLOUDFLARE 下不設 standalone；api Worker 的 FRONTEND_URL 指向前台 Worker

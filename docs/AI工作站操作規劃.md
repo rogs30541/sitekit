@@ -28,7 +28,7 @@
 |---|---|---|
 | **B1 首頁區塊** `home` | `get_site`（R）→ `set_home_sections`（W） | 「首頁加一段學員見證（三則）放在課程列表後面」→ 讀現有 sections、插入 `testimonials` 區塊、整組回寫。20 種 kind 與欄位見 §4。 |
 | **B2 頁面與文章** `page` | `list_content`／`get_content_draft`（R）→ `upsert_content`（W，草稿）→ `preview_content`（R）→ `publish_content`（W，confirm）；`list_revisions`／`restore_revision` | 新頁面優先用**區塊頁**：`design: { kind:'sections', sections:[…] }`（與首頁同一套 20 種區塊，後台可用區塊編輯器續改）；只有需要自由排版才用視覺設計器 DesignDoc。文章（type post）用 body HTML。 |
-| **B3 一頁式銷售頁** `sales` | `list_sales_pages`／`get_sales_page`（R）→ `upsert_sales_page`（W）→ `preview_sales_page`（R）→ `publish_sales_page`（W，confirm） | 「做秋季組合銷售頁，掛 SKU A 當優惠、B 當加購」→ 先 `list_products` 查 productId。 |
+| **B3 一頁式銷售頁** `sales` | `list_sales_templates`（R）→ `apply_sales_template`（W，confirm，25 套模板建草稿）；`list_sales_pages`／`get_sales_page`（R）→ `upsert_sales_page`（W）→ `preview_sales_page`（R）→ `publish_sales_page`（W，confirm） | 「做秋季組合銷售頁，掛 SKU A 當優惠、B 當加購」→ 先 `list_products` 查 productId。 |
 
 ### C. 商務
 | 項目 | 常用動作 | 典型流程 |

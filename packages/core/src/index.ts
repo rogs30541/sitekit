@@ -38,6 +38,7 @@ export * from './modules/payments/gateways/pchomepay';
 export * from './modules/payments/newebpay';
 export * from './modules/payments/payments.service';
 export * from './modules/sales/sales.service';
+export * from './modules/sales/sales-template.service';
 export * from './modules/settings/revalidate.service';
 export * from './modules/settings/settings.service';
 export * from './modules/storage/storage.service';

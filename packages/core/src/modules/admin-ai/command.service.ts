@@ -53,6 +53,8 @@ const TOOL_HINTS: Partial<Record<OpsAction, string>> = {
   list_questions: '參數：status open|answered。',
   generate_image: '參數：prompt（英文描述效果較好）或 templateKey＋inputs（先用 list_image_templates 挑模板，inputs 的 key 依模板 inputFields；商品製圖／Banner 優先套模板）、referenceImages（商品現有 coverUrl 等公開圖網址，≤4）、size、quality、purpose。回 url 後可 upsert_product 設 coverUrl，或放進 upsert_content 的 design image 區塊。',
   set_tracking: '參數：ga4、gtm、fbPixel、tiktok、lineTag、googleAdsId、googleAdsLabel、head、bodyTop、bodyBottom、events{pageView,viewContent,addToCart,initiateCheckout,purchase}（未給的欄位會被清空，先 get_tracking 取現值再整份回傳）。頁面層級追蹤放在 upsert_content 的 design.settings.tracking 或 upsert_sales_page 的 doc.tracking。',
+  list_sales_templates: '參數：category（可選）。回 templates[{id,name,category,style,palette,blocks[]}]；做銷售頁先從這裡挑一套。',
+  apply_sales_template: '參數：id（先 list_sales_templates）、title（新頁必填）、slug（可選；已存在會覆寫內文與主題）、confirm(true)。只建立草稿；之後用 upsert_sales_page 掛商品（items）與改文案、preview_sales_page 給預覽、使用者要上線才 publish_sales_page。',
   upsert_sales_page: '參數：slug(必填)、title、code、doc（深度合併）。doc.content 為設計文件（同 upsert_content 的 design 格式，可放 addtocart 區塊）；doc.items=[{productId,kind:offer|bundle|product|addon,order}]（productId 先用 list_products 查）；doc.notice/countdown/theme/display/form/contact/tracking/seo/schedule。存草稿後用 preview_sales_page 給預覽連結。',
   publish_sales_page: '參數：idOrSlug、confirm(true)、note；unpublish=true 為下架。',
   apply_site_template: '參數：id（先 list_site_templates 取 id）、confirm(true)、restore(true=還原套版前)、pages(false=不建子頁)、menu(false=不動選單)。會覆寫主題／首頁區塊／選單並建立同名子頁；商品／課程／文章／品牌資料不動；第一次套版前自動備份。',
@@ -403,6 +405,18 @@ export class CommandService {
       await exec('set_home_sections', { sections: [...cur, add] });
       return `（mock）準備在首頁末尾加入「${String(add.kind)}」區塊（目前 ${cur.length} 個 → ${cur.length + 1} 個），整份覆寫。請確認執行。`;
     }
+    if (/(銷售頁|一頁式)/.test(m) && /(模板|套版|範本)/.test(m)) {
+      const id = grab(/(sales-[a-z]+-[a-z]+)/i);
+      const title = grab(/[「"']([^「」"']+)[」"']/);
+      if (id) {
+        if (!title) return '（mock）請給銷售頁標題（用「」包住），例：用模板 sales-course-neon 建立銷售頁「秋季實體課」。';
+        await exec('apply_sales_template', { id, title, confirm: true });
+        return `（mock）準備用套版 ${id} 建立銷售頁「${title}」草稿（內文＋主題＋區塊順序；不發佈）。確認後到「一頁式網頁」掛商品與改文案。請確認執行。`;
+      }
+      const cat = /課程|報名/.test(m) ? 'course' : /商品|電商/.test(m) ? 'shop' : /服務|預約/.test(m) ? 'service' : /品牌|個人/.test(m) ? 'brand' : /方案|形象|企業/.test(m) ? 'image' : undefined;
+      const r = (await exec('list_sales_templates', { ...(cat ? { category: cat } : {}) })) as { data?: { templates?: unknown[] } };
+      return `（mock）已列出 ${r.data?.templates?.length ?? 0} 套銷售頁模板${cat ? `（${cat}）` : ''}；說「用模板 <id> 建立銷售頁「標題」」即可排入待確認。`;
+    }
     if (/訂單/.test(m)) {
       const status = /已付款|paid/.test(m) ? 'paid' : /未付款|pending/.test(m) ? 'pending' : undefined;
       const shipping = /未出貨/.test(m) ? 'pending' : /已出貨/.test(m) ? 'shipped' : undefined;
@@ -432,6 +446,6 @@ export class CommandService {
       return `（mock）準備把頁面「${title}」（/p/${slug}）存成草稿；確認後我會給你沙盒預覽連結（用 preview_content）。`;
     }
     if (/(部署|遷移|管理員|設定|deploy|migrate)/.test(m)) return '系統功能（部署／遷移／設定／管理員）不開放給 AI 指令台，請到「系統功能」選單人工操作。';
-    return '（mock 規則模式）我目前只懂：一鍵建站／版型套用／主題／品牌設定／首頁區塊／表單訊息／列出商品／上架商品／下架商品／產圖 Banner／訂單／報表／建立課程／建立頁面。要用真正的 AI 理解自然語言，請到「設定」把供應商改成 anthropic 或 openai 並填入金鑰。';
+    return '（mock 規則模式）我目前只懂：一鍵建站／版型套用／銷售頁模板／主題／品牌設定／首頁區塊／表單訊息／列出商品／上架商品／下架商品／產圖 Banner／訂單／報表／建立課程／建立頁面。要用真正的 AI 理解自然語言，請到「設定」把供應商改成 anthropic 或 openai 並填入金鑰。';
   }
 }
