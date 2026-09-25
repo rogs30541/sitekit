@@ -1,11 +1,14 @@
 {
   "name": "@sitekit/web",
-  "version": "0.31.0",
+  "version": "0.32.0",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
-    "start": "next start -p 3000"
+    "start": "next start -p 3000",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@sitekit/shared": "*",
@@ -14,11 +17,13 @@
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.6",
     "@tailwindcss/postcss": "^4.1.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "tailwindcss": "^4.1.0",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "wrangler": "^4.140.0"
   }
 }

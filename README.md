@@ -308,7 +308,24 @@ D1／workerd 的差異都收在 `packages/db`（`wrapSqlite(base, { emulateInter
 - **不可用**：伺服器硬碟儲存（精靈選 R2）、備份排程、外掛載入（需檔案系統）；逾期訂單改 Cron Trigger。
 - `Prisma.dmmf` 在 wasm client 不存在：匯出服務改讀 `@sitekit/db` 的 `getDmmf()`。
 
-CI `e2e-workers`：wrangler dev＋本機 D1 跑同一套 API 類 e2e（14 檔全綠；需要 web 的 10 檔跳過）。前台（Next）上 Workers 走 OpenNext 是下一步。
+CI `e2e-workers`：wrangler dev＋本機 D1 跑同一套 API 類 e2e（14 檔全綠；需要 web 的 10 檔跳過）。
+
+### 前台（Next.js）上 Workers：OpenNext（v0.32.0）
+
+`apps/web` 以 `@opennextjs/cloudflare` 打包成第二個 Worker（`apps/web/wrangler.jsonc`＝`sitekit-web`，`open-next.config.ts` 先不接 ISR 快取）。前台→api 走 **Service Binding**（`lib/api-fetch.ts` 在 Workers 上讀 OpenNext 放在 globalThis 的 env.API），瀏覽器的 `/api/*` 由 `app/api/[...path]/route.ts` 代理（Node／Docker 仍是 next.config 的 beforeFiles rewrite 先攔）。
+
+```bash
+# 建置期靜態產生不要打線上 api（給立即拒連的網址讓頁面走後備）；執行期前台→api 一律走 Service Binding env.API（wrangler.jsonc services），
+# 因為同帳號 workers.dev 之間不能互相 fetch（同 zone 會掛住）。瀏覽器的 /api/* 在 Workers 上由 app/api/[...path]/route.ts 代理
+cd apps/web
+API_INTERNAL_URL=http://127.0.0.1:9 NEXT_PUBLIC_SITE_URL=https://sitekit-web.sitekit-deploy-cloudflare.workers.dev npm run cf:build
+npm run cf:preview        # 本機 wrangler dev（8788）
+npm run cf:deploy         # 部署；再把 apps/worker/wrangler.jsonc 的 FRONTEND_URL 改成前台網址重佈 api
+```
+
+- 實測（2026-09-25）：https://sitekit-web.sitekit-deploy-cloudflare.workers.dev 首頁／商城／課程／登入頁 SSR 正常（全新 D1 站會 302 到 /setup），`/api/*` 經 Service Binding 代理正常；**免費方案的 api Worker 冷啟動 1–9 秒不等**（wasm 查詢引擎初始化），冷的時候頁面要等每次 API 逾時（10 秒）才回後備內容——正式使用請 Workers Paid，或用 Zeabur（預設平台）。
+- **Windows 陷阱**：OpenNext 建置在含中文的路徑會失敗（`npm run build` 找不到／standalone 路徑拼接錯）；請在 ASCII 路徑（robocopy 一份到 `C:\skbuild`）或 CI（Linux）建置。CI 有 `build-web-cf` job 只做建置驗證，不部署（部署需 `CLOUDFLARE_API_TOKEN`）。
+- 未做：ISR 快取（R2 incremental cache）、Service Binding 取代 rewrite、圖片上傳走 R2（前台在 Workers 時精靈選 R2）。
 
 ## 部署平台建議（2026-09-25 定案）
 

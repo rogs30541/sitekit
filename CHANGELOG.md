@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v0.32.0（2026-09-25）
+
+- Cloudflare 前台殼：`apps/web` 以 OpenNext（@opennextjs/cloudflare 1.20）打包成 Worker `sitekit-web`（`wrangler.jsonc`、`open-next.config.ts`、`cf:build`／`cf:preview`／`cf:deploy`）；next.config 在 OPEN_NEXT_CLOUDFLARE 下不設 standalone；api Worker 的 FRONTEND_URL 指向前台 Worker
+- 前台→api 改走 **Service Binding**（同帳號 workers.dev 之間 fetch 會掛住）：`lib/api-fetch.ts` 統一入口（Workers 上讀 OpenNext 放在 globalThis 的 env.API，Node 走一般 fetch），所有伺服器端 API 呼叫（apiPublic／apiServer／middleware／預覽頁／銷售頁／revalidate）改用；瀏覽器 `/api/*` 在 Workers 由 `app/api/[...path]/route.ts` 代理（轉發 cookie／Set-Cookie），Node 仍由 next.config **beforeFiles** rewrite 先攔；apiPublic 加 10 秒逾時（建置期與 api 冷啟動不再掛住整個 build）
+- 實測：https://sitekit-web.sitekit-deploy-cloudflare.workers.dev SSR 與 `/api/*` 代理正常；免費方案 api 冷啟動 5–8 秒（文件註明建議 Workers Paid 或 Zeabur）；建置期 API 網址不可含埠（OpenNext 路徑比對）；Windows 中文路徑需改 ASCII 路徑或 CI 建置
+- CI 新增 `build-web-cf`（Linux OpenNext 建置驗證，不部署）
+
 ## v0.31.0（2026-09-25）
 
 - 一鍵建站：OPS／MCP `recommend_site_template`（行業關鍵字→分類、tags／風格計分、回推薦與備選）與 `quick_setup_site`（confirm；挑版型→套用→品牌名／標語／Email／電話寫進首頁 hero 與聯絡區塊→品牌設定→主題；不產圖不杜撰）；後台套版庫與安裝精靈的「一鍵建站」面板（`components/QuickSetupPanel.tsx`）；指令台「幫我建站」流程（SYSTEM_PROMPT 第 11 條＋mock 規則）

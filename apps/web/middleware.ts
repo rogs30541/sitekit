@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { apiFetch } from '@/lib/api-fetch';
 
 /**
  * 1) 安裝精靈閘門：admin_users 為空（全新站台）時，所有頁面導到 /setup（api、靜態檔除外）
@@ -13,7 +14,7 @@ let setup: { at: number; needsSetup: boolean } | null = null;
 async function redirects() {
   if (cache && Date.now() - cache.at < TTL) return cache.map;
   try {
-    const res = await fetch(`${API}/api/content/redirects`, { cache: 'no-store' });
+    const res = await apiFetch(`${API}/api/content/redirects`, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
     const rows = (await res.json()) as { fromPath: string; toPath: string; code: number }[];
     cache = { at: Date.now(), map: new Map(rows.map((r) => [r.fromPath, { to: r.toPath, code: r.code }])) };
   } catch {
@@ -25,7 +26,7 @@ async function redirects() {
 async function needsSetup() {
   if (setup && Date.now() - setup.at < (setup.needsSetup ? 15_000 : 600_000)) return setup.needsSetup;
   try {
-    const res = await fetch(`${API}/api/setup/status`, { cache: 'no-store', signal: AbortSignal.timeout(3000) });
+    const res = await apiFetch(`${API}/api/setup/status`, { cache: 'no-store', signal: AbortSignal.timeout(3000) });
     const j = (await res.json()) as { needsSetup?: boolean };
     setup = { at: Date.now(), needsSetup: !!j.needsSetup };
   } catch {

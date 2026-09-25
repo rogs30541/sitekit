@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { API_INTERNAL_URL } from '@/lib/api-public';
+import { apiFetch } from '@/lib/api-fetch';
 import { DesignBody } from '@/components/DesignBody';
 import { SectionRenderer } from '@/components/SectionRenderer';
 import type { Section as SectionDoc } from '@sitekit/shared';
@@ -31,7 +32,7 @@ export default async function PreviewPage({ params, searchParams }: { params: Pr
   const { token = '' } = await searchParams;
   let doc: PreviewDoc | null = null;
   try {
-    const r = await fetch(`${API_INTERNAL_URL}/api/content/preview/${encodeURIComponent(id)}?token=${encodeURIComponent(token)}`, { cache: 'no-store' });
+    const r = await apiFetch(`${API_INTERNAL_URL}/api/content/preview/${encodeURIComponent(id)}?token=${encodeURIComponent(token)}`, { cache: 'no-store' });
     if (r.status === 401) {
       return (
         <Section title={t('預覽連結無效或已過期')} group="(marketing)">

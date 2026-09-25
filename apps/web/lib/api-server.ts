@@ -1,11 +1,12 @@
 import { cookies } from 'next/headers';
 import { API_INTERNAL_URL } from './api-public';
+import { apiFetch } from './api-fetch';
 
 /** 需登入的伺服器端請求：轉發瀏覽器 cookie 給 api，永不快取。 */
 export async function apiServer<T>(path: string, init?: RequestInit): Promise<T | null> {
   const cookie = (await cookies()).toString();
   try {
-    const res = await fetch(`${API_INTERNAL_URL}${path}`, { ...init, cache: 'no-store', headers: { accept: 'application/json', ...(init?.headers ?? {}), cookie } });
+    const res = await apiFetch(`${API_INTERNAL_URL}${path}`, { ...init, cache: 'no-store', headers: { accept: 'application/json', ...(init?.headers ?? {}), cookie } });
     if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {

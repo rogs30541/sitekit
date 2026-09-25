@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Section } from '@/components/Section';
 import { SalesPageView, type SalesRender } from '@/components/SalesPageView';
 import { API_INTERNAL_URL } from '@/lib/api-public';
+import { apiFetch } from '@/lib/api-fetch';
 import { PasswordGate } from './PasswordGate';
 import { getSite } from '@/lib/site';
 import { t } from '@/lib/i18n';
@@ -13,7 +14,7 @@ type Resp = SalesRender | { id: string; slug: string; title: string; state: 'clo
 
 async function load(slug: string, pw?: string): Promise<Resp | null> {
   try {
-    const r = await fetch(`${API_INTERNAL_URL}/api/sales/${encodeURIComponent(slug)}${pw ? `?pw=${encodeURIComponent(pw)}` : ''}`, { cache: 'no-store' });
+    const r = await apiFetch(`${API_INTERNAL_URL}/api/sales/${encodeURIComponent(slug)}${pw ? `?pw=${encodeURIComponent(pw)}` : ''}`, { cache: 'no-store' });
     return r.ok ? ((await r.json()) as Resp) : null;
   } catch {
     return null;

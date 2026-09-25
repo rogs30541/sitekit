@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Section } from '@/components/Section';
 import { SalesPageView, type SalesRender } from '@/components/SalesPageView';
 import { API_INTERNAL_URL } from '@/lib/api-public';
+import { apiFetch } from '@/lib/api-fetch';
 import { t } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +15,7 @@ export default async function SalesPreviewPage({ params, searchParams }: { param
   const { token = '' } = await searchParams;
   let page: SalesRender | null = null;
   try {
-    const r = await fetch(`${API_INTERNAL_URL}/api/sales/preview/${encodeURIComponent(id)}?token=${encodeURIComponent(token)}`, { cache: 'no-store' });
+    const r = await apiFetch(`${API_INTERNAL_URL}/api/sales/preview/${encodeURIComponent(id)}?token=${encodeURIComponent(token)}`, { cache: 'no-store' });
     if (r.status === 401)
       return (
         <Section title={t('預覽連結無效或已過期')} group="(marketing)">

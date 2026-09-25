@@ -15,10 +15,10 @@
   ],
   "vars": {
     "APP_ENV": "production",
-    "FRONTEND_URL": "http://localhost:3000",
+    "FRONTEND_URL": "https://sitekit-web.sitekit-deploy-cloudflare.workers.dev",
     "DATABASE_URL": "d1",
-    "APP_VERSION": "0.26.0",
-    "npm_package_version": "0.26.0"
+    "APP_VERSION": "0.32.0",
+    "npm_package_version": "0.32.0"
   },
   // core／apps/api 以 PostgreSQL 版 client 的型別編譯；Workers 上一律換成 SQLite 版（D1）的 wasm client
   "alias": {

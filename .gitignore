@@ -24,3 +24,5 @@ data/
 backups/
 apps/worker/.wrangler/
 apps/worker/.dev.vars
+apps/web/.open-next/
+apps/web/.wrangler/

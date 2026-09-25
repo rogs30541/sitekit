@@ -188,6 +188,27 @@ jobs:
         run: tail -n 150 /tmp/wrangler.log
 
   # deploy/compose：Caddy（自簽 localhost）＋單體映像＋Postgres 從原始碼建起，經 Caddy 走 HTTPS 打 /api/health 與 /setup
+  # Cloudflare 前台殼：OpenNext 建置驗證（Linux；不部署——部署需 CLOUDFLARE_API_TOKEN）
+  build-web-cf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build -w @sitekit/shared
+      - name: OpenNext build
+        working-directory: apps/web
+        env:
+          OPEN_NEXT_CLOUDFLARE: '1'
+          API_INTERNAL_URL: http://127.0.0.1:9
+          NEXT_PUBLIC_SITE_URL: https://sitekit-web.sitekit-deploy-cloudflare.workers.dev
+        run: npx opennextjs-cloudflare build
+      - name: bundle exists
+        run: test -f apps/web/.open-next/worker.js && du -sh apps/web/.open-next
+
   compose-smoke:
     runs-on: ubuntu-latest
     steps:

@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { apiFetch } from '@/lib/api-fetch';
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -15,7 +16,7 @@ async function verify(token: string) {
     return sig.length === expect.length && timingSafeEqual(Buffer.from(sig), Buffer.from(expect));
   }
   try {
-    const r = await fetch(`${API}/api/internal/revalidate/verify`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token }), cache: 'no-store', signal: AbortSignal.timeout(5000) });
+    const r = await apiFetch(`${API}/api/internal/revalidate/verify`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token }), cache: 'no-store', signal: AbortSignal.timeout(5000) });
     const j = (await r.json()) as { ok?: boolean };
     return !!j.ok;
   } catch {

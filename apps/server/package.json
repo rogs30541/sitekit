@@ -1,6 +1,6 @@
 {
   "name": "@sitekit/server",
-  "version": "0.31.0",
+  "version": "0.32.0",
   "private": true,
   "description": "SiteKit 單體殼：一個 Node 程序同時跑 API 與前台，預設 SQLite；sitekit start 即開站",
   "main": "dist/main.js",

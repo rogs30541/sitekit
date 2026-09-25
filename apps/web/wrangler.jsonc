@@ -1,0 +1,20 @@
+// SiteKit 前台（Next.js）on Cloudflare Workers：OpenNext 適配（apps/web/open-next.config.ts）
+//   建置：API_INTERNAL_URL=http://127.0.0.1:9 NEXT_PUBLIC_SITE_URL=<本 worker 網址> npm run cf:build -w @sitekit/web
+//        （建置期靜態產生不要打線上 api：給一個立即拒連的網址讓頁面走後備；執行期一律走 Service Binding env.API，網址主機名無關）
+//   本機預覽：npm run cf:preview -w @sitekit/web（wrangler dev，讀 vars）
+//   部署：npm run cf:deploy -w @sitekit/web；並把 apps/worker/wrangler.jsonc 的 FRONTEND_URL 改成本 worker 網址後重佈 api
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sitekit-web",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat", "nodejs_compat_populate_process_env", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  // 前台→api 走 Service Binding（同帳號 workers.dev 之間不能互相 fetch）；lib/api-fetch.ts 讀 env.API
+  "services": [{ "binding": "API", "service": "sitekit-api" }],
+  "vars": {
+    "API_INTERNAL_URL": "https://sitekit-api.sitekit-deploy-cloudflare.workers.dev",
+    "NEXT_PUBLIC_SITE_URL": "https://sitekit-web.sitekit-deploy-cloudflare.workers.dev"
+  },
+  "observability": { "enabled": true }
+}
