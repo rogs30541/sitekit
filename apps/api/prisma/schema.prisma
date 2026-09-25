@@ -635,6 +635,7 @@ model ContactMessage {
   page      String?
   status    String    @default("new")
   note      String?
+  reply     String?
   ip        String?
   userAgent String?
   repliedAt DateTime?

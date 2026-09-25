@@ -65,6 +65,10 @@ const TOOL_HINTS: Partial<Record<OpsAction, string>> = {
   update_brand: '參數：settings{ key: value }，key 白名單 brand.name／brand.siteName／brand.description／brand.tagline／brand.logoUrl／brand.primaryColor／brand.contactEmail／brand.phone／brand.address／brand.social.facebook|instagram|line|youtube／brand.footerText／seo.ogImage／site.locale。',
   list_contact_messages: '參數：status new|read|replied|archived（可選）、limit。回 counts 與 items[{id,name,email,phone,subject,message,page,status,note,createdAt}]。',
   update_contact_message: '參數：id、status new|read|replied|archived、note。',
+  reply_contact_message: '參數：id、reply（純文字，會轉成段落）、subject 可選。會真的寄信給訪客（走「聯絡表單回覆」範本），務必列成待確認並在回覆裡附上擬好的內容。',
+  list_mail_templates: '無參數。回 11 種信件範本（kind、label、vars、subject、body、customized、enabled）。',
+  set_mail_template: '參數：kind、subject、body（{{變數}} 跳脫、{{{變數}}} 原樣 HTML；變數見 list_mail_templates）、enabled（contact_autoreply 才有）、reset。先 preview_mail_template 給使用者看再存。',
+  preview_mail_template: '參數：kind、subject／body（可試算未儲存內容）。回 subject 與 html。',
   get_site: '無參數。回 brand、theme、menus{header,footer}、home.sections（現有首頁區塊，改動前先讀）、settings。',
   list_image_templates: '無參數。回每個模板的 key／分類／說明／欄位定義（inputFields[].key、label、required、options）。',
 };
@@ -81,7 +85,7 @@ const SYSTEM_PROMPT = `你是「SiteKit 架站套件」的後台全站工作總�
 7. 主題用 set_theme（只改給的鍵）；品牌名稱／聯絡／SEO／語言用 update_brand（白名單）。金流、金鑰、部署、遷移、管理員屬系統功能，不在你的工具裡，遇到就請使用者到「系統功能」選單操作。
 8. 區塊裡的 icon 一律填圖示名稱（例 mail、phone、star、rocket、check-circle、shield、truck、sprout），不要用 emoji。連結用站內路徑（/courses、/store、/p/about、/#faq）或完整網址。
 9. 產圖會花錢：一次一張，先確認尺寸與用途。Banner 一般 1536x1024；商品主圖 1024x1024；商品圖優先用 list_image_templates 挑模板＋參考圖。產完的網址回填商品 coverUrl 或區塊的 imageUrl／bgImageUrl。
-10. 聯絡表單訊息（list_contact_messages）只做摘要、排序與擬回覆文字；真正寄信由管理員在後台「表單訊息」用 Email 回覆；標記狀態用 update_contact_message。回覆學員提問 answer_question 會寄信給學員，務必列成待確認。
+10. 聯絡表單訊息（list_contact_messages）可摘要、排序、擬回覆；要寄出用 reply_contact_message（寫入待確認，回覆裡附上完整內容給使用者看）；標記狀態用 update_contact_message。信件範本用 list_mail_templates／preview_mail_template／set_mail_template。回覆學員提問 answer_question 會寄信給學員，務必列成待確認。
 11. 一鍵建站：使用者說「幫我建站／從零開始」時，先問齊或從對話取得品牌名稱、行業、風格偏好、聯絡 Email／電話（沒有就只用有的），用 recommend_site_template 挑版型並說明理由與備選，再排入 quick_setup_site（confirm=true）；文案與圖片之後再用「首頁區塊」與「製圖」項目補，不要自己編造品牌事實。
 12. 不要杜撰資料；找不到就說找不到。金額一律整數新台幣。回覆精簡、條列，用繁體中文；連結請完整輸出。`;
 
@@ -350,6 +354,10 @@ export class CommandService {
       await exec('quick_setup_site', { confirm: true, templateId: rec.data.picked.id, ...(brandName ? { brandName } : {}), ...(industry ? { industry } : {}), ...(style ? { style } : {}), ...(contactEmail ? { contactEmail } : {}), ...(phone ? { phone } : {}) });
       return `（mock）依「${industry ?? '未指定行業'}」推薦版型「${rec.data.picked.name}」（${rec.data.picked.id}）；確認後會套用並把${[brandName && '品牌名稱', contactEmail && 'Email', phone && '電話'].filter(Boolean).join('、') || '版型'}寫進站台。文案與圖片之後再補。請確認執行。`;
     }
+    if (/(信件範本|郵件範本|email 範本|範本)/i.test(m) && /(信|郵件|mail)/i.test(m)) {
+      const r = (await exec('list_mail_templates', {})) as { data?: unknown[] };
+      return `（mock）已列出 ${Array.isArray(r.data) ? r.data.length : 0} 種信件範本，見下方結果；改範本請說「把 <kind> 的主旨改成「…」」。`;
+    }
     if (/(版型|套版|套用|範本|template)/i.test(m)) {
       const cat = /電商|商城|賣/.test(m) ? 'shop' : /課程|教學/.test(m) ? 'course' : /品牌|個人/.test(m) ? 'brand' : /服務|顧問|診所|事務所/.test(m) ? 'service' : /形象|企業|公司/.test(m) ? 'image' : undefined;
       const r = (await exec('list_site_templates', { ...(cat ? { category: cat } : {}) })) as { data?: { templates?: { id: string; name: string }[] } };
@@ -392,6 +400,13 @@ export class CommandService {
       if (!Object.keys(settings).length) return '（mock）請用「網站名稱改成「…」」「標語「…」」「Email 改成 x@y」的格式。';
       await exec('update_brand', { settings });
       return `（mock）準備更新品牌設定：${Object.keys(settings).join('、')}。請確認執行。`;
+    }
+    if (/回覆/.test(m) && /(訊息|表單|留言)/.test(m)) {
+      const id = grab(/([a-z0-9]{20,})/i);
+      const reply = grab(/[「"']([^「」"']+)[」"']/);
+      if (!id || !reply) return '（mock）請給訊息 id 與回覆內容（用「」包住），例：回覆訊息 cmxxx「您好，已收到…」。';
+      await exec('reply_contact_message', { id, reply });
+      return `（mock）準備寄出回覆給該訪客：「${reply.slice(0, 60)}」。確認後會真的寄信並標記已回覆。請確認執行。`;
     }
     if (/(表單|訊息|留言|聯絡我們)/.test(m) && !/區塊|首頁/.test(m)) {
       const status = /未讀/.test(m) ? 'new' : /已回覆/.test(m) ? 'replied' : /封存/.test(m) ? 'archived' : undefined;

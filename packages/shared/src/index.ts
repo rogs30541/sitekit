@@ -80,6 +80,7 @@ export const SETTING_KEYS = {
   resendApiKey: 'resend.apiKey',
   mailFrom: 'mail.from',
   mailAdminTo: 'mail.adminTo',
+  mailTemplates: 'mail.templates',
   lineChannelToken: 'line.channelToken',
   lineAdminUserId: 'line.adminUserId',
   adminRegisterAllowlist: 'admin.registerAllowlist',
@@ -185,6 +186,10 @@ export const OPS_ACTIONS = {
   update_brand: { desc: '更新品牌／聯絡／SEO／語言等非機密站台設定（白名單：brand.*、seo.*、site.locale；金流／金鑰／系統設定不在此，請用系統功能）', mutating: true },
   list_site_templates: { desc: '列出快速套版：五大分類（形象／電商／課程／品牌／專業服務）× 10 套，回 id、名稱、風格、主題、子頁；可帶 category 過濾', mutating: false },
   apply_site_template: { desc: '套用版型（必須 confirm=true）：覆寫主題 theme.*、首頁區塊、header/footer 選單，並建立／更新同名子頁（about/services/contact…，slug 冪等、直接上線）；不動商品／課程／文章／品牌資料。restore=true 還原套版前的主題／首頁／選單', mutating: true },
+  reply_contact_message: { desc: '回覆聯絡表單訊息（id、reply 內容、subject 可選）：用「聯絡表單回覆」信件範本寄給訪客（mail.from 寄件），成功後標記 replied 並存回覆內容', mutating: true },
+  list_mail_templates: { desc: '列出信件範本（11 種通知：主旨／內文／變數／是否自訂／自動回覆是否啟用）', mutating: false },
+  set_mail_template: { desc: '設定信件範本（kind、subject、body（{{變數}} 跳脫、{{{變數}}} 原樣 HTML）、enabled（僅自動回覆類）；reset=true 回預設）', mutating: true },
+  preview_mail_template: { desc: '用範例變數渲染某種信件範本（kind；可帶 subject／body 試算未儲存內容）', mutating: false },
   list_contact_messages: { desc: '列出前台聯絡表單訊息（status new|read|replied|archived 可選、limit）', mutating: false },
   update_contact_message: { desc: '更新聯絡表單訊息狀態／備註（id、status new|read|replied|archived、note）', mutating: true },
   delete_contact_message: { desc: '刪除一筆聯絡表單訊息（id）', mutating: true },
@@ -326,3 +331,4 @@ export function effectivePrice(p: { price: number; salePrice?: number | null; sa
 export * from './i18n';
 export * from './site-templates';
 export * from './sales-templates';
+export * from './mail-templates';

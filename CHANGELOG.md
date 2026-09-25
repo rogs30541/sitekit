@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v0.36.0（2026-09-26）
+
+- 信件範本（Email 範本）：11 種通知信（付款成功／新訂單／ATM 帳號／出貨／退款／歡迎／提問通知／提問回覆／聯絡表單通知／聯絡表單自動回覆／聯絡表單回覆）集中在 `packages/shared/src/mail-templates.ts`（主旨＋內文、{{變數}} 跳脫、{{{變數}}} 原樣 HTML），站主在後台「系統功能 → 信件範本」覆寫、預覽（範例資料）、回到預設、寄測試信；NotifyService 全部改走範本（`compose`／`sendKind`）；設定存 `mail.templates`
+- 聯絡表單回覆：後台「表單訊息」可直接寫回覆寄給訪客（走「聯絡表單回覆」範本、寄件人 mail.from），成功後標記 replied 並保存回覆；訪客自動回覆信（預設關閉，可在範本啟用）；`contact_messages.reply` 欄位（PG／SQLite／MySQL／D1 遷移）
+- OPS／MCP：`reply_contact_message`、`list_mail_templates`、`set_mail_template`、`preview_mail_template`；指令台 D2 範例、hints、mock（回覆訊息／列信件範本）
+- e2e p38
+
 ## v0.35.0（2026-09-26）
 
 - 追蹤新增 **ChatGPT Ads（OpenAI Ads）Measurement Pixel**：追蹤設定多一欄 `openaiPixel`（網站層級與頁面／銷售頁可覆蓋），前台載入官方 `oaiq` SDK（bzrcdn.openai.com/sdk/oaiq.min.js）並 `init`；自動事件對映 PageView→page_viewed、ViewContent→contents_viewed、AddToCart→items_added、InitiateCheckout→checkout_started、Purchase→order_created（amount 整數、currency、contents[{id,name,content_type,quantity}]、event_id=order_<訂單號> 去重）；滑動深度與區塊可視事件送 `custom`（custom_event_name）

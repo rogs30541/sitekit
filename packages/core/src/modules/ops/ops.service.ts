@@ -409,6 +409,14 @@ export class OpsService {
         return { ...this.siteTemplates.list(p.category ? String(p.category) : undefined), current: await this.siteTemplates.current() };
       case 'apply_site_template':
         return this.siteTemplates.apply(String(p.id ?? ''), actor, { confirm: p.confirm === true || p.confirm === 'true', restore: p.restore === true || p.restore === 'true', pages: p.pages !== false, menu: p.menu !== false });
+      case 'reply_contact_message':
+        return this.contact.reply(String(p.id ?? ''), { reply: String(p.reply ?? ''), subject: p.subject ? String(p.subject) : undefined }, actor);
+      case 'list_mail_templates':
+        return this.notify.listTemplates();
+      case 'set_mail_template':
+        return this.notify.setTemplate(String(p.kind ?? ''), { ...(p.subject !== undefined ? { subject: String(p.subject) } : {}), ...(p.body !== undefined ? { body: String(p.body) } : {}), ...(p.enabled !== undefined ? { enabled: p.enabled === true || p.enabled === 'true' } : {}), reset: p.reset === true || p.reset === 'true' });
+      case 'preview_mail_template':
+        return this.notify.previewTemplate(String(p.kind ?? ''), { subject: p.subject ? String(p.subject) : undefined, body: p.body ? String(p.body) : undefined });
       case 'list_contact_messages':
         return { counts: await this.contact.counts(), items: await this.contact.list({ status: p.status ? String(p.status) : undefined, limit: p.limit ? Number(p.limit) : undefined }) };
       case 'update_contact_message':

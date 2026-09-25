@@ -1,7 +1,7 @@
 {
   "name": "sitekit",
   "private": true,
-  "version": "0.35.0",
+  "version": "0.36.0",
   "description": "AIGC創客架站套件（SiteKit）：電商開店／線上課程／品牌網站共用骨架，後台具 MCP 與 AI API 雙路徑",
   "workspaces": [
     "packages/*",

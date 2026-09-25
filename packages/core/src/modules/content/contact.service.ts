@@ -36,6 +36,7 @@ export class ContactService {
     if (recent) throw new BadRequestException('送出太頻繁，請稍後再試');
     const m = await this.prisma.contactMessage.create({ data: { name: d.name, email: d.email.toLowerCase(), phone: d.phone || null, subject: d.subject || null, message: d.message, page: d.page || null, ip: meta.ip?.slice(0, 64) || null, userAgent: meta.userAgent?.slice(0, 300) || null } });
     background(this.notify.contactMessage({ id: m.id, name: m.name, email: m.email, phone: m.phone, subject: m.subject, message: m.message, page: m.page }));
+    background(this.notify.contactAutoreply({ name: m.name, email: m.email, subject: m.subject, message: m.message }));
     background(events.emit('contact.submitted', { id: m.id, name: m.name, email: m.email, subject: m.subject, page: m.page, createdAt: m.createdAt.toISOString() }));
     return { ok: true, id: m.id };
   }
@@ -57,6 +58,18 @@ export class ContactService {
     if (!m) throw new NotFoundException('message not found');
     if (patch.status !== undefined && !(CONTACT_STATUSES as readonly string[]).includes(patch.status)) throw new BadRequestException(`status 需為 ${CONTACT_STATUSES.join('|')}`);
     return this.prisma.contactMessage.update({ where: { id }, data: { ...(patch.status !== undefined ? { status: patch.status, ...(patch.status === 'replied' ? { repliedAt: new Date(), repliedBy: actor } : {}) } : {}), ...(patch.note !== undefined ? { note: patch.note.slice(0, 2000) } : {}) } });
+  }
+
+  /** 回覆訪客：走「聯絡表單回覆」範本寄信，成功才標 replied 並存回覆 */
+  async reply(id: string, input: { reply: string; subject?: string }, actor: string) {
+    const m = await this.prisma.contactMessage.findUnique({ where: { id } });
+    if (!m) throw new NotFoundException('message not found');
+    const text = String(input.reply ?? '').trim();
+    if (!text) throw new BadRequestException('reply is required');
+    const r = await this.notify.contactReply({ name: m.name, email: m.email, subject: m.subject, message: m.message }, text.slice(0, 5000), input.subject);
+    if (!r.ok) throw new BadRequestException(`寄信失敗：${r.error ?? r.skipped ?? 'unknown'}`);
+    const updated = await this.prisma.contactMessage.update({ where: { id }, data: { status: 'replied', reply: text.slice(0, 5000), repliedAt: new Date(), repliedBy: actor } });
+    return { ...updated, mail: r };
   }
 
   async remove(id: string) {

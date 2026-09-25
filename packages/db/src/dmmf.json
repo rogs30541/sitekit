@@ -5757,6 +5757,20 @@
             "isUpdatedAt": false
           },
           {
+            "name": "reply",
+            "kind": "scalar",
+            "type": "String",
+            "isList": false,
+            "isRequired": false,
+            "isId": false,
+            "isUnique": false,
+            "relationName": null,
+            "relationFromFields": [],
+            "relationToFields": [],
+            "hasDefaultValue": false,
+            "isUpdatedAt": false
+          },
+          {
             "name": "ip",
             "kind": "scalar",
             "type": "String",

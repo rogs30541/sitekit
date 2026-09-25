@@ -41,7 +41,7 @@
 | 項目 | 常用動作 | 典型流程 |
 |---|---|---|
 | **D1 報表與名單** `report` | `sales_report`（R，scope shop/course/all）；`list_orders`（R）；`list_members`（R）→ `delete_member`（W） | 「比較上月與本月營收」→ 兩次 `sales_report` 後摘要；「找出買過課程但沒買商品的會員」→ `list_members({tag:'course'})`。 |
-| **D2 客服與訊息** `inbox` | `list_contact_messages`（R）→ `update_contact_message`／`delete_contact_message`（W）；`list_questions`（R） | 「未讀的聯絡表單有哪些？幫我依急迫度排序並各擬一句回覆」→ 列 new，摘要，回覆草稿放在回覆文字裡（真正寄信由管理員用 Email 回覆連結）；「把 xxx 標成已回覆並註記」→ 寫入待確認。 |
+| **D2 客服與訊息** `inbox` | `list_contact_messages`（R）→ `reply_contact_message`（W，真的寄信）／`update_contact_message`／`delete_contact_message`（W）；`list_mail_templates`／`preview_mail_template`（R）→ `set_mail_template`（W）；`list_questions`（R） | 「未讀的聯絡表單有哪些？幫我依急迫度排序並各擬一句回覆」→ 列 new，摘要，回覆草稿放在回覆文字裡（真正寄信由管理員用 Email 回覆連結）；「把 xxx 標成已回覆並註記」→ 寫入待確認。 |
 | **D3 追蹤與 SEO** `tracking` | `get_tracking`（R）→ `set_tracking`（W，整份回寫；含 scroll 深度百分比事件、openaiPixel ChatGPT Ads）；區塊可視事件在 `set_home_sections`／`upsert_content` 的區塊 `track`；`update_brand`（W：描述／OG 圖／語言） | 「裝 GA4 G-XXXX 和 Meta Pixel」→ 先 `get_tracking` 取現值再整份回傳（未給欄位會被清空）。 |
 
 ### E. 設計

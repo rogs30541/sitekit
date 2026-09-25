@@ -14,6 +14,7 @@ export interface MessageRow {
   page: string | null;
   status: 'new' | 'read' | 'replied' | 'archived';
   note: string | null;
+  reply?: string | null;
   createdAt: string;
   repliedAt: string | null;
   repliedBy: string | null;
@@ -28,6 +29,23 @@ export function MessagesClient({ rows: initial, counts }: { rows: MessageRow[]; 
   const [filter, setFilter] = useState<'all' | MessageRow['status']>('all');
   const [open, setOpen] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
+  const [replyText, setReplyText] = useState<Record<string, string>>({});
+  const [sending, setSending] = useState('');
+  async function sendReply(id: string) {
+    const text = (replyText[id] ?? '').trim();
+    if (!text) return;
+    if (!window.confirm('會真的寄信給訪客（走「聯絡表單回覆」範本、寄件人為 mail.from）。確定寄出？')) return;
+    setSending(id);
+    setMsg('');
+    const r = await fetch(`/api/admin/messages/${id}/reply`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reply: text }) });
+    const j = await r.json().catch(() => ({}));
+    setSending('');
+    if (!r.ok) return setMsg(`寄信失敗：${typeof j.message === 'string' ? j.message : r.status}`);
+    setRows((rs) => rs.map((x) => (x.id === id ? { ...x, ...j } : x)));
+    setReplyText((t) => ({ ...t, [id]: '' }));
+    setMsg(`已寄出回覆（${j.mail?.provider ?? 'email'}）並標記已回覆。`);
+    router.refresh();
+  }
   async function patch(id: string, body: { status?: string; note?: string }) {
     const r = await fetch(`/api/admin/messages/${id}`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
     const j = await r.json().catch(() => ({}));
@@ -70,6 +88,19 @@ export function MessagesClient({ rows: initial, counts }: { rows: MessageRow[]; 
             {open === r.id ? (
               <div className="mt-2 space-y-2">
                 <p className="whitespace-pre-wrap rounded border p-3" style={{ ...line, background: 'var(--soft)' }}>{r.message}</p>
+                {r.reply ? (
+                  <div className="rounded border p-3 text-xs" style={line}>
+                    <p className="mb-1 font-semibold">已寄出的回覆{r.repliedAt ? `（${fmtDateTime(r.repliedAt)}）` : ''}</p>
+                    <p className="whitespace-pre-wrap">{r.reply}</p>
+                  </div>
+                ) : null}
+                <label className="block text-xs">
+                  回覆訪客（會寄到 {r.email}；走「信件範本 → 聯絡表單回覆」）
+                  <textarea className="w-full rounded border px-2 py-1 text-sm" style={line} rows={4} placeholder="輸入回覆內容…" value={replyText[r.id] ?? ''} onChange={(e) => setReplyText((t) => ({ ...t, [r.id]: e.target.value }))} data-reply-input />
+                  <button disabled={sending === r.id || !(replyText[r.id] ?? '').trim()} onClick={() => void sendReply(r.id)} className="mt-1 rounded bg-black px-3 py-1 text-white disabled:opacity-50" data-reply-send>
+                    {sending === r.id ? '寄出中…' : '寄出回覆'}
+                  </button>
+                </label>
                 <label className="block text-xs">
                   內部備註
                   <textarea className="w-full rounded border px-2 py-1 text-sm" style={line} rows={2} defaultValue={r.note ?? ''} onBlur={(e) => e.target.value !== (r.note ?? '') && void patch(r.id, { note: e.target.value })} />

@@ -31,6 +31,11 @@ export class AdminMessagesController {
     return this.contact.update(id, body ?? {}, req.session!.user.email);
   }
 
+  @Post(':id/reply')
+  reply(@Param('id') id: string, @Body() body: { reply?: string; subject?: string } | undefined, @Req() req: AuthedRequest) {
+    return this.contact.reply(id, { reply: String(body?.reply ?? ''), subject: body?.subject }, req.session!.user.email);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.contact.remove(id);

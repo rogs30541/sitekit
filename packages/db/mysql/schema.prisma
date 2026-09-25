@@ -637,6 +637,7 @@ model ContactMessage {
   page      String? @db.Text
   status    String    @default("new")
   note      String? @db.Text
+  reply     String? @db.Text
   ip        String? @db.Text
   userAgent String? @db.Text
   repliedAt DateTime?

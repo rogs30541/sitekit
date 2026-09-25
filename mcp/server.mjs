@@ -141,6 +141,10 @@ server.tool(
   { location: z.enum(['header', 'footer']).default('header'), items: z.array(z.object({ label: z.string(), kind: z.enum(['page', 'route', 'link']).default('route'), contentId: z.string().optional(), href: z.string().optional(), isVisible: z.boolean().optional(), newTab: z.boolean().optional(), children: z.array(z.object({ label: z.string(), kind: z.enum(['page', 'route', 'link']).default('route'), contentId: z.string().optional(), href: z.string().optional(), isVisible: z.boolean().optional(), newTab: z.boolean().optional() })).optional() })) },
   async (p) => asText(await ops('set_menu', p)),
 );
+server.tool('sitekit_reply_contact_message', '回覆聯絡表單訊息（走信件範本寄給訪客，成功後標記 replied）', { id: z.string(), reply: z.string().min(1), subject: z.string().optional() }, async (p) => asText(await ops('reply_contact_message', p)));
+server.tool('sitekit_list_mail_templates', '列出信件範本（11 種通知；主旨／內文／變數／是否自訂）', {}, async () => asText(await ops('list_mail_templates', {})));
+server.tool('sitekit_set_mail_template', '設定信件範本（{{變數}} 跳脫、{{{變數}}} 原樣；reset=true 回預設；enabled 僅自動回覆）', { kind: z.string(), subject: z.string().optional(), body: z.string().optional(), enabled: z.boolean().optional(), reset: z.boolean().optional() }, async (p) => asText(await ops('set_mail_template', p)));
+server.tool('sitekit_preview_mail_template', '用範例變數渲染信件範本', { kind: z.string(), subject: z.string().optional(), body: z.string().optional() }, async (p) => asText(await ops('preview_mail_template', p)));
 server.tool('sitekit_list_contact_messages', '列出前台聯絡表單訊息（含各狀態計數；status new|read|replied|archived 可選）', { status: z.string().optional(), limit: z.number().optional() }, async (p) => asText(await ops('list_contact_messages', p)));
 server.tool('sitekit_update_contact_message', '更新聯絡表單訊息狀態／備註', { id: z.string(), status: z.enum(['new', 'read', 'replied', 'archived']).optional(), note: z.string().optional() }, async (p) => asText(await ops('update_contact_message', p)));
 server.tool('sitekit_delete_contact_message', '刪除一筆聯絡表單訊息', { id: z.string() }, async (p) => asText(await ops('delete_contact_message', p)));
