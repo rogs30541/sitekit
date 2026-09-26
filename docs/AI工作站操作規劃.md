@@ -41,7 +41,7 @@
 | 項目 | 常用動作 | 典型流程 |
 |---|---|---|
 | **D1 報表與名單** `report` | `sales_report`（R，scope shop/course/all）；`list_orders`（R）；`list_members`（R）→ `delete_member`（W） | 「比較上月與本月營收」→ 兩次 `sales_report` 後摘要；「找出買過課程但沒買商品的會員」→ `list_members({tag:'course'})`。 |
-| **D2 客服與訊息** `inbox` | `list_contact_messages`（R）→ `reply_contact_message`（W，真的寄信）／`update_contact_message`／`delete_contact_message`（W）；`list_mail_templates`／`preview_mail_template`（R）→ `set_mail_template`（W）；`list_questions`（R） | 「未讀的聯絡表單有哪些？幫我依急迫度排序並各擬一句回覆」→ 列 new，摘要，回覆草稿放在回覆文字裡（真正寄信由管理員用 Email 回覆連結）；「把 xxx 標成已回覆並註記」→ 寫入待確認。 |
+| **D2 客服與訊息** `inbox` | `list_contact_messages`（R）→ `draft_contact_reply`（R，AI 擬稿：只用原訊息＋站主要點，缺事實留【請補充】；不寄信）→ `reply_contact_message`（W，真的寄信）／`update_contact_message`／`delete_contact_message`（W）；`list_mail_templates`／`preview_mail_template`（R）→ `set_mail_template`（W）；`list_questions`（R） | 「未讀的聯絡表單有哪些？幫我依急迫度排序並各擬一句回覆」→ 列 new，摘要；「幫訊息 xxx 擬回覆草稿，要點：下週一回電」→ `draft_contact_reply` 即時回草稿貼給使用者審閱；「回覆訊息 xxx「…」」→ `reply_contact_message` 待確認後寄出；「把 xxx 標成已回覆並註記」→ 寫入待確認。後台「表單訊息」同一套：要點＋AI 擬稿→填回覆框→寄出回覆。 |
 | **D3 追蹤與 SEO** `tracking` | `get_tracking`（R）→ `set_tracking`（W，整份回寫；含 scroll 深度百分比事件、openaiPixel ChatGPT Ads）；區塊可視事件在 `set_home_sections`／`upsert_content` 的區塊 `track`；`update_brand`（W：描述／OG 圖／語言） | 「裝 GA4 G-XXXX 和 Meta Pixel」→ 先 `get_tracking` 取現值再整份回傳（未給欄位會被清空）。 |
 
 ### E. 設計
@@ -90,7 +90,8 @@
 ## 5. 指令台 UI（後台 `/admin/studio`）
 
 - **左欄**：五組十二項工作項目（點選切換範例）；「站台狀態」卡（目前版型、主題深淺色、未讀表單訊息數、未回覆提問數）——讓 AI 與人都看得到現況。
-- **中央**：對話＋結果卡（已查詢／待確認／已執行）；待確認卡顯示動作、參數摘要與「會覆寫／可還原」提示。
+- **中央**：對話＋結果卡（已查詢／待確認／已執行）；待確認卡顯示動作、參數摘要與「會覆寫／可還原」提示；`set_home_sections` 與 `upsert_content`（區塊頁）顯示區塊 kind 差異（＋／－）、`upsert_content` 標示覆寫既有頁面／新頁面（同回合先 `get_content_draft`／`list_content` 才有現況可比）。
+- **對話記錄**（v0.37.0）：每回合自動存進 `admin_ai_conversations`（每位管理員自己的，含結果卡與待確認 token），工具列「對話記錄」切換／刪除、「新對話」；MCP／OPS `list_ai_conversations` 只列摘要（系統類，不開放給指令台）。
 - **E1 製圖**：內嵌 inShow 式產圖面板，對話指令收進折疊區。
 - **設定**：供應商 anthropic／openai／gemini／mock 與模型自動偵測；金鑰只在這裡填（走 `update_settings`，屬系統功能，不開放給對話）。
 - **模板與任務管理**分頁：產圖模板 CRUD、任務列表。
@@ -111,6 +112,7 @@
 
 - （v0.31.0 已做）一鍵建站 `quick_setup_site`：挑版型＋套用＋品牌資料寫進區塊＋品牌設定＋主題；後台套版庫／精靈有同名面板。文案初稿與產圖仍分開做（不杜撰）。
 - （v0.31.0 已做）待確認卡片：`set_home_sections` 顯示區塊 kind 差異（＋／－）；套版類提示覆寫範圍與還原。
-- 待確認卡片：`upsert_content` 區塊頁差異。
-- 表單訊息 AI 回覆草稿一鍵寄出（需先有站主寄件身分與範本）。
-- 對話記錄落庫（目前只在 sessionStorage）。
+- （v0.37.0 已做）待確認卡片：`upsert_content` 區塊頁差異＋覆寫／新頁面標示。
+- （v0.36.0＋v0.37.0 已做）表單訊息 AI 回覆草稿→審閱→一鍵寄出（`draft_contact_reply`→`reply_contact_message`；後台表單訊息頁同一套）。
+- （v0.37.0 已做）對話記錄落庫（`admin_ai_conversations`；sessionStorage 只當快取）。
+- 對話記錄搜尋／匯出；跨管理員共享（目前只有本人可見）。

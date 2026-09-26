@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { AdminSessionGuard, type AuthedRequest } from '../../common/guards';
 import { OpsService } from '@sitekit/core';
-import { CommandService, type ChatTurn } from '@sitekit/core';
+import { CommandService, ConversationService, type ChatTurn } from '@sitekit/core';
 
 /** AI API 路徑：/api/admin/ai/*，只認後台 cookie session。與 MCP 路徑共用 OpsService。 */
 @Controller('admin/ai')
@@ -10,6 +10,7 @@ export class AdminAiController {
   constructor(
     private readonly ops: OpsService,
     private readonly command: CommandService,
+    private readonly conversations: ConversationService,
   ) {}
 
   @Get('actions')
@@ -40,6 +41,33 @@ export class AdminAiController {
   @Post('command')
   run(@Body() body: { message: string; history?: ChatTurn[] }, @Req() req: AuthedRequest) {
     return this.command.run(body ?? { message: '' }, 'admin-ai:' + req.session!.user.id);
+  }
+
+  /* ---------- 對話記錄（落庫；每位管理員自己的） ---------- */
+  @Get('conversations')
+  listConversations(@Query('limit') limit: string | undefined, @Req() req: AuthedRequest) {
+    return this.conversations.list(req.session!.user.id, limit ? Number(limit) : undefined);
+  }
+
+  @Get('conversations/:id')
+  getConversation(@Param('id') id: string, @Req() req: AuthedRequest) {
+    return this.conversations.get(req.session!.user.id, id);
+  }
+
+  /** 儲存整份對話（有 id→更新；無→新建，回 id）。指令台每回合自動呼叫。 */
+  @Put('conversations')
+  saveConversation(@Body() body: { id?: string; title?: string; turns: unknown }, @Req() req: AuthedRequest) {
+    return this.conversations.save(req.session!.user.id, body ?? { turns: [] });
+  }
+
+  @Patch('conversations/:id')
+  renameConversation(@Param('id') id: string, @Body() body: { title?: string } | undefined, @Req() req: AuthedRequest) {
+    return this.conversations.rename(req.session!.user.id, id, String(body?.title ?? ''));
+  }
+
+  @Delete('conversations/:id')
+  deleteConversation(@Param('id') id: string, @Req() req: AuthedRequest) {
+    return this.conversations.remove(req.session!.user.id, id);
   }
 
   /** 使用者按下確認：以 token 執行待確認清單 */

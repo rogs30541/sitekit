@@ -746,3 +746,17 @@ model SalesPageRevision {
   @@unique([pageId, version])
   @@map("sales_page_revisions")
 }
+
+/// AI 指令台對話記錄（每位管理員自己的；turns＝前端 Turn[] 原樣，含已查詢／待確認／已執行）
+model AdminAiConversation {
+  id        String   @id @default(cuid())
+  adminId   String
+  title     String
+  turns     Json
+  turnCount Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([adminId, updatedAt])
+  @@map("admin_ai_conversations")
+}

@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v0.37.0（2026-09-26）
+
+- AI 工作站完善①對話記錄落庫：指令台每回合自動存到 `admin_ai_conversations`（每位管理員自己的；含已查詢／待確認／已執行卡與 token，重新整理或換裝置都能接續），工具列「對話記錄」可切換／刪除、「新對話」開新一則；API `GET/PUT/PATCH/DELETE /api/admin/ai/conversations`；PG／SQLite／MySQL／D1 四庫遷移；OPS／MCP `list_ai_conversations`（系統類摘要，指令台本身不開放）
+- ②AI 擬回覆草稿：後台「表單訊息」每則訊息多「要點（可選）＋AI 擬稿」，草稿填進回覆框、審閱後才寄；OPS／MCP `draft_contact_reply`（唯讀、不寄信不改狀態；只用原訊息＋站主要點＋網站名稱，缺的事實一律留【請補充】不杜撰）；供應商走指令台同一組設定（`TextGenService`），mock／未設金鑰時用規則範本；指令台 SYSTEM_PROMPT 規則 10、hints、mock「幫訊息 <id> 擬回覆草稿，要點：…」→ 即時回草稿，「回覆訊息 <id>「…」」才排寄信；mock「回覆」規則改為只有帶 id 才觸發（「未讀表單…擬一句回覆」回歸列表）
+- ③待確認卡片 `upsert_content` 差異：同回合查過 `get_content_draft`／`list_content` 時標示「覆寫既有頁面／新頁面」，區塊頁比 kind 序列（＋／－），HTML 內文顯示字數；未先查詢時提示可能覆寫
+- e2e p39；docs/AI工作站操作規劃 §5／§8 更新
+
 ## v0.36.0（2026-09-26）
 
 - 信件範本（Email 範本）：11 種通知信（付款成功／新訂單／ATM 帳號／出貨／退款／歡迎／提問通知／提問回覆／聯絡表單通知／聯絡表單自動回覆／聯絡表單回覆）集中在 `packages/shared/src/mail-templates.ts`（主旨＋內文、{{變數}} 跳脫、{{{變數}}} 原樣 HTML），站主在後台「系統功能 → 信件範本」覆寫、預覽（範例資料）、回到預設、寄測試信；NotifyService 全部改走範本（`compose`／`sendKind`）；設定存 `mail.templates`

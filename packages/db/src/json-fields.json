@@ -11,7 +11,8 @@
     "raw",
     "result",
     "snapshot",
-    "specs"
+    "specs",
+    "turns"
   ],
   "array": [
     "allowedFeatures",

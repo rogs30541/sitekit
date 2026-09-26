@@ -6781,6 +6781,112 @@
             "version"
           ]
         ]
+      },
+      {
+        "name": "AdminAiConversation",
+        "dbName": "admin_ai_conversations",
+        "fields": [
+          {
+            "name": "id",
+            "kind": "scalar",
+            "type": "String",
+            "isList": false,
+            "isRequired": true,
+            "isId": true,
+            "isUnique": false,
+            "relationName": null,
+            "relationFromFields": [],
+            "relationToFields": [],
+            "hasDefaultValue": true,
+            "isUpdatedAt": false
+          },
+          {
+            "name": "adminId",
+            "kind": "scalar",
+            "type": "String",
+            "isList": false,
+            "isRequired": true,
+            "isId": false,
+            "isUnique": false,
+            "relationName": null,
+            "relationFromFields": [],
+            "relationToFields": [],
+            "hasDefaultValue": false,
+            "isUpdatedAt": false
+          },
+          {
+            "name": "title",
+            "kind": "scalar",
+            "type": "String",
+            "isList": false,
+            "isRequired": true,
+            "isId": false,
+            "isUnique": false,
+            "relationName": null,
+            "relationFromFields": [],
+            "relationToFields": [],
+            "hasDefaultValue": false,
+            "isUpdatedAt": false
+          },
+          {
+            "name": "turns",
+            "kind": "scalar",
+            "type": "Json",
+            "isList": false,
+            "isRequired": true,
+            "isId": false,
+            "isUnique": false,
+            "relationName": null,
+            "relationFromFields": [],
+            "relationToFields": [],
+            "hasDefaultValue": false,
+            "isUpdatedAt": false
+          },
+          {
+            "name": "turnCount",
+            "kind": "scalar",
+            "type": "Int",
+            "isList": false,
+            "isRequired": true,
+            "isId": false,
+            "isUnique": false,
+            "relationName": null,
+            "relationFromFields": [],
+            "relationToFields": [],
+            "hasDefaultValue": true,
+            "isUpdatedAt": false
+          },
+          {
+            "name": "createdAt",
+            "kind": "scalar",
+            "type": "DateTime",
+            "isList": false,
+            "isRequired": true,
+            "isId": false,
+            "isUnique": false,
+            "relationName": null,
+            "relationFromFields": [],
+            "relationToFields": [],
+            "hasDefaultValue": true,
+            "isUpdatedAt": false
+          },
+          {
+            "name": "updatedAt",
+            "kind": "scalar",
+            "type": "DateTime",
+            "isList": false,
+            "isRequired": true,
+            "isId": false,
+            "isUnique": false,
+            "relationName": null,
+            "relationFromFields": [],
+            "relationToFields": [],
+            "hasDefaultValue": false,
+            "isUpdatedAt": true
+          }
+        ],
+        "primaryKey": null,
+        "uniqueFields": []
       }
     ]
   },

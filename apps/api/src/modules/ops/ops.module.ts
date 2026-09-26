@@ -10,7 +10,7 @@ import { CatalogModule } from '../catalog/catalog.module';
 import { ContentModule } from '../content/content.module';
 import { InvoiceModule } from '../invoice/invoice.module';
 import { OpsController } from './ops.controller';
-import { OpsService } from '@sitekit/core';
+import { ConversationService, OpsService } from '@sitekit/core';
 
-@Module({ imports: [SystemModule, AdminModule, SalesModule, StudioModule, MigrationModule, CreditsModule, OrdersModule, CatalogModule, ContentModule, InvoiceModule], controllers: [OpsController], providers: [OpsService], exports: [OpsService] })
+@Module({ imports: [SystemModule, AdminModule, SalesModule, StudioModule, MigrationModule, CreditsModule, OrdersModule, CatalogModule, ContentModule, InvoiceModule], controllers: [OpsController], providers: [OpsService, ConversationService], exports: [OpsService, ConversationService] })
 export class OpsModule {}

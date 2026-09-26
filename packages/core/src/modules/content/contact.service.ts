@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { background } from '../../env';
 import { events } from '../../plugins';
 import { NotifyService } from '../notify/notify.service';
+import { SettingsService } from '../settings/settings.service';
+import { TextGenService } from '../admin-ai/textgen.service';
 
 /**
  * 前台「聯絡表單」（contact 區塊 showForm=true）→ 後台「表單訊息」／OPS list_contact_messages／MCP。
@@ -27,6 +29,8 @@ export class ContactService {
   constructor(
     private readonly prisma: PrismaClient,
     private readonly notify: NotifyService,
+    private readonly settings: SettingsService,
+    private readonly textgen: TextGenService,
   ) {}
 
   async submit(input: unknown, meta: { ip?: string; userAgent?: string } = {}) {
@@ -70,6 +74,41 @@ export class ContactService {
     if (!r.ok) throw new BadRequestException(`寄信失敗：${r.error ?? r.skipped ?? 'unknown'}`);
     const updated = await this.prisma.contactMessage.update({ where: { id }, data: { status: 'replied', reply: text.slice(0, 5000), repliedAt: new Date(), repliedBy: actor } });
     return { ...updated, mail: r };
+  }
+
+  /**
+   * AI 擬回覆草稿（不寄信、不改狀態）：只用「訪客原訊息＋站主給的要點＋網站名稱」，不知道的事實寫成【請補充：…】，不杜撰。
+   * 供應商走指令台同一組設定；mock／未設金鑰時用規則模板產生。回 draft 給後台回覆框或指令台接 reply_contact_message。
+   */
+  async draftReply(id: string, opts: { tone?: string; points?: string } = {}) {
+    const m = await this.prisma.contactMessage.findUnique({ where: { id } });
+    if (!m) throw new NotFoundException('message not found');
+    const siteName = (await this.settings.get('brand.name')) || (await this.settings.get('brand.siteName')) || 'SiteKit';
+    const tone = String(opts.tone ?? '').trim().slice(0, 40) || '親切、專業';
+    const points = String(opts.points ?? '').trim().slice(0, 2000);
+    const subject = `Re: ${m.subject || '您的來信'}`;
+    const cfg = await this.textgen.config();
+    if (cfg.provider !== 'mock' && cfg.ready) {
+      const system = `你是網站「${siteName}」的客服，替站主草擬回覆訪客來信的內文（純文字、繁體中文、3–6 句、語氣${tone}）。
+規則：只能使用「訪客原訊息」與「站主要點」裡的資料；價格、日期、方案細節、名額等任何未提供的事實，一律寫成【請補充：…】佔位，絕不自行編造。不要主旨行、不要 Markdown、不要多餘說明；開頭稱呼訪客姓名，結尾署名「${siteName}」。`;
+      const user = `訪客姓名：${m.name}
+原主旨：${m.subject || '（無）'}
+原訊息：
+${m.message}
+
+站主要點：${points || '（未提供；不知道的地方用【請補充：…】）'}`;
+      const r = await this.textgen.complete({ system, user, maxTokens: 1024 });
+      if (r.text) return { id: m.id, draft: r.text.slice(0, 5000), subject, provider: r.provider, model: r.model, mock: false, tone, points };
+    }
+    const firstLine = m.message.replace(/\s+/g, ' ').trim().slice(0, 60);
+    const draft = `${m.name} 您好：
+
+感謝您來信${m.subject ? `詢問「${m.subject}」` : ''}。關於您提到的「${firstLine}${m.message.trim().length > 60 ? '…' : ''}」，${points || '【請補充：具體回覆內容】'}
+
+若還有其他問題，歡迎直接回覆此信，我們會盡快協助。
+
+${siteName} 敬上`;
+    return { id: m.id, draft, subject, provider: 'mock', model: 'rules', mock: true, tone, points };
   }
 
   async remove(id: string) {

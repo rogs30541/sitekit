@@ -36,6 +36,12 @@ export class AdminMessagesController {
     return this.contact.reply(id, { reply: String(body?.reply ?? ''), subject: body?.subject }, req.session!.user.email);
   }
 
+  /** AI 擬回覆草稿（不寄信；同 OPS draft_contact_reply） */
+  @Post(':id/draft')
+  draft(@Param('id') id: string, @Body() body: { tone?: string; points?: string } | undefined) {
+    return this.contact.draftReply(id, { tone: body?.tone, points: body?.points });
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.contact.remove(id);

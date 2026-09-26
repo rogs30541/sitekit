@@ -191,6 +191,8 @@ export const OPS_ACTIONS = {
   set_mail_template: { desc: '設定信件範本（kind、subject、body（{{變數}} 跳脫、{{{變數}}} 原樣 HTML）、enabled（僅自動回覆類）；reset=true 回預設）', mutating: true },
   preview_mail_template: { desc: '用範例變數渲染某種信件範本（kind；可帶 subject／body 試算未儲存內容）', mutating: false },
   list_contact_messages: { desc: '列出前台聯絡表單訊息（status new|read|replied|archived 可選、limit）', mutating: false },
+  draft_contact_reply: { desc: 'AI 擬回覆草稿（id；tone 語氣、points 站主要點可選）：只用原訊息＋要點＋網站名稱，不知道的事實留【請補充】；不寄信、不改狀態，回 draft／subject 給人審閱後再 reply_contact_message', mutating: false },
+  list_ai_conversations: { desc: '列出 AI 指令台對話記錄摘要（各管理員；limit）——系統類，指令台本身不開放', mutating: false },
   update_contact_message: { desc: '更新聯絡表單訊息狀態／備註（id、status new|read|replied|archived、note）', mutating: true },
   delete_contact_message: { desc: '刪除一筆聯絡表單訊息（id）', mutating: true },
   list_questions: { desc: '列出課程問答（courseId 或 slug 可選、status open|answered|hidden）', mutating: false },
@@ -294,7 +296,7 @@ export interface OpsResult {
 export * from './design';
 
 /** AI 指令台排除的「系統功能」動作（只在系統功能選單人工操作，不開放自然語言指令） */
-export const COMMAND_EXCLUDED_ACTIONS: OpsAction[] = ['status', 'deploy', 'migrate', 'get_settings', 'update_settings', 'import_content', 'adjust_credits', 'audit', 'create_admin', 'list_admins', 'update_admin', 'delete_admin', 'send_test_notification', 'storage_status', 'export_site', 'import_site', 'list_backups'];
+export const COMMAND_EXCLUDED_ACTIONS: OpsAction[] = ['status', 'deploy', 'migrate', 'get_settings', 'update_settings', 'import_content', 'adjust_credits', 'audit', 'create_admin', 'list_admins', 'update_admin', 'delete_admin', 'send_test_notification', 'storage_status', 'export_site', 'import_site', 'list_backups', 'list_ai_conversations'];
 
 /** 指令台七大工作項目（快捷任務；範例指令會填入輸入框） */
 export const COMMAND_TASKS: { key: string; group: string; label: string; desc: string; examples: string[] }[] = [
@@ -307,7 +309,7 @@ export const COMMAND_TASKS: { key: string; group: string; label: string; desc: s
   { key: 'course', group: '商務', label: '課程與學員', desc: '建立課程與章節、發公告、回覆學員提問（會寄信通知）', examples: ['建立課程 slug ai-basics「AI 入門」，價格 1990，先不發布，並新增三個章節：認識 AI、提示詞入門、實作練習', '列出未回覆的學員提問，幫每題擬一段回覆給我確認'] },
   { key: 'orders', group: '商務', label: '訂單物流發票', desc: '訂單查詢、出貨、物流單、發票、折扣碼、逾期訂單', examples: ['列出今天已付款但未出貨的訂單', '訂單 SK… 標記已出貨，黑貓 單號 1234567890，並開立發票', '建立折扣碼 WELCOME10：九折、最低 500、限用 100 次'] },
   { key: 'report', group: '營運', label: '報表與名單', desc: '銷售報表、期間比較、會員名單與標籤', examples: ['幫我看這個月的銷售報表，按天分組，告訴我最好的三天和原因', '比較上個月和這個月的營收與訂單數', '列出買過課程的會員'] },
-  { key: 'inbox', group: '營運', label: '客服與訊息', desc: '前台聯絡表單訊息（未讀／已讀／已回覆／封存、備註）與課程提問', examples: ['未讀的聯絡表單有哪些？依急迫度排序，每則幫我擬一句回覆', '把來自 hello@example.com 的訊息標成已回覆，備註「已電話聯絡」'] },
+  { key: 'inbox', group: '營運', label: '客服與訊息', desc: '前台聯絡表單訊息（未讀／已讀／已回覆／封存、備註）與課程提問', examples: ['未讀的聯絡表單有哪些？依急迫度排序，每則幫我擬一句回覆', '幫訊息 <id> 擬一份回覆草稿，語氣親切，要點：下週一回電確認需求；我看過再寄', '把來自 hello@example.com 的訊息標成已回覆，備註「已電話聯絡」'] },
   { key: 'tracking', group: '營運', label: '追蹤與 SEO', desc: 'GA4／GTM／Meta Pixel／TikTok／LINE Tag／Google Ads 與網站描述、OG 圖、語言', examples: ['安裝 GA4 G-XXXXXXX 和 Meta Pixel 1234567890，其他不動', '網站描述改成「台北最好吃的手工麵包」，OG 圖用 https://…'] },
   { key: 'image', group: '設計', label: '商品製圖與 Banner', desc: 'AI 產生商品主圖／Banner（先套 20 組模板＋參考圖），產完回填商品封面或區塊圖片', examples: ['幫 SKU DEMO-MUG 產生一張白底簡約的商品主圖，1024x1024，並設成商品封面', '做一張秋季課程優惠 Banner（1536x1024，暖色系），放進首頁最上方 hero 的圖片'] },
 ];

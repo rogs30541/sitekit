@@ -1,5 +1,5 @@
 import { Global, Module } from '@nestjs/common';
-import { SettingsService } from '@sitekit/core';
+import { SettingsService, TextGenService } from '@sitekit/core';
 import { RevalidateService } from '@sitekit/core';
 import { RevalidateController } from './revalidate.controller';
 
@@ -9,6 +9,7 @@ import { RevalidateController } from './revalidate.controller';
   controllers: [RevalidateController],
   providers: [
     SettingsService,
+    TextGenService,
     {
       provide: RevalidateService,
       inject: [SettingsService],
@@ -19,6 +20,6 @@ import { RevalidateController } from './revalidate.controller';
       },
     },
   ],
-  exports: [SettingsService, RevalidateService],
+  exports: [SettingsService, RevalidateService, TextGenService],
 })
 export class SettingsModule {}

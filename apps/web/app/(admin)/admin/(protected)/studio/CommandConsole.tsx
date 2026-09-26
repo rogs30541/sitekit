@@ -49,6 +49,13 @@ type Turn =
 const line = { borderColor: "var(--line)" } as const;
 const input = "w-full rounded border px-2 py-1 text-sm";
 const KEY = "sitekit.command.transcript";
+const CONV_KEY = "sitekit.command.conv";
+interface ConvMeta {
+  id: string;
+  title: string;
+  turnCount: number;
+  updatedAt: string;
+}
 
 /**
  * AI 指令台（後台全站工作總控）：自然語言 → 唯讀動作即時執行、寫入動作列成待確認清單 → 管理員按「確認執行」才真的改資料。
@@ -78,24 +85,90 @@ export function CommandConsole({
   const [busy, setBusy] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(!initial.ready);
   const [task, setTask] = useState<string>(initial.tasks[0]?.key ?? "");
+  const [convId, setConvId] = useState<string | null>(null);
+  const [convs, setConvs] = useState<ConvMeta[]>([]);
+  const [convOpen, setConvOpen] = useState(false);
+  const skipSave = useRef(false);
   const bottom = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const loadConvs = async () => {
     try {
-      const raw = sessionStorage.getItem(KEY);
-      if (raw) setTurns(JSON.parse(raw));
+      const r = await fetch("/api/admin/ai/conversations?limit=30");
+      if (r.ok) setConvs(await r.json());
     } catch {
       /* ignore */
     }
+  };
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(KEY);
+      if (raw) {
+        skipSave.current = true;
+        setTurns(JSON.parse(raw));
+      }
+      setConvId(sessionStorage.getItem(CONV_KEY) || null);
+    } catch {
+      /* ignore */
+    }
+    void loadConvs();
   }, []);
   useEffect(() => {
     try {
       sessionStorage.setItem(KEY, JSON.stringify(turns.slice(-40)));
+      if (convId) sessionStorage.setItem(CONV_KEY, convId);
+      else sessionStorage.removeItem(CONV_KEY);
     } catch {
       /* ignore */
     }
     bottom.current?.scrollIntoView({ block: "end" });
-  }, [turns]);
+  }, [turns, convId]);
+  /** 對話記錄落庫：每次回合變動後 600ms 存一次（載入舊對話那一次不存） */
+  useEffect(() => {
+    if (skipSave.current) {
+      skipSave.current = false;
+      return;
+    }
+    if (!turns.length) return;
+    const h = setTimeout(async () => {
+      try {
+        const r = await fetch("/api/admin/ai/conversations", {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ id: convId ?? undefined, turns }),
+        });
+        if (!r.ok) return;
+        const j = (await r.json()) as ConvMeta;
+        if (j.id !== convId) setConvId(j.id);
+        setConvs((cs) => [j, ...cs.filter((c) => c.id !== j.id)]);
+      } catch {
+        /* ignore */
+      }
+    }, 600);
+    return () => clearTimeout(h);
+  }, [turns, convId]);
+  async function openConv(id: string) {
+    const r = await fetch(`/api/admin/ai/conversations/${id}`);
+    if (!r.ok) return;
+    const c = (await r.json()) as { id: string; turns: Turn[] };
+    skipSave.current = true;
+    setTurns(Array.isArray(c.turns) ? c.turns : []);
+    setConvId(c.id);
+    setConvOpen(false);
+  }
+  function newConv() {
+    skipSave.current = true;
+    setTurns([]);
+    setConvId(null);
+    sessionStorage.removeItem(KEY);
+    sessionStorage.removeItem(CONV_KEY);
+    setConvOpen(false);
+  }
+  async function deleteConv(id: string) {
+    if (!window.confirm("刪除這則對話記錄？")) return;
+    await fetch(`/api/admin/ai/conversations/${id}`, { method: "DELETE" });
+    setConvs((cs) => cs.filter((c) => c.id !== id));
+    if (id === convId) newConv();
+  }
 
   const history = () =>
     turns
@@ -251,16 +324,38 @@ export function CommandConsole({
           設定
         </button>
         <button
-          onClick={() => {
-            setTurns([]);
-            sessionStorage.removeItem(KEY);
-          }}
+          onClick={() => setConvOpen((o) => !o)}
           className="ml-auto rounded border px-2 py-0.5"
           style={line}
+          data-conv-toggle
         >
-          清除對話
+          對話記錄{convs.length ? `（${convs.length}）` : ""}
+        </button>
+        <button onClick={newConv} className="rounded border px-2 py-0.5" style={line} data-conv-new>
+          新對話
         </button>
       </div>
+      {convOpen ? (
+        <div className="border-b p-2 text-xs" style={{ ...line, background: "var(--soft)" }} data-conv-list>
+          {!convs.length ? (
+            <p style={{ color: "var(--muted)" }}>還沒有對話記錄；每次送出指令後會自動儲存到資料庫（只有你自己看得到）。</p>
+          ) : (
+            <ul className="max-h-48 space-y-1 overflow-auto">
+              {convs.map((c) => (
+                <li key={c.id} className={`flex items-center gap-2 rounded px-2 py-1 ${c.id === convId ? "bg-black text-white" : "hover:bg-white"}`}>
+                  <button className="flex-1 truncate text-left" onClick={() => void openConv(c.id)} title={c.title}>
+                    {c.title}
+                  </button>
+                  <span className="shrink-0 opacity-70">{c.turnCount} 回合 · {new Date(c.updatedAt).toLocaleString("zh-TW", { hour12: false })}</span>
+                  <button className="shrink-0 opacity-70 hover:opacity-100" onClick={() => void deleteConv(c.id)} aria-label="刪除">
+                    ✕
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : null}
       {settingsOpen ? (
         <Settings
           config={config}
@@ -338,6 +433,9 @@ export function CommandConsole({
                             }
                             after={(Array.isArray(s.params.sections) ? (s.params.sections as { kind: string }[]) : []).map((x) => x.kind)}
                           />
+                        ) : null}
+                        {s.action === "upsert_content" ? (
+                          <ContentDiff params={s.params} executed={t.executed ?? []} />
                         ) : null}
                         {s.action === "apply_site_template" || s.action === "quick_setup_site" ? (
                           <p className="mt-1 text-[11px] text-amber-800">會覆寫主題、首頁區塊、選單並建立同名子頁；商品／課程／文章不動；可用 restore 還原。</p>
@@ -545,6 +643,40 @@ function SectionsDiff({ before, after }: { before: string[] | null; after: strin
       ))}
       <span style={{ color: "var(--muted)" }}>（{before.length} → {after.length} 個區塊）</span>
     </p>
+  );
+}
+
+/** upsert_content 待確認差異：同回合查過的草稿（get_content_draft）／清單（list_content）vs 送出的內容；區塊頁比 kind 序列 */
+function ContentDiff({ params, executed }: { params: Record<string, unknown>; executed: Exec[] }) {
+  const slug = String(params.slug ?? "");
+  const type = String(params.type ?? "page");
+  const url = type === "post" ? `/blog/${slug}` : slug === "home" ? "/" : `/p/${slug}`;
+  const draftQ = executed.find((e) => e.action === "get_content_draft" && e.ok && (e.data as { content?: { slug?: string } } | undefined)?.content?.slug === slug);
+  const draft = draftQ?.data as { content?: { title?: string; status?: string; version?: number }; draft?: { design?: { kind?: string; sections?: { kind: string }[] } | null; body?: string | null } } | undefined;
+  const listQ = executed.find((e) => e.action === "list_content" && e.ok && Array.isArray(e.data));
+  const listed = listQ ? (listQ.data as { slug: string; title: string; status: string }[]).find((c) => c.slug === slug) : undefined;
+  const exists = draft?.content ?? (listed ? { title: listed.title, status: listed.status } : undefined);
+  const design = params.design as { kind?: string; sections?: { kind: string }[] } | undefined;
+  const afterKinds = design?.kind === "sections" && Array.isArray(design.sections) ? design.sections.map((x) => x.kind) : null;
+  const beforeKinds = draft?.draft?.design?.kind === "sections" && Array.isArray(draft.draft.design.sections) ? draft.draft.design.sections.map((x) => x.kind) : null;
+  const bodyLen = typeof params.body === "string" ? params.body.replace(/<[^>]+>/g, "").length : 0;
+  return (
+    <div className="mt-1 text-[11px]" data-content-diff>
+      <p className={exists ? "text-amber-800" : "text-green-800"}>
+        {exists
+          ? `覆寫既有${type === "post" ? "文章" : "頁面"}「${exists.title ?? slug}」的草稿（${exists.status === "published" ? "線上版不動，需 publish 才上線" : "尚未發佈"}）`
+          : draftQ || listQ
+            ? `新${type === "post" ? "文章" : "頁面"} ${url}（存草稿；預覽後才發佈）`
+            : `存草稿到 ${url}；未先查詢現況，若 slug 已存在會覆寫其草稿`}
+      </p>
+      {afterKinds ? (
+        <SectionsDiff before={beforeKinds} after={afterKinds} />
+      ) : bodyLen ? (
+        <p style={{ color: "var(--muted)" }}>HTML 內文約 {bodyLen} 字{draft?.draft?.body ? `（原草稿約 ${draft.draft.body.replace(/<[^>]+>/g, "").length} 字）` : ""}</p>
+      ) : params.design ? (
+        <p style={{ color: "var(--muted)" }}>視覺設計器文件（DesignDoc）</p>
+      ) : null}
+    </div>
   );
 }
 

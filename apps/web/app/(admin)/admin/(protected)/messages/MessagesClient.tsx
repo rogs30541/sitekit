@@ -22,7 +22,7 @@ export interface MessageRow {
 const STATUS: Record<MessageRow['status'], string> = { new: '未讀', read: '已讀', replied: '已回覆', archived: '封存' };
 const line = { borderColor: 'var(--line)' } as const;
 
-/** 表單訊息：前台 contact 區塊表單送出的訊息；標記狀態／備註／刪除。同功能 MCP：list_contact_messages／update_contact_message／delete_contact_message。 */
+/** 表單訊息：前台 contact 區塊表單送出的訊息；標記狀態／備註／AI 擬稿／回覆寄信／刪除。同功能 MCP：list_contact_messages／draft_contact_reply／reply_contact_message／update_contact_message／delete_contact_message。 */
 export function MessagesClient({ rows: initial, counts }: { rows: MessageRow[]; counts: Record<string, number> }) {
   const router = useRouter();
   const [rows, setRows] = useState(initial);
@@ -31,6 +31,19 @@ export function MessagesClient({ rows: initial, counts }: { rows: MessageRow[]; 
   const [msg, setMsg] = useState('');
   const [replyText, setReplyText] = useState<Record<string, string>>({});
   const [sending, setSending] = useState('');
+  const [points, setPoints] = useState<Record<string, string>>({});
+  const [drafting, setDrafting] = useState('');
+  /** AI 擬稿：不寄信，只把草稿填進回覆框（同 OPS draft_contact_reply；只用原訊息＋要點，缺的事實留【請補充】） */
+  async function draft(id: string) {
+    setDrafting(id);
+    setMsg('');
+    const r = await fetch(`/api/admin/messages/${id}/draft`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ points: (points[id] ?? '').trim() || undefined }) });
+    const j = await r.json().catch(() => ({}));
+    setDrafting('');
+    if (!r.ok) return setMsg(`擬稿失敗：${typeof j.message === 'string' ? j.message : r.status}`);
+    setReplyText((t) => ({ ...t, [id]: String(j.draft ?? '') }));
+    setMsg(j.mock ? '已用規則範本填入草稿（未設定 AI 金鑰）；請補齊【請補充】再寄出。' : `AI 草稿已填入（${j.provider}）；請審閱、補齊【請補充】後再寄出。`);
+  }
   async function sendReply(id: string) {
     const text = (replyText[id] ?? '').trim();
     if (!text) return;
@@ -94,6 +107,12 @@ export function MessagesClient({ rows: initial, counts }: { rows: MessageRow[]; 
                     <p className="whitespace-pre-wrap">{r.reply}</p>
                   </div>
                 ) : null}
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <input className="min-w-[16rem] flex-1 rounded border px-2 py-1" style={line} placeholder="給 AI 的要點（可選）：例如 下週一回電確認需求、報價另寄" value={points[r.id] ?? ''} onChange={(e) => setPoints((t) => ({ ...t, [r.id]: e.target.value }))} data-draft-points />
+                  <button disabled={drafting === r.id} onClick={() => void draft(r.id)} className="rounded border px-2 py-1 disabled:opacity-50" style={line} data-draft-btn>
+                    {drafting === r.id ? '擬稿中…' : 'AI 擬稿'}
+                  </button>
+                </div>
                 <label className="block text-xs">
                   回覆訪客（會寄到 {r.email}；走「信件範本 → 聯絡表單回覆」）
                   <textarea className="w-full rounded border px-2 py-1 text-sm" style={line} rows={4} placeholder="輸入回覆內容…" value={replyText[r.id] ?? ''} onChange={(e) => setReplyText((t) => ({ ...t, [r.id]: e.target.value }))} data-reply-input />

@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '../../compat';
+import { ConversationService } from '../admin-ai/conversation.service';
 import { Prisma } from '@prisma/client';
 import { OPS_ACTIONS, OPS_ACTION_KEYS, type OpsAction, type OpsResult, THEME_KEYS, themeFromSettings, themeSchema, themeToSettings, SETTING_KEYS } from '@sitekit/shared';
 import { background, env } from '../../env';
@@ -62,6 +63,7 @@ export class OpsService {
     private readonly salesTemplates: SalesTemplateService,
     private readonly members: MembersService,
     private readonly system: SystemService,
+    private readonly conversations: ConversationService,
   ) {}
 
   listActions() {
@@ -419,6 +421,10 @@ export class OpsService {
         return this.notify.previewTemplate(String(p.kind ?? ''), { subject: p.subject ? String(p.subject) : undefined, body: p.body ? String(p.body) : undefined });
       case 'list_contact_messages':
         return { counts: await this.contact.counts(), items: await this.contact.list({ status: p.status ? String(p.status) : undefined, limit: p.limit ? Number(p.limit) : undefined }) };
+      case 'draft_contact_reply':
+        return this.contact.draftReply(String(p.id ?? ''), { tone: p.tone ? String(p.tone) : undefined, points: p.points ? String(p.points) : undefined });
+      case 'list_ai_conversations':
+        return this.conversations.listAll(p.limit ? Number(p.limit) : undefined);
       case 'update_contact_message':
         return this.contact.update(String(p.id ?? ''), { ...(p.status !== undefined ? { status: String(p.status) } : {}), ...(p.note !== undefined ? { note: String(p.note) } : {}) }, actor);
       case 'delete_contact_message':
