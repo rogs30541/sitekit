@@ -4,7 +4,7 @@
 //      忘記密碼 forgot→reset（範本 admin_password_reset、舊 session 失效）；CLI `sitekit admin set-email|reset-password` 救援（不需登入不需收信）；
 //      信件範本 13 種；MCP update_admin 含 email
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const B = process.env.API ?? 'http://localhost:4000';
@@ -80,7 +80,12 @@ ok('新密碼可登入、舊密碼不行', (await login(fixed3, 'new-pass-12345'
 
 // 5) CLI 救援（不需登入、不需收信）。reset-password 只重設既有帳號（不存在＝報錯，不會改到第一位 superadmin）；
 //    set-email 才會把「第一位 superadmin」的 Email 改成給的值——為了不動 seed 的 admin@example.com，這裡用 set-email 給既有 Email 驗證主管理員 Email 與密碼重設
-const env = { ...process.env, DATABASE_URL: process.env.DATABASE_URL || readFileSync(join(ROOT, 'apps', 'api', '.env'), 'utf8').match(/^DATABASE_URL=(.*)$/m)?.[1]?.replace(/^["']|["']$/g, '') };
+const W = process.env.E2E_PLATFORM === 'workers';
+const envFile = join(ROOT, 'apps', 'api', '.env');
+const dbUrl = process.env.DATABASE_URL || (existsSync(envFile) ? readFileSync(envFile, 'utf8').match(/^DATABASE_URL=(.*)$/m)?.[1]?.replace(/^["']|["']$/g, '') : '');
+const env = { ...process.env, DATABASE_URL: dbUrl };
+if (W || !dbUrl) console.log(`SKIP CLI 救援（${W ? 'workers 平台沒有 Node CLI' : '找不到 DATABASE_URL'}）`);
+else {
 let cliOut = '';
 try {
   cliOut = execFileSync(process.execPath, [join(ROOT, 'apps', 'server', 'bin', 'sitekit.mjs'), 'admin', 'reset-password', fixed3, 'cli-pass-12345'], { cwd: ROOT, env, encoding: 'utf8', timeout: 60_000 });
@@ -104,6 +109,8 @@ try {
   cliOut2 = String(e.stdout ?? '') + String(e.stderr ?? '') + String(e.message);
 }
 ok('CLI set-email（既有 Email＋密碼）→ 主管理員 Email＝它、密碼重設', /管理員救援完成/.test(cliOut2) && (await settings())['admin.primaryEmail'] === fixed3 && (await login(fixed3, 'cli-pass-67890')).status < 300, cliOut2.slice(-160));
+
+}
 
 // 6) 範本 13 種＋MCP
 const tpls = (await act('list_mail_templates')).body?.data ?? [];
