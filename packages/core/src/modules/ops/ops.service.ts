@@ -505,8 +505,13 @@ export class OpsService {
       case 'list_admins':
         return this.admins.list();
       case 'update_admin': {
-        const { idOrEmail, email, ...rest } = p;
-        return this.admins.update(String(idOrEmail ?? email ?? ''), rest);
+        // idOrEmail 是目標；email 是要換成的新 Email（沒給 idOrEmail 時退回舊語意：email 當識別）
+        const { idOrEmail, ...rest } = p;
+        if (!idOrEmail && rest.email) {
+          const { email, ...r2 } = rest;
+          return this.admins.update(String(email), r2);
+        }
+        return this.admins.update(String(idOrEmail ?? ''), rest);
       }
       case 'delete_admin':
         return this.admins.remove(String(p.idOrEmail ?? p.email ?? ''));

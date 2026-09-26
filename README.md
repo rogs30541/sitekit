@@ -157,7 +157,7 @@ MCP 路徑拿不到 cookie session，AI API 路徑不接受 Bearer token，兩�
 
 ## P6 會員與課程社群（2026-09-21，v0.5.0）
 
-- **後台管理員 Email 驗證註冊**：`/admin/login` 的「註冊管理員」→ 寄 6 碼驗證碼（15 分鐘、5 次上限）→ 驗證碼＋密碼建立帳號並登入。資格：admin_users 為空（第一位＝superadmin）或 email／@網域在 `admin.registerAllowlist`（後台「管理員」頁或 MCP update_settings 設定）；不符資格不寄信、回應相同（防列舉）。無驗證的 bootstrap 端點已移除。
+- **後台管理員 Email 驗證註冊**：`/admin/login` 的「註冊管理員」→ 寄 6 碼驗證碼（15 分鐘、5 次上限）→ 驗證碼＋密碼建立帳號並登入。資格：admin_users 為空（第一位＝superadmin）、**主管理員 Email**（`admin.primaryEmail`＝第一位管理員輸入的 Email，v0.38.0）或 email／@網域在 `admin.registerAllowlist`（後台「管理員」頁或 MCP update_settings 設定）；不符資格不寄信、回應相同（防列舉）；已是管理員會回「請登入／忘記密碼」。**忘記密碼**：登入頁「忘記密碼」寄驗證碼→設新密碼。**填錯 Email／收不到信的救援（不需登入、不需收信）**：環境變數 `SITEKIT_ADMIN_EMAIL`（＋`SITEKIT_ADMIN_PASSWORD`）重新部署一次（沒有管理員→建立第一位；已有→把第一位 superadmin 的 Email 改成它；給密碼→重設），或 CLI `node apps/server/bin/sitekit.mjs admin set-email <email> [--password <pw>]`／`admin reset-password <email> <pw>`；登入後到「管理員帳號 → 我的帳號」也能用目前密碼換 Email（主管理員 Email 與 mail.adminTo 跟著改）。用完請移除環境變數。
 - **忘記密碼／重設**（一次性 token、1 小時、重設後清所有 session）、**會員資料**（顯示名稱、變更密碼；第三方登入帳號可直接設密碼）。
 - **第三方登入**：Google／LINE Login（OAuth 2.0 授權碼；設定 `google.clientId/clientSecret`、`line.loginChannelId/loginChannelSecret`；Redirect URI＝`<site.url>/api/auth/oauth/<provider>/callback`）。同一人不同管道登入合併：identities 命中 → 該會員；否則以 email 併入既有會員；否則建新會員。`mock` provider 只在非 production 開放供 E2E。登入／註冊頁只顯示已設定的供應商。
 - **課程問答與公告**：教室頁下方問答（購買者可提問、可標記章節；公開／僅自己可見）與公告；後台課程頁回覆（Email 通知提問者）、隱藏、公告 CRUD；新提問推 LINE／Email 給管理員；MCP `list_questions`／`answer_question`／`post_announcement`。

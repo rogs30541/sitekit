@@ -107,7 +107,7 @@ export class NotifyService {
     const r = renderMailTemplate({ subject: draft?.subject?.trim() ? draft.subject : t.subject, body: draft?.body?.trim() ? draft.body : t.body }, sampleMailVars(kind, { siteName: siteName || 'SiteKit', siteUrl: cfg.site }));
     return { kind, subject: r.subject, html: this.layout(r.subject, r.html, cfg.site) };
   }
-  private async sendKind(kind: string, to: string, vars: Record<string, string | number | null | undefined>): Promise<NotifyResult> {
+  async sendKind(kind: string, to: string, vars: Record<string, string | number | null | undefined>): Promise<NotifyResult> {
     const m = await this.compose(kind, vars);
     if (!m) {
       const r: NotifyResult = { channel: 'email', provider: 'log', ok: false, skipped: `${kind} disabled` };

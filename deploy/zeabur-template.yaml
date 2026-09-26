@@ -101,3 +101,8 @@ spec:
             default: "3000"
           SITEKIT_DATA_DIR:
             default: /data
+          # 救援用（填錯管理員 Email／忘記密碼時）：填 Email（＋密碼）重新部署一次即生效，登入後請清空
+          SITEKIT_ADMIN_EMAIL:
+            default: ""
+          SITEKIT_ADMIN_PASSWORD:
+            default: ""

@@ -36,6 +36,35 @@ export class AdminAuthController {
     return { ok: true, admin };
   }
 
+  /** 忘記密碼第 1 步：寄 6 碼驗證碼給既有管理員（回應一律 ok 防列舉） */
+  @Post('forgot')
+  forgot(@Body() body: unknown) {
+    return this.admins.forgotPassword(body);
+  }
+
+  /** 忘記密碼第 2 步：驗證碼＋新密碼 → 重設並登入 */
+  @Post('reset')
+  async reset(@Body() body: unknown, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const admin = await this.admins.resetPassword(body);
+    await this.issue(admin.id, req, res);
+    return { ok: true, admin };
+  }
+
+  /** 本人換 Email（要目前密碼）；主管理員 Email／mail.adminTo 會跟著改——填錯 Email 的自救 */
+  @Patch('me')
+  @UseGuards(AdminSessionGuard)
+  async changeMyEmail(@Body() body: { email?: string; currentPassword?: string } | undefined, @Req() req: AuthedRequest) {
+    const admin = await this.admins.changeEmail(req.session!.user.id, String(body?.email ?? ''), { currentPassword: body?.currentPassword, requirePassword: true });
+    return { ok: true, admin, primaryEmail: await this.admins.primaryEmail() };
+  }
+
+  /** 主管理員 Email（第一位管理員輸入的 Email） */
+  @Get('primary')
+  @UseGuards(AdminSessionGuard)
+  async primary() {
+    return { primaryEmail: await this.admins.primaryEmail() };
+  }
+
   @Post('login')
   async login(@Body() body: unknown, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const admin = await this.admins.login(body);

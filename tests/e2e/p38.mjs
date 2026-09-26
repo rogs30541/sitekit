@@ -21,7 +21,7 @@ await act('update_settings', { settings: { 'ai.commandProvider': 'mock', 'mail.a
 // 1) 範本清單
 const l0 = await act('list_mail_templates');
 const tpls = l0.body?.data ?? [];
-ok('list_mail_templates 11 種，含 contact_reply／contact_autoreply（optional、預設關）', l0.body?.ok === true && tpls.length === 11 && tpls.some((t) => t.kind === 'contact_reply') && tpls.find((t) => t.kind === 'contact_autoreply')?.optional === true && tpls.find((t) => t.kind === 'contact_autoreply')?.enabled === false, tpls.map((t) => t.kind).join(','));
+ok('list_mail_templates 13 種，含 contact_reply／contact_autoreply（optional、預設關）', l0.body?.ok === true && tpls.length === 13 && tpls.some((t) => t.kind === 'contact_reply') && tpls.find((t) => t.kind === 'contact_autoreply')?.optional === true && tpls.find((t) => t.kind === 'contact_autoreply')?.enabled === false, tpls.map((t) => t.kind).join(','));
 ok('每種都有 vars／subject／body／defaultSubject', tpls.every((t) => Array.isArray(t.vars) && t.vars.length && t.subject && t.body && t.defaultSubject));
 
 // 2) 預覽／設定／重設

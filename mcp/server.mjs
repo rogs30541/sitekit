@@ -142,7 +142,7 @@ server.tool(
   async (p) => asText(await ops('set_menu', p)),
 );
 server.tool('sitekit_reply_contact_message', '回覆聯絡表單訊息（走信件範本寄給訪客，成功後標記 replied）', { id: z.string(), reply: z.string().min(1), subject: z.string().optional() }, async (p) => asText(await ops('reply_contact_message', p)));
-server.tool('sitekit_list_mail_templates', '列出信件範本（11 種通知；主旨／內文／變數／是否自訂）', {}, async () => asText(await ops('list_mail_templates', {})));
+server.tool('sitekit_list_mail_templates', '列出信件範本（13 種通知；主旨／內文／變數／是否自訂）', {}, async () => asText(await ops('list_mail_templates', {})));
 server.tool('sitekit_set_mail_template', '設定信件範本（{{變數}} 跳脫、{{{變數}}} 原樣；reset=true 回預設；enabled 僅自動回覆）', { kind: z.string(), subject: z.string().optional(), body: z.string().optional(), enabled: z.boolean().optional(), reset: z.boolean().optional() }, async (p) => asText(await ops('set_mail_template', p)));
 server.tool('sitekit_preview_mail_template', '用範例變數渲染信件範本', { kind: z.string(), subject: z.string().optional(), body: z.string().optional() }, async (p) => asText(await ops('preview_mail_template', p)));
 server.tool('sitekit_list_contact_messages', '列出前台聯絡表單訊息（含各狀態計數；status new|read|replied|archived 可選）', { status: z.string().optional(), limit: z.number().optional() }, async (p) => asText(await ops('list_contact_messages', p)));
@@ -205,7 +205,7 @@ server.tool('sitekit_create_admin', '建立後台管理員（後台帳號與前�
 server.tool('sitekit_list_members', '會員資料庫：列出前台會員與自動標籤（shop＝電商客戶、course＝課程學員，兩者皆有＝兩個標籤）', { q: z.string().optional(), tag: z.enum(['shop', 'course', 'both', 'none']).optional(), limit: z.number().optional() }, async (p) => asText(await ops('list_members', p)));
 server.tool('sitekit_delete_member', '刪除會員（有訂單／點數紀錄者匿名化停用並保留訂單；無交易者直接刪除）', { idOrEmail: z.string().optional(), ids: z.array(z.string()).optional() }, async (p) => asText(await ops('delete_member', p)));
 server.tool('sitekit_list_admins', '列出後台管理員', {}, async () => asText(await ops('list_admins')));
-server.tool('sitekit_update_admin', '修改管理員密碼／名稱／角色／狀態', { idOrEmail: z.string(), password: z.string().min(8).optional(), displayName: z.string().optional(), role: z.enum(['admin', 'superadmin']).optional(), status: z.enum(['active', 'suspended']).optional() }, async (p) => asText(await ops('update_admin', p)));
+server.tool('sitekit_update_admin', '修改管理員 Email（主管理員 Email／通知信箱跟著改）／密碼／名稱／角色／狀態', { idOrEmail: z.string(), email: z.string().email().optional(), password: z.string().min(8).optional(), displayName: z.string().optional(), role: z.enum(['admin', 'superadmin']).optional(), status: z.enum(['active', 'suspended']).optional() }, async (p) => asText(await ops('update_admin', p)));
 server.tool('sitekit_delete_admin', '刪除管理員（不可刪最後一位 superadmin）', { idOrEmail: z.string() }, async (p) => asText(await ops('delete_admin', p)));
 server.tool('sitekit_send_test_notification', '寄測試信（to 可選）並推 LINE 給管理員，驗證通知設定', { to: z.string().email().optional() }, async (p) => asText(await ops('send_test_notification', p)));
 server.tool('sitekit_storage_status', '物件儲存（local／R2）與通知中心設定狀態、最近通知紀錄', {}, async () => asText(await ops('storage_status')));

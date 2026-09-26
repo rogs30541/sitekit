@@ -128,10 +128,14 @@ export class SystemController {
 
 @Module({ imports: [AdminAuthModule], controllers: [SetupController, SystemController], providers: [SystemService, ExportService], exports: [SystemService, ExportService] })
 export class SystemModule implements OnModuleInit {
-  constructor(private readonly system: SystemService) {}
-  /** 啟動即補機密（在 listen 之前完成，OperatorTokenGuard 才讀得到自動產生的 OPS_TOKEN） */
+  constructor(
+    private readonly system: SystemService,
+    private readonly admins: AdminAuthService,
+  ) {}
+  /** 啟動即補機密（在 listen 之前完成，OperatorTokenGuard 才讀得到自動產生的 OPS_TOKEN）＋管理員救援環境變數 */
   async onModuleInit() {
     await this.system.ensureSecrets();
+    await this.admins.applyEnvRescue((m) => console.log(`[sitekit] ${m}`)).catch((e) => console.error(`[sitekit] 管理員救援失敗：${e instanceof Error ? e.message : String(e)}`));
     this.system.startBackupScheduler();
   }
 }

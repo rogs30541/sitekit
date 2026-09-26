@@ -15,11 +15,14 @@ export interface AdminRow {
 }
 const input = 'rounded border px-2 py-1 text-sm';
 
-export function AccountsClient({ rows, selfId, allowlist }: { rows: AdminRow[]; selfId: string; allowlist: string }) {
+export function AccountsClient({ rows, selfId, allowlist, primaryEmail }: { rows: AdminRow[]; selfId: string; allowlist: string; primaryEmail: string }) {
   const router = useRouter();
   const [wl, setWl] = useState(allowlist);
   const [form, setForm] = useState({ email: '', password: '', displayName: '', role: 'admin' });
   const [msg, setMsg] = useState('');
+  const me = rows.find((r) => r.id === selfId);
+  const [mine, setMine] = useState({ email: '', currentPassword: '' });
+  const [mineMsg, setMineMsg] = useState('');
 
   async function call(path: string, method: string, body?: unknown) {
     const r = await fetch(path, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -31,10 +34,38 @@ export function AccountsClient({ rows, selfId, allowlist }: { rows: AdminRow[]; 
 
   return (
     <div className="space-y-4">
+      <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }} data-my-account>
+        <p className="mb-1 text-sm font-semibold">我的帳號</p>
+        <p className="mb-2 text-xs" style={{ color: 'var(--muted)' }}>
+          目前登入：<b>{me?.email}</b>
+          {primaryEmail ? <>；主管理員 Email（第一位管理員輸入的、通知信與註冊驗證碼都以它為主）：<b>{primaryEmail}</b></> : null}
+          。填錯 Email 收不到信就在這裡改：改完主管理員 Email 與站主通知信箱會跟著更新。
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <input className={`${input} w-64`} style={{ borderColor: 'var(--line)' }} type="email" placeholder="新的 Email" autoComplete="off" value={mine.email} onChange={(e) => setMine({ ...mine, email: e.target.value })} data-my-email />
+          <input className={`${input} w-44`} style={{ borderColor: 'var(--line)' }} type="password" placeholder="目前密碼" autoComplete="current-password" value={mine.currentPassword} onChange={(e) => setMine({ ...mine, currentPassword: e.target.value })} data-my-password />
+          <button
+            disabled={!mine.email || !mine.currentPassword}
+            onClick={async () => {
+              const r = await fetch('/api/admin/auth/me', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(mine) });
+              const j = await r.json().catch(() => ({}));
+              setMineMsg(r.ok ? `已改為 ${j.admin?.email}；主管理員 Email：${j.primaryEmail}` : typeof j.message === 'string' ? j.message : JSON.stringify(j.message ?? j));
+              if (r.ok) setMine({ email: '', currentPassword: '' });
+              router.refresh();
+            }}
+            className="rounded border px-3 py-1.5 text-sm disabled:opacity-50"
+            style={{ borderColor: 'var(--line)' }}
+            data-my-save
+          >
+            更換我的 Email
+          </button>
+          {mineMsg ? <span className="text-xs">{mineMsg}</span> : null}
+        </div>
+      </div>
       <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
         <p className="mb-1 text-sm font-semibold">自助註冊白名單（Email 驗證）</p>
         <p className="mb-2 text-xs" style={{ color: 'var(--muted)' }}>
-          後台登入頁的「註冊管理員」只寄驗證碼給這裡列出的 Email 或 @網域（逗號分隔）；註冊者角色為 admin。
+          後台登入頁的「註冊管理員」只寄驗證碼給主管理員 Email 與這裡列出的 Email 或 @網域（逗號分隔）；註冊者角色為 admin。忘記密碼走登入頁「忘記密碼」；完全收不到信時用環境變數 SITEKIT_ADMIN_EMAIL／SITEKIT_ADMIN_PASSWORD 或 CLI「sitekit admin set-email」救援。
         </p>
         <div className="flex flex-wrap gap-2">
           <input className={`${input} w-96`} style={{ borderColor: 'var(--line)' }} placeholder="ops@your.domain, @your.domain" value={wl} onChange={(e) => setWl(e.target.value)} />
@@ -83,12 +114,24 @@ export function AccountsClient({ rows, selfId, allowlist }: { rows: AdminRow[]; 
         <tbody>
           {rows.map((a) => (
             <tr key={a.id} className="border-t" style={{ borderColor: 'var(--line)' }}>
-              <td className="py-1">{a.email}</td>
+              <td className="py-1">
+                {a.email}
+                {a.email === primaryEmail ? <span className="ml-1 rounded bg-amber-100 px-1 text-[10px] text-amber-900">主管理員</span> : null}
+              </td>
               <td className="py-1">{a.displayName}</td>
               <td className="py-1">{ROLE_LABELS[a.role] ?? a.role}</td>
               <td className="py-1">{a.lastLoginAt ? fmtDateTime(a.lastLoginAt) : '—'}</td>
               <td className="py-1">
                 <span className="flex gap-2">
+                  <button
+                    className="underline"
+                    onClick={() => {
+                      const em = window.prompt(`把 ${a.email} 改成新的 Email`, a.email);
+                      if (em && em !== a.email) call(`/api/admin/auth/users/${a.id}`, 'PATCH', { email: em.trim() });
+                    }}
+                  >
+                    改 Email
+                  </button>
                   <button
                     className="underline"
                     onClick={() => {

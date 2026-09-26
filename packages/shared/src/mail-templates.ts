@@ -13,7 +13,7 @@ export interface MailKindDef {
   label: string;
   desc: string;
   /** 收件對象 */
-  to: '顧客' | '站主' | '訪客';
+  to: '顧客' | '站主' | '訪客' | '管理員';
   vars: { key: string; label: string; html?: boolean }[];
   /** 可否由站主關閉（預設一律送） */
   optional?: boolean;
@@ -36,6 +36,8 @@ const orderVars = [
 ];
 
 export const MAIL_KINDS: MailKindDef[] = [
+  { kind: 'admin_register', label: '管理員註冊驗證碼', desc: '後台「註冊管理員」寄 6 碼驗證碼（第一位管理員／主管理員 Email／白名單才會寄）', to: '管理員', vars: [...common, { key: 'email', label: '註冊 Email' }, { key: 'code', label: '6 碼驗證碼' }, { key: 'firstNote', label: '第一位管理員提示（HTML）', html: true }, { key: 'loginUrl', label: '登入頁連結' }], subject: '【後台管理員註冊】驗證碼 {{code}}', body: '<p>您的後台管理員註冊驗證碼：</p><p style="font-size:28px;font-weight:700;letter-spacing:6px">{{code}}</p><p>15 分鐘內有效。{{{firstNote}}}</p><p><a href="{{loginUrl}}">{{loginUrl}}</a></p>' },
+  { kind: 'admin_password_reset', label: '管理員重設密碼驗證碼', desc: '後台登入頁「忘記密碼」寄 6 碼驗證碼給既有管理員', to: '管理員', vars: [...common, { key: 'email', label: '管理員 Email' }, { key: 'code', label: '6 碼驗證碼' }, { key: 'resetUrl', label: '重設密碼頁連結' }], subject: '【後台】重設密碼驗證碼 {{code}}', body: '<p>您申請了重設後台密碼，驗證碼：</p><p style="font-size:28px;font-weight:700;letter-spacing:6px">{{code}}</p><p>15 分鐘內有效；若不是您本人申請，請忽略此信。</p><p><a href="{{resetUrl}}">{{resetUrl}}</a></p>' },
   { kind: 'order_paid', label: '付款成功（顧客）', desc: '訂單付款完成後寄給顧客', to: '顧客', vars: orderVars, subject: '【付款成功】訂單 {{orderNo}}', body: '<p>{{name}} 您好，我們已收到您的付款。</p>{{{itemsHtml}}}<p><a href="{{siteUrl}}/member">前往會員中心</a></p>' },
   { kind: 'order_paid_admin', label: '新訂單通知（站主）', desc: '訂單付款完成後寄給站主', to: '站主', vars: [...orderVars, { key: 'shippingNote', label: '需要出貨提示（HTML）', html: true }], subject: '【新訂單】{{orderNo}} {{amount}}', body: '<p>{{email}}</p>{{{itemsHtml}}}{{{shippingNote}}}' },
   { kind: 'vacc_issued', label: 'ATM 虛擬帳號（顧客）', desc: '取得轉帳帳號後寄給顧客', to: '顧客', vars: [...orderVars, { key: 'virtualAccount', label: '轉帳帳號' }, { key: 'expireAt', label: '繳費期限' }], subject: '【待付款】訂單 {{orderNo}} 轉帳資訊', body: '{{{itemsHtml}}}<p>轉帳帳號：<strong>{{virtualAccount}}</strong></p><p>繳費期限：{{expireAt}}（台北時間）</p>' },
@@ -76,6 +78,6 @@ export function resolveMailTemplate(kind: string, overrides: Record<string, Part
 
 /** 各種類的範例變數（後台預覽用） */
 export function sampleMailVars(kind: string, site: { siteName: string; siteUrl: string }): Record<string, string> {
-  const base: Record<string, string> = { siteName: site.siteName, siteUrl: site.siteUrl, name: '王小明', email: 'customer@example.com', orderNo: 'SK20260926A1', amount: 'NT$ 1,980', itemsHtml: '<ul><li>示範商品 × 1</li></ul><p>訂單編號 <code>SK20260926A1</code>，金額 <strong>NT$ 1,980</strong></p>', shippingNote: '<p>此訂單需要出貨。</p>', virtualAccount: '9990001234567890', expireAt: '2026-09-30 23:59', status: '已出貨', carrier: '黑貓', trackingNo: '1234567890', courseName: '示範課程', question: '請問第二章的範例檔在哪裡？', from: 'student@example.com', adminUrl: `${site.siteUrl}/admin/messages`, answerHtml: '在章節附件區，已補上連結。', classroomUrl: `${site.siteUrl}/classroom/demo-course`, phone: '0912-345-678', subject: '想詢問合作方案', messageHtml: '您好，想了解企業方案的報價。<br>謝謝。', page: '/p/contact', replyHtml: '您好，企業方案報價已附上，歡迎回信討論。' };
+  const base: Record<string, string> = { siteName: site.siteName, siteUrl: site.siteUrl, name: '王小明', email: 'customer@example.com', orderNo: 'SK20260926A1', amount: 'NT$ 1,980', itemsHtml: '<ul><li>示範商品 × 1</li></ul><p>訂單編號 <code>SK20260926A1</code>，金額 <strong>NT$ 1,980</strong></p>', shippingNote: '<p>此訂單需要出貨。</p>', virtualAccount: '9990001234567890', expireAt: '2026-09-30 23:59', status: '已出貨', carrier: '黑貓', trackingNo: '1234567890', courseName: '示範課程', question: '請問第二章的範例檔在哪裡？', from: 'student@example.com', adminUrl: `${site.siteUrl}/admin/messages`, answerHtml: '在章節附件區，已補上連結。', classroomUrl: `${site.siteUrl}/classroom/demo-course`, phone: '0912-345-678', subject: '想詢問合作方案', messageHtml: '您好，想了解企業方案的報價。<br>謝謝。', page: '/p/contact', replyHtml: '您好，企業方案報價已附上，歡迎回信討論。', code: '482913', firstNote: '<strong>此帳號將成為第一位超級管理員。</strong>', loginUrl: `${site.siteUrl}/admin/login`, resetUrl: `${site.siteUrl}/admin/login?mode=forgot` };
   return base;
 }

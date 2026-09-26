@@ -98,6 +98,8 @@
 
 ## 6. MCP 對等
 
+系統類（不開放給對話、只走 MCP／後台）補充：`update_admin` 自 v0.38.0 可帶 `email` 換管理員 Email（主管理員 Email `admin.primaryEmail` 與 `mail.adminTo` 跟著改）；管理員救援走環境變數 `SITEKIT_ADMIN_EMAIL`／`SITEKIT_ADMIN_PASSWORD` 或 CLI `sitekit admin`，不經 OPS。
+
 每個工作項目的動作在 `mcp/server.mjs` 都有同名 `sitekit_*` 工具（本次新增 `sitekit_set_theme`、`sitekit_update_brand`）。訂閱制 AI（Claude Desktop／Code）用 MCP 做部署與批次維運；後台指令台給站主日常操作。兩者共用 `OpsService.run` 與稽核。
 
 ## 7. 本次落地（v0.30.0）

@@ -5,6 +5,9 @@
  *   sitekit migrate                                      只套用資料庫遷移
  *   sitekit seed [--demo]                                只補種子（--demo 建示範帳號與內容）
  *   sitekit env                                          印出實際生效的設定（機密遮蔽）
+ *   sitekit admin set-email <email> [--password <pw>]     救援：把主管理員（第一位 superadmin）的 Email 改成它（沒有管理員時兩者都給＝建立第一位）
+ *   sitekit admin reset-password <email> <password>       救援：重設該管理員密碼（清掉所有登入）
+ *   （同義的環境變數：SITEKIT_ADMIN_EMAIL／SITEKIT_ADMIN_PASSWORD，每次啟動套用，用完請移除）
  *   sitekit export [--out FILE] [--no-secrets]           整庫匯出 JSON（預設含機密，搬家用）
  *   sitekit import FILE --confirm                        從匯出檔還原（清空後覆蓋，不可逆）
  * 環境變數（都有預設值，全新主機不用設）：
@@ -133,6 +136,29 @@ switch (cmd) {
   case 'env':
     show();
     break;
+  case 'admin': {
+    // 救援：不需登入、不需收信。set-email <email> [--password <pw>]／reset-password <email> <password>
+    const sub = args[args.indexOf('admin') + 1];
+    const positional = args.slice(args.indexOf('admin') + 2).filter((x, i, arr) => !x.startsWith('--') && (i === 0 || !arr[i - 1].startsWith('--')));
+    const email = positional[0];
+    const password = sub === 'reset-password' ? positional[1] : flag('password', '');
+    if (!sub || !email || (sub === 'reset-password' && !password) || !['set-email', 'reset-password'].includes(sub)) {
+      console.error('usage: sitekit admin set-email <email> [--password <pw>] | sitekit admin reset-password <email> <password>');
+      process.exit(1);
+    }
+    const { createPrisma } = require('@sitekit/db');
+    const { AdminAuthService, NotifyService, SettingsService } = require('@sitekit/core');
+    const prisma = createPrisma();
+    try {
+      const settings = new SettingsService(prisma);
+      const admins = new AdminAuthService(prisma, new NotifyService(settings, prisma), settings);
+      const r = await admins.rescue(sub === 'set-email' ? { mode: 'set-email', email, password: password && password !== true ? String(password) : '' } : { mode: 'reset-password', email, password: String(password) });
+      console.log(`[sitekit] 管理員救援完成：${r.applied.join('、') || '（無變更）'}${r.email ? `（${r.email}）` : ''}`);
+    } finally {
+      await prisma.$disconnect();
+    }
+    break;
+  }
   case 'migrate':
     migrate();
     break;
@@ -147,5 +173,5 @@ switch (cmd) {
     break;
   }
   default:
-    console.log('usage: sitekit start|migrate|seed|env [--port N] [--data DIR] [--demo]');
+    console.log('usage: sitekit start|migrate|seed|env|export|import|admin [--port N] [--data DIR] [--demo]');
 }

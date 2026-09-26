@@ -67,7 +67,7 @@ const TOOL_HINTS: Partial<Record<OpsAction, string>> = {
   update_contact_message: '參數：id、status new|read|replied|archived、note。',
   draft_contact_reply: '參數：id、tone（語氣）、points（站主要點）。唯讀、不寄信：回 draft／subject；把 draft 原文貼給使用者審閱，使用者同意後再排 reply_contact_message（reply=審閱後的內容）。不知道的事實草稿會留【請補充】，請提醒使用者補齊再寄。',
   reply_contact_message: '參數：id、reply（純文字，會轉成段落）、subject 可選。會真的寄信給訪客（走「聯絡表單回覆」範本），務必列成待確認並在回覆裡附上擬好的內容。',
-  list_mail_templates: '無參數。回 11 種信件範本（kind、label、vars、subject、body、customized、enabled）。',
+  list_mail_templates: '無參數。回 13 種信件範本（kind、label、vars、subject、body、customized、enabled）。',
   set_mail_template: '參數：kind、subject、body（{{變數}} 跳脫、{{{變數}}} 原樣 HTML；變數見 list_mail_templates）、enabled（contact_autoreply 才有）、reset。先 preview_mail_template 給使用者看再存。',
   preview_mail_template: '參數：kind、subject／body（可試算未儲存內容）。回 subject 與 html。',
   get_site: '無參數。回 brand、theme、menus{header,footer}、home.sections（現有首頁區塊，改動前先讀）、settings。',

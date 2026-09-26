@@ -5,7 +5,7 @@ import { MailTemplatesClient, type MailTpl } from './MailTemplatesClient';
 
 export const dynamic = 'force-dynamic';
 
-/** 信件範本：11 種通知信（顧客／站主／訪客）的主旨與內文；自動回覆開關；預覽與測試。 */
+/** 信件範本：13 種通知信（顧客／站主／訪客／管理員）的主旨與內文；自動回覆開關；預覽與測試。 */
 export default async function AdminMailTemplatesPage() {
   const r = await apiServer<{ data?: MailTpl[] }>('/api/admin/ai/act', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'list_mail_templates', params: {} }) });
   const list = r?.data ?? [];

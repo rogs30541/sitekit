@@ -1,6 +1,6 @@
 {
   "name": "@sitekit/server",
-  "version": "0.37.0",
+  "version": "0.38.0",
   "license": "AGPL-3.0-only",
   "private": true,
   "description": "SiteKit 單體殼：一個 Node 程序同時跑 API 與前台，預設 SQLite；sitekit start 即開站",

@@ -36,6 +36,7 @@ export function SetupWizard() {
   const STEPS = [tr('管理員'), tr('站名與網址'), tr('版型'), tr('儲存'), 'Email', tr('金流'), tr('完成')];
   const [status, setStatus] = useState<Status | null>(null);
   const [admin, setAdmin] = useState<{ email: string; role: string } | null>(null);
+  const [fix, setFix] = useState({ email: '', currentPassword: '' });
   const [step, setStep] = useState(0);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
@@ -185,6 +186,32 @@ export function SetupWizard() {
 
       {step === 1 && admin ? (
         <div className="space-y-2 text-sm">
+          <div className="rounded border p-2 text-xs" style={line} data-admin-fix>
+            <p>
+              {tr('管理員 Email')}：<b>{admin.email}</b>（{tr('主管理員 Email：通知信與註冊驗證碼都以它為主')}）
+            </p>
+            <div className="mt-1 flex flex-wrap gap-2">
+              <input className={`${input} w-64`} style={line} type="email" placeholder={tr('填錯了？輸入正確的 Email')} value={fix.email} onChange={(e) => setFix({ ...fix, email: e.target.value })} />
+              <input className={`${input} w-40`} style={line} type="password" placeholder={tr('目前密碼')} autoComplete="current-password" value={fix.currentPassword} onChange={(e) => setFix({ ...fix, currentPassword: e.target.value })} />
+              <button
+                disabled={busy || !fix.email || !fix.currentPassword}
+                onClick={() =>
+                  void run(async () => {
+                    const r = await j<{ ok?: boolean; admin?: { email: string; role: string } }>('/api/admin/auth/me', { method: 'PATCH', body: JSON.stringify(fix) });
+                    if (r.status >= 400) throw new Error(errText(r.body));
+                    setAdmin(r.body.admin ?? admin);
+                    setMail((m) => ({ ...m, adminTo: r.body.admin?.email ?? m.adminTo }));
+                    setFix({ email: '', currentPassword: '' });
+                    return tr('管理員 Email 已更正');
+                  })
+                }
+                className="rounded border px-3 py-1 disabled:opacity-50"
+                style={line}
+              >
+                {tr('更正 Email')}
+              </button>
+            </div>
+          </div>
           <label className="block">
             {tr('網站名稱（標題列、頁尾）')}
             <input className={input} style={line} value={site.siteName} onChange={(e) => setSite({ ...site, siteName: e.target.value })} placeholder={tr('例：小明烘焙坊')} />

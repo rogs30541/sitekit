@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 /**
- * 信件範本：11 種通知信的主旨／內文（{{變數}} 跳脫、{{{變數}}} 原樣 HTML）、自動回覆開關、預覽、重設、測試寄送。
+ * 信件範本：13 種通知信的主旨／內文（{{變數}} 跳脫、{{{變數}}} 原樣 HTML）、自動回覆開關、預覽、重設、測試寄送。
  * 全部走 OPS（list_mail_templates／set_mail_template／preview_mail_template／send_test_notification），與 MCP 同一套。
  */
 export interface MailTpl {

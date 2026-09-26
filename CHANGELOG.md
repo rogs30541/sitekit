@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v0.38.0（2026-09-26）
+
+- **主管理員 Email＝第一個輸入的 Email**：/setup 或註冊建立第一位管理員時，該 Email 寫入 `admin.primaryEmail`，並成為站主通知信箱 `mail.adminTo` 的預設；主管理員 Email 永久具備「註冊管理員」驗證碼資格（不必列白名單）；已是管理員再按註冊會回清楚訊息（請登入／忘記密碼）而不是靜默
+- **填錯 Email 可重新設置**（四條路，皆不依賴收到信）：①註冊第 2 步「填錯了？更換 Email 重寄」；②/setup 第 1 步與後台「管理員帳號 → 我的帳號」用目前密碼換 Email（`PATCH /api/admin/auth/me`；主管理員 Email 與 mail.adminTo 跟著改）；③超級管理員在帳號頁「改 Email」／OPS・MCP `update_admin{email}`；④救援：環境變數 `SITEKIT_ADMIN_EMAIL`／`SITEKIT_ADMIN_PASSWORD`（啟動套用；沒有管理員時建立第一位、已有時把第一位 superadmin 的 Email 改成它、給密碼就重設）或 CLI `sitekit admin set-email <email> [--password]`／`sitekit admin reset-password <email> <pw>`（reset-password 不存在的 Email 會報錯、不會改到第一位 superadmin）；Zeabur 一鍵模板預留這兩個環境變數
+- **後台忘記密碼**：登入頁「忘記密碼」→ `POST /api/admin/auth/forgot`（寄 6 碼驗證碼給既有管理員，回應一律 ok 防列舉）→ `POST /api/admin/auth/reset`（驗證碼＋新密碼，舊 session 全部失效並登入）
+- 信件範本加 `admin_register`（註冊驗證碼）與 `admin_password_reset`（重設密碼驗證碼）→ 13 種，後台可改；註冊／忘記密碼回應附 `mail{ok,provider,error}`，寄信失敗或 log 模式會在畫面說明
+- e2e p40；p38 範本數 13
+
 ## v0.37.0（2026-09-26）
 
 - Zeabur 一鍵模板實測修正（`deploy/zeabur-template.yaml`）：postgres 服務 env 加 `expose: true`＋`POSTGRES_HOST/PORT/CONNECTION_STRING`（原本 sitekit 服務引用 `${POSTGRES_PASSWORD}` 展不開 → P1000 認證失敗）；`FRONTEND_URL`／`NEXT_PUBLIC_SITE_URL` 改用 `${ZEABUR_WEB_URL}`（`${PUBLIC_DOMAIN}` 以 CLI 部署時只會是子網域前綴）；檔頭寫明 CLI 部署指令
