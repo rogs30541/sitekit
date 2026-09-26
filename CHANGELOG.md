@@ -2,6 +2,8 @@
 
 ## v0.37.0（2026-09-26）
 
+- Zeabur 一鍵模板實測修正（`deploy/zeabur-template.yaml`）：postgres 服務 env 加 `expose: true`＋`POSTGRES_HOST/PORT/CONNECTION_STRING`（原本 sitekit 服務引用 `${POSTGRES_PASSWORD}` 展不開 → P1000 認證失敗）；`FRONTEND_URL`／`NEXT_PUBLIC_SITE_URL` 改用 `${ZEABUR_WEB_URL}`（`${PUBLIC_DOMAIN}` 以 CLI 部署時只會是子網域前綴）；檔頭寫明 CLI 部署指令
+
 - AI 工作站完善①對話記錄落庫：指令台每回合自動存到 `admin_ai_conversations`（每位管理員自己的；含已查詢／待確認／已執行卡與 token，重新整理或換裝置都能接續），工具列「對話記錄」可切換／刪除、「新對話」開新一則；API `GET/PUT/PATCH/DELETE /api/admin/ai/conversations`；PG／SQLite／MySQL／D1 四庫遷移；OPS／MCP `list_ai_conversations`（系統類摘要，指令台本身不開放）
 - ②AI 擬回覆草稿：後台「表單訊息」每則訊息多「要點（可選）＋AI 擬稿」，草稿填進回覆框、審閱後才寄；OPS／MCP `draft_contact_reply`（唯讀、不寄信不改狀態；只用原訊息＋站主要點＋網站名稱，缺的事實一律留【請補充】不杜撰）；供應商走指令台同一組設定（`TextGenService`），mock／未設金鑰時用規則範本；指令台 SYSTEM_PROMPT 規則 10、hints、mock「幫訊息 <id> 擬回覆草稿，要點：…」→ 即時回草稿，「回覆訊息 <id>「…」」才排寄信；mock「回覆」規則改為只有帶 id 才觸發（「未讀表單…擬一句回覆」回歸列表）
 - ③待確認卡片 `upsert_content` 差異：同回合查過 `get_content_draft`／`list_content` 時標示「覆寫既有頁面／新頁面」，區塊頁比 kind 序列（＋／－），HTML 內文顯示字數；未先查詢時提示可能覆寫

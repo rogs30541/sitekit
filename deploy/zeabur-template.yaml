@@ -1,5 +1,6 @@
 # Zeabur Template：SiteKit 單體殼＋PostgreSQL（一鍵部署）
-# 匯入方式：Zeabur 儀表板 → Templates → Create from YAML（貼上本檔），或 `npx zeabur@latest template deploy -f deploy/zeabur-template.yaml`
+# 部署方式（2026-09-26 實測）：`npx zeabur@latest template deploy -f deploy/zeabur-template.yaml --project-id <專案ID> --var PUBLIC_DOMAIN=<子網域前綴> -i=false`
+#   （儀表板「建立新模板」只導向文件，沒有貼 YAML 入口；先在儀表板建空專案選好伺服器，再用 CLI 部署進去；PUBLIC_DOMAIN 只填前綴，CLI 會自動加 .zeabur.app）
 # 注意：ghcr.io/rogs30541/sitekit 在原始碼 repo 公開前是私有映像；私有時請在 Zeabur 服務加 registry 認證，或改用 Dockerfile.monolith 從 Git 建置。
 apiVersion: zeabur.com/v1
 kind: Template
@@ -38,12 +39,30 @@ spec:
           - id: data
             dir: /var/lib/postgresql/data
         env:
+          # expose=true 才能被 sitekit 服務以 ${POSTGRES_*} 引用（2026-09-26 一鍵模板實測：沒 expose ＝ P1000 密碼不對）
           POSTGRES_USER:
             default: sitekit
+            expose: true
+            readonly: true
           POSTGRES_PASSWORD:
             default: ${PASSWORD}
+            expose: true
           POSTGRES_DB:
             default: sitekit
+            expose: true
+            readonly: true
+          POSTGRES_HOST:
+            default: ${CONTAINER_HOSTNAME}
+            expose: true
+            readonly: true
+          POSTGRES_PORT:
+            default: ${DATABASE_PORT}
+            expose: true
+            readonly: true
+          POSTGRES_CONNECTION_STRING:
+            default: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+            expose: true
+            readonly: true
           PGDATA:
             default: /var/lib/postgresql/data/pgdata
         instructions:
@@ -69,11 +88,13 @@ spec:
             dir: /data
         env:
           DATABASE_URL:
-            default: postgresql://sitekit:${POSTGRES_PASSWORD}@postgresql.zeabur.internal:5432/sitekit
+            default: ${POSTGRES_CONNECTION_STRING}
+          # ${PUBLIC_DOMAIN} 在 CLI 部署時只會展開成子網域前綴（sitekit-tpl-test），不能直接拼網址；
+          # 改用 Zeabur 特殊變數 ${ZEABUR_WEB_URL}（port id=web 的公開網址，自訂網域也對）
           FRONTEND_URL:
-            default: https://${PUBLIC_DOMAIN}
+            default: ${ZEABUR_WEB_URL}
           NEXT_PUBLIC_SITE_URL:
-            default: https://${PUBLIC_DOMAIN}
+            default: ${ZEABUR_WEB_URL}
           APP_ENV:
             default: production
           PORT:

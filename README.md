@@ -332,7 +332,7 @@ npm run cf:deploy         # 部署；再把 apps/worker/wrangler.jsonc 的 FRONT
 
 ## 部署平台建議（2026-09-25 定案）
 
-- **預設推薦：Zeabur**——功能 100%（外掛、備份、排程、伺服器硬碟）、東京節點對台灣延遲最好、儀表板零維運；專用伺服器約 US$4／月。步驟見下方「Zeabur 實際部署」；一鍵模板 `deploy/zeabur-template.yaml`（映像 `ghcr.io/rogs30541/sitekit` 已公開）。
+- **預設推薦：Zeabur**——功能 100%（外掛、備份、排程、伺服器硬碟）、東京節點對台灣延遲最好、儀表板零維運；專用伺服器約 US$4／月。步驟見下方「Zeabur 實際部署」；一鍵模板 `deploy/zeabur-template.yaml`（映像 `ghcr.io/rogs30541/sitekit` 已公開；**2026-09-26 實測可用**：儀表板先建空專案選好伺服器，再 `npx zeabur@latest template deploy -f deploy/zeabur-template.yaml --project-id <專案ID> --var PUBLIC_DOMAIN=<子網域前綴> -i=false`，約 2 分鐘後網域自動導到 `/setup`；儀表板「建立新模板」只導向文件、沒有貼 YAML 的入口）。
 - **次要：Cloudflare Workers＋D1＋R2**——零維運、全球邊緣；免費方案 CPU 10ms 不夠跑密碼雜湊，實際建議付費方案（US$5／月）；前台待 OpenNext。見「Cloudflare Workers＋D1 殼」。
 - 其他（VPS＋compose、Render、Railway、Fly、cPanel Node）為可用選項，客戶已有主機時採用；Firebase／Vercel／Netlify 靜態託管與純 PHP 主機不支援。
 
