@@ -1,6 +1,7 @@
 {
   "name": "@sitekit/db",
   "version": "0.1.0",
+  "license": "AGPL-3.0-only",
   "private": true,
   "description": "SiteKit 資料庫層：一份模型（apps/api/prisma/schema.prisma）產生 postgres／sqlite／mysql 三個 Prisma client；createPrisma() 依 DATABASE_URL 選用，SQLite 自動轉換 Json／陣列／enum、MySQL 轉換陣列",
   "main": "dist/index.js",

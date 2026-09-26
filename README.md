@@ -382,3 +382,8 @@ npm run cf:deploy         # 部署；再把 apps/worker/wrangler.jsonc 的 FRONT
 - `web` 環境變數：`API_INTERNAL_URL=http://api.zeabur.internal:8080`、`NEXT_PUBLIC_SITE_URL=https://aigc-sitekit.zeabur.app`、`NEXT_PUBLIC_APP_ENV=production`。
 - 網域 `https://aigc-sitekit.zeabur.app` 綁 `web:8080`；上線後用 MCP 路徑 `update_settings` 寫入 `site.url`，之後再補 `payment.provider=newebpay` 與藍新商店參數。
 - 儀表板陷阱：建立服務對話框裡填的環境變數不會保存，要到服務的「環境變數 → 編輯原始環境變數」再填並重新部署；前台註冊永遠是一般會員（role=user）；超級管理員只在 `/admin/login` 於 admin_users 為空時建立第一位，上線後請先建立正式管理員。
+
+## 授權
+
+- 原始碼採 **GNU AGPL-3.0**（`LICENSE`）：可自由使用、修改、部署；以網路服務提供他人使用時須公開修改後的原始碼。
+- 需要閉源使用（SaaS／內嵌產品）請取得**商業授權**，見 `COMMERCIAL-LICENSE.md`。

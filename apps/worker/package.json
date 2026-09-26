@@ -1,6 +1,7 @@
 {
   "name": "@sitekit/worker",
   "version": "0.37.0",
+  "license": "AGPL-3.0-only",
   "private": true,
   "type": "module",
   "description": "SiteKit Cloudflare Workers 殼：Hono＋D1，直接掛 apps/api 的 controller（nest-bridge）",

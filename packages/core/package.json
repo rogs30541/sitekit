@@ -1,6 +1,7 @@
 {
   "name": "@sitekit/core",
   "version": "0.1.0",
+  "license": "AGPL-3.0-only",
   "private": true,
   "description": "SiteKit 業務核心（純 TypeScript，不依賴 NestJS／Hono）：三個殼共用",
   "main": "dist/index.js",
