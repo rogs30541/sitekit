@@ -205,7 +205,7 @@ jobs:
           OPEN_NEXT_CLOUDFLARE: '1'
           API_INTERNAL_URL: http://127.0.0.1:9
           NEXT_PUBLIC_SITE_URL: https://sitekit-web.sitekit-deploy-cloudflare.workers.dev
-        run: npx opennextjs-cloudflare build
+        run: npx opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion
       - name: bundle exists
         run: test -f apps/web/.open-next/worker.js && du -sh apps/web/.open-next
 
