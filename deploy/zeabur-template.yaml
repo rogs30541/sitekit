@@ -1,3 +1,4 @@
+# ⚠ Zeabur 已於 2026-10 停止服務；本檔僅保留供其他相容平台對照，不再是推薦路徑。
 # Zeabur Template：SiteKit 單體殼＋PostgreSQL（一鍵部署）
 # 部署方式（2026-09-26 實測）：`npx zeabur@latest template deploy -f deploy/zeabur-template.yaml --project-id <專案ID> --var PUBLIC_DOMAIN=<子網域前綴> -i=false`
 #   （儀表板「建立新模板」只導向文件，沒有貼 YAML 入口；先在儀表板建空專案選好伺服器，再用 CLI 部署進去；PUBLIC_DOMAIN 只填前綴，CLI 會自動加 .zeabur.app）

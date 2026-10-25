@@ -12,7 +12,7 @@ export const en: Record<string, string> = {
   'SiteKit 安裝精靈': 'SiteKit Setup Wizard',
   上一個: 'Previous',
   上一步: 'Back',
-  '上傳的圖片、商品封面與 AI 產圖存在哪裡。部署在哪個平台就用該平台的硬碟：容器平台（Zeabur 等）把硬碟掛到資料夾即可用伺服器硬碟；沒有持久硬碟的環境才需要 Cloudflare R2／S3。': 'Where uploads, product covers and AI images are stored. Use the disk of whatever platform you deploy on: on container platforms (e.g. Zeabur) mount a volume on the data folder and pick server disk; only environments without a persistent disk need Cloudflare R2 / S3.',
+  '上傳的圖片、商品封面與 AI 產圖存在哪裡。部署在哪個平台就用該平台的硬碟：Docker／VPS 等容器平台把硬碟掛到資料夾即可用伺服器硬碟；Cloudflare Workers 等沒有持久硬碟的環境用 Cloudflare R2／S3。': 'Where uploads, product covers and AI images are stored. Use the disk of whatever platform you deploy on: on container platforms (Docker / VPS) mount a volume on the data folder and pick server disk; only environments without a persistent disk need Cloudflare R2 / S3.',
   '目前的儲存資料夾不在持久硬碟上（重新部署會清掉上傳檔）。請到平台把硬碟掛到這個資料夾再選伺服器硬碟，或改用 R2／S3：': 'The storage folder is not on a persistent disk (uploads are wiped on redeploy). Mount a volume on this folder before choosing server disk, or use R2 / S3:',
   '已偵測到持久硬碟：': 'Persistent disk detected:',
   下一個: 'Next',

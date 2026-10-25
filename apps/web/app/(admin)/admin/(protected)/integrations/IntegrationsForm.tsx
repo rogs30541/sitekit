@@ -90,7 +90,7 @@ export function IntegrationsForm({ status }: { status: IntegrationsStatus }) {
         </div>
         {fields(FIELDS.storage)}
         <p className="mt-2 text-xs" style={{ color: 'var(--muted)' }}>
-          AI 生成結果與搬運器落地的媒體會寫到這裡；部署在哪個平台就用該平台的硬碟（Zeabur 把硬碟掛到 /data 即可）；只有沒掛持久硬碟時重新部署才會清掉上傳檔，那種環境改用 R2。目前資料夾：{status.storage.localDir}
+          AI 生成結果與搬運器落地的媒體會寫到這裡；部署在哪個平台就用該平台的硬碟（Docker／VPS 把硬碟掛到 /data 即可）；只有沒掛持久硬碟時重新部署才會清掉上傳檔，那種環境改用 R2。目前資料夾：{status.storage.localDir}
         </p>
       </div>
       <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>

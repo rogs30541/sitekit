@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.39.0（2026-10-25）
+
+- **部署主線改為 Cloudflare Workers＋D1＋R2**（Zeabur 於 2026-10 停止服務）：README「最快開站」「部署平台建議」、安裝精靈與「儲存與通知」文案、`docs/最終方案.md` §2 全部改寫；新增 `docs/部署方案重規劃-2026-10.md`（A VPS compose／B Cloudflare／C Render 比較、資料搶救與搬遷步驟）；`deploy/zeabur-template.yaml` 標記僅供參考
+- Cloudflare：`sitekit-api`／`sitekit-web` 兩個 Worker 重佈到最新版；D1 遷移 0002–0004 補套；worker `APP_VERSION` 隨版；OpenNext 建置加 `--dangerouslyUseUnsupportedNextVersion`（Next 15 已過官方兩年支援窗，`opennextjs-cloudflare build` 直接拒絕；CI `build-web-cf` 同步）
+
 ## v0.38.0（2026-09-26）
 
 - **主管理員 Email＝第一個輸入的 Email**：/setup 或註冊建立第一位管理員時，該 Email 寫入 `admin.primaryEmail`，並成為站主通知信箱 `mail.adminTo` 的預設；主管理員 Email 永久具備「註冊管理員」驗證碼資格（不必列白名單）；已是管理員再按註冊會回清楚訊息（請登入／忘記密碼）而不是靜默

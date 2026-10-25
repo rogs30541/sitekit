@@ -220,7 +220,8 @@ docs/             架構說明、雙平台部署架構（一核心三殼路線�
 
 ## 最快開站
 
-**推薦：Zeabur（預設平台）**——GitHub 匯入 repo，用 `Dockerfile.monolith` 建置、掛 `/data` 硬碟、加 PostgreSQL，開網域後進 `/setup`。詳細步驟見下方「Zeabur 實際部署」；一鍵模板 `deploy/zeabur-template.yaml`（映像 `ghcr.io/rogs30541/sitekit`）。
+**推薦：Cloudflare Workers＋D1＋R2（預設平台，2026-10 起）**——`apps/worker`（API）＋`apps/web` OpenNext（前台）兩個 Worker，資料在 D1、上傳在 R2；Workers Paid（US$5／月）起。步驟見下方「Cloudflare Workers＋D1 殼」。**有自己主機**：`deploy/compose/`（Caddy 自動 HTTPS＋Postgres，功能 100%）。
+> Zeabur 已於 2026-10 停止服務；相關段落與 `deploy/zeabur-template.yaml` 僅保留供參考。
 
 ### 自己的主機（單體模式，任何有 Node 20 的主機）
 
@@ -330,9 +331,12 @@ npm run cf:deploy         # 部署；再把 apps/worker/wrangler.jsonc 的 FRONT
 - **Windows 陷阱**：OpenNext 建置在含中文的路徑會失敗（`npm run build` 找不到／standalone 路徑拼接錯）；請在 ASCII 路徑（robocopy 一份到 `C:\skbuild`）或 CI（Linux）建置。CI 有 `build-web-cf` job 只做建置驗證，不部署（部署需 `CLOUDFLARE_API_TOKEN`）。
 - 未做：ISR 快取（R2 incremental cache）、Service Binding 取代 rewrite、圖片上傳走 R2（前台在 Workers 時精靈選 R2）。
 
-## 部署平台建議（2026-09-25 定案）
+## 部署平台建議（2026-10-25 改訂：Zeabur 停止服務）
 
-- **預設推薦：Zeabur**——功能 100%（外掛、備份、排程、伺服器硬碟）、東京節點對台灣延遲最好、儀表板零維運；專用伺服器約 US$4／月。步驟見下方「Zeabur 實際部署」；一鍵模板 `deploy/zeabur-template.yaml`（映像 `ghcr.io/rogs30541/sitekit` 已公開；**2026-09-26 實測可用**：儀表板先建空專案選好伺服器，再 `npx zeabur@latest template deploy -f deploy/zeabur-template.yaml --project-id <專案ID> --var PUBLIC_DOMAIN=<子網域前綴> -i=false`，約 2 分鐘後網域自動導到 `/setup`；儀表板「建立新模板」只導向文件、沒有貼 YAML 的入口）。
+- **預設推薦：Cloudflare Workers＋D1＋R2**——零維運、全球邊緣、無平台倒閉風險；需 Workers Paid（US$5／月；免費方案冷啟動 10 秒以上、CPU 10 ms 不夠跑密碼雜湊）＋啟用 R2（上傳檔）；沒有伺服器硬碟、備份排程、外掛載入（約 85% 功能）。見「Cloudflare Workers＋D1 殼」與 `docs/部署方案重規劃-2026-10.md`。
+- **有自己主機：VPS＋Docker Compose**——`deploy/compose/`（Caddy 自動 HTTPS＋PostgreSQL），功能 100%，CI `compose-smoke` 每版驗證；月費只有 VPS 本身。
+- **要儀表板又要 100% 功能：Render starter**（`render.yaml`）／Railway／Fly。
+- （歷史）**Zeabur**——功能 100%（外掛、備份、排程、伺服器硬碟）、東京節點對台灣延遲最好、儀表板零維運；專用伺服器約 US$4／月。步驟見下方「Zeabur 實際部署」；一鍵模板 `deploy/zeabur-template.yaml`（映像 `ghcr.io/rogs30541/sitekit` 已公開；**2026-09-26 實測可用**：儀表板先建空專案選好伺服器，再 `npx zeabur@latest template deploy -f deploy/zeabur-template.yaml --project-id <專案ID> --var PUBLIC_DOMAIN=<子網域前綴> -i=false`，約 2 分鐘後網域自動導到 `/setup`；儀表板「建立新模板」只導向文件、沒有貼 YAML 的入口）。
 - **次要：Cloudflare Workers＋D1＋R2**——零維運、全球邊緣；免費方案 CPU 10ms 不夠跑密碼雜湊，實際建議付費方案（US$5／月）；前台待 OpenNext。見「Cloudflare Workers＋D1 殼」。
 - 其他（VPS＋compose、Render、Railway、Fly、cPanel Node）為可用選項，客戶已有主機時採用；Firebase／Vercel／Netlify 靜態託管與純 PHP 主機不支援。
 
@@ -346,11 +350,11 @@ npm run cf:deploy         # 部署；再把 apps/worker/wrangler.jsonc 的 FRONT
 | **Railway** | `railway.json` | New Project → Deploy from GitHub → 選 repo（自動讀 railway.json 用 Dockerfile.monolith）→ 服務 Settings → Volumes 新增掛到 `/data` → Variables：`FRONTEND_URL`、`NEXT_PUBLIC_SITE_URL`＝Railway 給的網址（要 Postgres 就 New → Database → Postgres，`DATABASE_URL=${{Postgres.DATABASE_URL}}`）→ Networking 產生網域（埠 3000） | 待實測（需 Railway 帳號登入） |
 | **Render** | `render.yaml`（正式：starter＋持久硬碟）／`deploy/render-free.yaml`（免費：free web＋free Postgres，不需付款資訊） | Dashboard → New → Blueprint → 選 repo → Blueprint Path 填 `deploy/render-free.yaml` → 填 `FRONTEND_URL`＝`https://<name>.onrender.com` → Deploy。免費層沒有持久硬碟（上傳請選 R2）、閒置休眠、免費 Postgres 30 天到期 | ✅ 2026-09-24 免費層實測：https://sitekit-free.onrender.com（v0.26.0，Docker 建置約 4 分鐘） |
 | **Fly.io** | `fly.toml` | `fly launch --copy-config --no-deploy`（改 app 名）→ `fly volumes create sitekit_data --size 3 --region nrt` → `fly secrets set FRONTEND_URL=https://<app>.fly.dev NEXT_PUBLIC_SITE_URL=https://<app>.fly.dev` → `fly deploy`。預設 SQLite 在 volume；要 Postgres：`fly postgres create` 後 `fly secrets set DATABASE_URL=…` | 待實測（需 flyctl 登入） |
-| **Zeabur** | 儀表板貼 Dockerfile（見下節） | 見「Zeabur 實際部署」 | ✅ 2026-09-24 |
+| ~~Zeabur~~ | 平台已於 2026-10 停止服務 | 段落保留供參考 | ❌ 2026-10-25 停止 |
 | **cPanel／Plesk（有 Node 的虛擬主機）** | Release 的 `sitekit-<版號>.tar.gz` | 上傳解壓 → 「Setup Node.js App」：Node 22、Application root＝解壓目錄、Startup file＝`apps/server/bin/sitekit.mjs`、環境變數 `SITEKIT_DATA_DIR`＝目錄下 data、`FRONTEND_URL`＝網址 → Start。資料庫用 SQLite，或主機給的 MySQL（`DATABASE_URL=mysql://…`，v0.26.0 起） | 待實測（需主機帳號） |
 | Vercel／Netlify | — | 不支援：無持久硬碟、不能常駐 Node 程序 | — |
 
-## 部署（Zeabur 或任何容器平台）
+## 部署（任何容器平台）
 
 四個服務：`web`、`api`、`postgres`、`redis`。`web` 與 `api` 各用 repo 根目錄的 `Dockerfile.web` / `Dockerfile.api` 建置；
 `api` 啟動時自動 `prisma migrate deploy`。環境變數見 `apps/api/.env.example` 與 `apps/web/.env.example`，機密只放平台 Secret。
@@ -359,7 +363,7 @@ npm run cf:deploy         # 部署；再把 apps/worker/wrangler.jsonc 的 FRONT
 
 詳細架構與分期見 `docs/架構.md` 與 `docs/全新網站規劃.md`；**雙平台（Zeabur 容器／Cloudflare Workers＋D1＋R2＋Resend）部署架構與遷移路線見 `docs/雙平台部署架構.md`**（一核心兩薄殼：packages/core 業務邏輯共用、apps/api＝Nest 殼、apps/worker＝Hono 殼）。
 
-### Zeabur 實際部署（2026-09-24 改為單體殼；實測步驟）
+### （歷史）Zeabur 實際部署（平台已於 2026-10 停止服務；2026-09-24 單體殼實測步驟，供其他容器平台對照）
 
 2026-09-24 已把舊的四服務（web／api／redis／postgresql）全部刪除，改成 **兩個服務**：`postgresql-hess`（marketplace PostgreSQL，postgres:18）＋ `sitekit`（GitHub `rogs30541/sitekit` main，用 `Dockerfile.monolith`）。上線後 `/api/health` 回 `version 0.25.0、db ok`，首頁自動導到 `/setup`。
 

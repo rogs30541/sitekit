@@ -145,7 +145,7 @@ export function SetupWizard() {
     <div className="rounded-xl border p-6" style={{ ...line, background: 'var(--card)' }}>
       <h1 className="text-xl font-bold">{tr('SiteKit 安裝精靈')}</h1>
       <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>
-        版本 {status.version}。像 WordPress 一樣，幾個步驟把站台建好；每一步之後都可以在後台再改。建議部署平台：Zeabur（伺服器硬碟直接可用）。
+        版本 {status.version}。像 WordPress 一樣，幾個步驟把站台建好；每一步之後都可以在後台再改。建議部署平台：Cloudflare Workers（零維運，儲存選 R2）或任何 Docker 主機（VPS compose，伺服器硬碟直接可用）。
       </p>
       <ol className="my-4 flex flex-wrap gap-2 text-xs">
         {STEPS.map((s, i) => (
@@ -247,7 +247,7 @@ export function SetupWizard() {
 
       {step === 3 && admin ? (
         <div className="space-y-2 text-sm">
-          <p style={{ color: 'var(--muted)' }}>{tr('上傳的圖片、商品封面與 AI 產圖存在哪裡。部署在哪個平台就用該平台的硬碟：容器平台（Zeabur 等）把硬碟掛到資料夾即可用伺服器硬碟；沒有持久硬碟的環境才需要 Cloudflare R2／S3。')}</p>
+          <p style={{ color: 'var(--muted)' }}>{tr('上傳的圖片、商品封面與 AI 產圖存在哪裡。部署在哪個平台就用該平台的硬碟：Docker／VPS 等容器平台把硬碟掛到資料夾即可用伺服器硬碟；Cloudflare Workers 等沒有持久硬碟的環境用 Cloudflare R2／S3。')}</p>
           {status?.localDisk?.persistent === false ? (
             <p className="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-amber-800">{tr('目前的儲存資料夾不在持久硬碟上（重新部署會清掉上傳檔）。請到平台把硬碟掛到這個資料夾再選伺服器硬碟，或改用 R2／S3：')} {status.localDisk.dir}</p>
           ) : status?.localDisk?.persistent === true ? (
